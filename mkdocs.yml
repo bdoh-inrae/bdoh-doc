@@ -1,7 +1,7 @@
 site_name: BDOH — Modèle de données
 site_description: Documentation du modèle de données de l'observatoire hydrologique BDOH
 site_author: INRAE UR RiverLy
-repo_url: https://github.com/votre-org/bdoh-doc
+repo_url: https://github.com/bdoh-inrae/bdoh-doc
 repo_name: bdoh-doc
 edit_uri: edit/main/docs/
 
