@@ -1,0 +1,65 @@
+site_name: BDOH — Modèle de données
+site_description: Documentation du modèle de données de l'observatoire hydrologique BDOH
+site_author: INRAE UR RiverLy
+repo_url: https://github.com/votre-org/bdoh-doc
+repo_name: bdoh-doc
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: fr
+  palette:
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Mode sombre
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Mode clair
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.action.edit
+    - toc.follow
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+      title: Sur cette page
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search:
+      lang: fr
+
+nav:
+  - Accueil: index.md
+  - Vue d'ensemble: overview.md
+  - Modèle de données:
+    - Introduction: model/index.md
+    - Acteurs: model/actors.md
+    - Référentiels: model/references.md
+    - Géographie: model/geography.md
+    - Réseau de surveillance: model/network.md
+    - Projet: model/project.md
+    - Instrumentation: model/instrumentation.md
+    - Observation: model/observation.md
+    - Transformation: model/transformation.md
+    - Organisation: model/organisation.md
+  - Standards: standards/index.md
+  - Décisions: decisions/index.md
