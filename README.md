@@ -4,7 +4,7 @@ Documentation du modèle de données de la Base de Données des Observatoires Hy
 
 ## Lire la documentation
 
-La documentation est disponible en ligne : [https://votre-org.github.io/bdoh-doc](https://votre-org.github.io/bdoh-doc)
+La documentation est disponible en ligne : [https://bdoh-inrae.github.io/bdoh-doc](https://bdoh-inrae.github.io/bdoh-doc)
 
 ## Contribuer
 
