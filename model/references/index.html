@@ -1,0 +1,1448 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation du modèle de données de l'observatoire hydrologique BDOH">
+      
+      
+        <meta name="author" content="INRAE UR RiverLy">
+      
+      
+      
+        <link rel="prev" href="../actors/">
+      
+      
+        <link rel="next" href="../geography/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Référentiels - BDOH — Modèle de données</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#referentiels" class="md-skip">
+          Aller au contenu
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href="../.." title="BDOH — Modèle de données" class="md-header__button md-logo" aria-label="BDOH — Modèle de données" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            BDOH — Modèle de données
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Référentiels
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Mode sombre"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Mode sombre" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Mode clair"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mode clair" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Rechercher" placeholder="Rechercher" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Recherche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Effacer" aria-label="Effacer" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initialisation de la recherche
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/bdoh-inrae/bdoh-doc" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdoh-doc
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Onglets" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Accueil
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../overview/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Vue d'ensemble
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Modèle de données
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../standards/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Standards
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../decisions/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Décisions
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="BDOH — Modèle de données" class="md-nav__button md-logo" aria-label="BDOH — Modèle de données" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    BDOH — Modèle de données
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/bdoh-inrae/bdoh-doc" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdoh-doc
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accueil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue d'ensemble
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modèle de données
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modèle de données
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Acteurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Référentiels
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Référentiels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Sur cette page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Sur cette page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#property" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Property
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Procedure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keyword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyword
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#identifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifier
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geography/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Géographie
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Réseau de surveillance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../instrumentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instrumentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transformation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../organisation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Organisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Standards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Décisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Sur cette page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Sur cette page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#property" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Property
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Procedure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keyword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyword
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#identifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifier
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/bdoh-inrae/bdoh-doc/edit/main/docs/model/references.md" title="Editer cette page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="referentiels">Référentiels<a class="headerlink" href="#referentiels" title="Permanent link">&para;</a></h1>
+<p>Les référentiels sont des entités stables gérées par les curateurs. Elles définissent le vocabulaire commun du modèle — variables, unités, protocoles, classifications thématiques et identifiants externes.</p>
+<hr />
+<h2 id="property">Property<a class="headerlink" href="#property" title="Permanent link">&para;</a></h2>
+<p>Aligné avec : STA ObservedProperty, NERC NVS P01, Helmholtz SMS CV, ODM2 Variable</p>
+<p>Utilisé par : <a href="../observation/#timeserie">TimeSerie</a> (property), <a href="../transformation/#transformedtimeserie">TransformedTimeSerie</a> (property), <a href="../transformation/#transferfunction">TransferFunction</a> (inputProperty, outputProperty)</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Chaque variable est unique et non dupliquée — gérée par les curateurs.
+Les URIs vers les thésaurus externes (NERC P01, Theia/OZCAR, SANDRE...) sont portées par <code>identifier</code>.
+<code>discipline</code> et <code>theme</code> suivent un vocabulaire contrôlé interne BDOH.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Cardinalité</th>
+<th>Définition</th>
+<th>Valeurs possibles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>1</td>
+<td>Identifiant technique, clé primaire</td>
+<td>uuid</td>
+</tr>
+<tr>
+<td><code>code</code></td>
+<td>1</td>
+<td>Code court unique, saisi par curateur (2-8 cars)</td>
+<td>"no3" | "debit" | "doc" | "bact-div"</td>
+</tr>
+<tr>
+<td><code>symbol</code></td>
+<td>0..1</td>
+<td>Symbole scientifique universel</td>
+<td>"NO3" | "Q" | "DOC"</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>1</td>
+<td>Nom de la variable</td>
+<td>"Nitrate" | "Débit journalier maximal annuel"</td>
+</tr>
+<tr>
+<td><code>definition</code></td>
+<td>0..1</td>
+<td>Définition textuelle</td>
+<td>"Maximum annuel du débit journalier"</td>
+</tr>
+<tr>
+<td><code>defaultUnit</code></td>
+<td>0..1 →Unit</td>
+<td>Unité par défaut</td>
+<td>→ <a href="#unit">Unit</a></td>
+</tr>
+<tr>
+<td><code>sourceProperty</code></td>
+<td>0..1 →Prop</td>
+<td>Variable source pour les variables dérivées</td>
+<td>→ Property (ex: "Q" pour "QJXA")</td>
+</tr>
+<tr>
+<td><code>discipline</code></td>
+<td>1</td>
+<td>Famille majeure (vocabulaire contrôlé BDOH)</td>
+<td><code>hydrology</code> | <code>chemistry</code> | <code>meteorology</code> | <code>sediment</code> | <code>microbiology</code> | <code>general</code></td>
+</tr>
+<tr>
+<td><code>theme</code></td>
+<td>0..1</td>
+<td>Famille mineure (vocabulaire contrôlé BDOH)</td>
+<td><code>metals</code> | <code>nutrients</code> | <code>bacterialDiversity</code> | <code>bacterialAbundance</code> | <code>bacterialResistance</code> | <code>radionuclides</code> | <code>pesticides</code> | <code>pharmaceuticals</code> | <code>persistentOrganicPollutants</code> | <code>organicMicropollutants</code> | <code>general</code></td>
+</tr>
+<tr>
+<td><code>samplingMedium</code></td>
+<td>0..1</td>
+<td>Milieu intrinsèque à la variable (CV ODM2)</td>
+<td><code>air</code> | <code>surfaceWater</code> | <code>groundwater</code> | <code>soil</code> | <code>sediment</code> | <code>poreWater</code> | <code>atmosphere</code></td>
+</tr>
+<tr>
+<td><code>aggregationType</code></td>
+<td>0..1</td>
+<td>Type d'agrégation temporelle</td>
+<td><code>average</code> | <code>sum</code> | <code>min</code> | <code>max</code> | <code>instantaneous</code> | <code>cumulative</code></td>
+</tr>
+<tr>
+<td><code>samplingPeriod</code></td>
+<td>0..1</td>
+<td>Début de la période de référence (MM-JJ)</td>
+<td>null | "09-01" | "01-01"</td>
+</tr>
+<tr>
+<td><code>variableType</code></td>
+<td>0..1</td>
+<td>Nature physique — calcul de delta</td>
+<td><code>intensive</code> | <code>extensive</code></td>
+</tr>
+<tr>
+<td><code>valueType</code></td>
+<td>0..1</td>
+<td>Nature des valeurs</td>
+<td><code>continuous</code> | <code>discrete</code> | <code>categorical</code> | <code>temporal</code></td>
+</tr>
+<tr>
+<td><code>origin</code></td>
+<td>0..1</td>
+<td>Mode de production</td>
+<td><code>observed</code> | <code>derived</code> | <code>simulated</code></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>1</td>
+<td>Statut du terme géré par les curateurs</td>
+<td><code>accepted</code> | <code>deprecated</code> | <code>proposed</code></td>
+</tr>
+<tr>
+<td><code>identifier</code></td>
+<td>0..* →Ident</td>
+<td>URIs vers vocabulaires externes</td>
+<td>→ <a href="#identifier">Identifier</a>[]</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="unit">Unit<a class="headerlink" href="#unit" title="Permanent link">&para;</a></h2>
+<p>Utilisé par : <a href="#property">Property</a> (defaultUnit), <a href="../observation/#timeserie">TimeSerie</a> (unit), <a href="../transformation/#transformedtimeserie">TransformedTimeSerie</a> (unit)</p>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Cardinalité</th>
+<th>Définition</th>
+<th>Valeurs possibles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>1</td>
+<td>Identifiant technique, clé primaire</td>
+<td>uuid</td>
+</tr>
+<tr>
+<td><code>code</code></td>
+<td>1</td>
+<td>Code court pour URLs (kebab-case)</td>
+<td>"mg-l" | "m3-s" | "degc"</td>
+</tr>
+<tr>
+<td><code>symbol</code></td>
+<td>1</td>
+<td>Symbole textuel affiché</td>
+<td>"mg/L" | "m³/s" | "°C"</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>1</td>
+<td>Nom complet de l'unité</td>
+<td>"milligram per litre"</td>
+</tr>
+<tr>
+<td><code>definition</code></td>
+<td>1</td>
+<td>URI QUDT ou UCUM</td>
+<td>"http://qudt.org/vocab/unit/MilliGM-PER-L"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="procedure">Procedure<a class="headerlink" href="#procedure" title="Permanent link">&para;</a></h2>
+<p>Utilisé par : <a href="../observation/#timeserie">TimeSerie</a> (procedure.observation, procedure.validation), <a href="../observation/#controlobservation">ControlObservation</a> (procedure.control), <a href="../transformation/#transferfunction">TransferFunction</a> (procedure), <a href="../transformation/#transformedtimeserie">TransformedTimeSerie</a> (procedure.transformation)</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Entité générique pour tout protocole. Le champ <code>type</code> discrimine le rôle.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Cardinalité</th>
+<th>Définition</th>
+<th>Valeurs possibles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>1</td>
+<td>Identifiant technique, clé primaire</td>
+<td>uuid</td>
+</tr>
+<tr>
+<td><code>code</code></td>
+<td>1</td>
+<td>Code court unique, saisi par curateur</td>
+<td>"iso-10304-1"</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>1</td>
+<td>Nom du protocole</td>
+<td>"NF EN ISO 10304-1"</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>1</td>
+<td>Rôle du protocole</td>
+<td><code>observation</code> | <code>validation</code> | <code>control</code> | <code>transformation</code></td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>0..1</td>
+<td>Description libre</td>
+<td></td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>0..1</td>
+<td>Version du protocole</td>
+<td>"2021"</td>
+</tr>
+<tr>
+<td><code>reference</code></td>
+<td>0..1</td>
+<td>URI ou DOI du document normatif</td>
+<td>"https://www.iso.org/standard/..."</td>
+</tr>
+<tr>
+<td><code>encodingType</code></td>
+<td>1</td>
+<td>Type d'encodage (conformité STA)</td>
+<td>"application/pdf" | URI</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="keyword">Keyword<a class="headerlink" href="#keyword" title="Permanent link">&para;</a></h2>
+<p>Aligné avec : ISO 19115 MD_Keywords, DataCite subject, DCAT keyword</p>
+<p>Utilisé par : <a href="#property">Property</a>, <a href="../network/#observatory">Observatory</a>, <a href="../observation/#timeserie">TimeSerie</a>, <a href="../organisation/#timeseriesbundle">TimeSeriesBundle</a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>keywordType</code> suit le vocabulaire <code>MD_KeywordTypeCode</code> d'ISO 19115 :</p>
+<ul>
+<li><code>discipline</code> → domaine scientifique (Hydrologie, Chimie...)</li>
+<li><code>theme</code> → sujet thématique fin (Métaux, Nutrients...)</li>
+<li><code>place</code> → lieu géographique ("Bassin Rhône", "France")</li>
+<li><code>temporal</code> → période temporelle ("Holocène", "21e siècle")</li>
+<li><code>stratum</code> → couche géologique ou verticale ("Zone saturée")</li>
+<li><code>taxon</code> → taxon biologique ("Escherichia coli")</li>
+<li><code>instrument</code> → type d'instrument</li>
+<li><code>process</code> → processus observé</li>
+</ul>
+</div>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Cardinalité</th>
+<th>Définition</th>
+<th>Valeurs possibles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>1</td>
+<td>Identifiant technique, clé primaire</td>
+<td>uuid</td>
+</tr>
+<tr>
+<td><code>term</code></td>
+<td>1</td>
+<td>Terme de classification</td>
+<td>"Hydrologie" | "Métaux et métalloïdes"</td>
+</tr>
+<tr>
+<td><code>keywordType</code></td>
+<td>1</td>
+<td>Type de keyword (MD_KeywordTypeCode ISO 19115)</td>
+<td><code>discipline</code> | <code>theme</code> | <code>place</code> | <code>temporal</code> | <code>stratum</code> | <code>taxon</code> | <code>instrument</code> | <code>process</code></td>
+</tr>
+<tr>
+<td><code>thesaurus</code></td>
+<td>0..1</td>
+<td>Vocabulaire source</td>
+<td>"BDOH" | "TheiaOZCAR" | "GCMD" | "SANDRE" | "free"</td>
+</tr>
+<tr>
+<td><code>uri</code></td>
+<td>0..1</td>
+<td>URI du terme dans le thésaurus</td>
+<td>"https://w3id.org/ozcar-theia/..."</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="identifier">Identifier<a class="headerlink" href="#identifier" title="Permanent link">&para;</a></h2>
+<p>Aligné avec : ODM2 ExternalIdentifiers, schema.org identifier</p>
+<p>Utilisé par : Observatory, Site, Station, Sensor, Equipment, TimeSerie, Person, Organization, SamplingFeature, Property, Project (via resourceType + resourceId)</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Permet autant de PIDs que nécessaire sur n'importe quelle ressource.
+Si <code>codeType = uri</code> alors <code>code</code> contient directement l'URI de résolution.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Cardinalité</th>
+<th>Définition</th>
+<th>Valeurs possibles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>1</td>
+<td>Identifiant technique, clé primaire</td>
+<td>uuid</td>
+</tr>
+<tr>
+<td><code>code</code></td>
+<td>1</td>
+<td>Valeur de l'identifiant ou URI complète</td>
+<td>"V3015810" | "https://w3id.org/ozcar-theia/c_xxx"</td>
+</tr>
+<tr>
+<td><code>codeType</code></td>
+<td>1</td>
+<td>Type d'identifiant</td>
+<td><code>localCode</code> | <code>uri</code> | <code>doi</code> | <code>orcid</code> | <code>ror</code> | <code>sandre</code> | <code>wigos</code> | <code>igsn</code> | <code>other</code></td>
+</tr>
+<tr>
+<td><code>codeSource</code></td>
+<td>1</td>
+<td>Système ou organisme émetteur</td>
+<td>"SANDRE" | "TheiaOZCAR" | "NERC" | "DataCite" | "ORCID" | "ROR"</td>
+</tr>
+<tr>
+<td><code>resourceType</code></td>
+<td>1</td>
+<td>Type de ressource ciblée</td>
+<td><code>Observatory</code> | <code>Site</code> | <code>Station</code> | <code>Sensor</code> | <code>Equipment</code> | <code>TimeSerie</code> | <code>Person</code> | <code>Organization</code> | <code>SamplingFeature</code> | <code>Property</code> | <code>Project</code></td>
+</tr>
+<tr>
+<td><code>resourceId</code></td>
+<td>1</td>
+<td>UUID de la ressource ciblée</td>
+<td>uuid</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Retour en haut de la page
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.suggest", "content.action.edit", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

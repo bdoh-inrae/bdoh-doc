@@ -1,0 +1,1376 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation du modèle de données de l'observatoire hydrologique BDOH">
+      
+      
+        <meta name="author" content="INRAE UR RiverLy">
+      
+      
+      
+        <link rel="prev" href="../standards/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Décisions - BDOH — Modèle de données</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#decisions-de-conception" class="md-skip">
+          Aller au contenu
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href=".." title="BDOH — Modèle de données" class="md-header__button md-logo" aria-label="BDOH — Modèle de données" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            BDOH — Modèle de données
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Décisions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Mode sombre"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Mode sombre" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Mode clair"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mode clair" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Rechercher" placeholder="Rechercher" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Recherche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Effacer" aria-label="Effacer" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initialisation de la recherche
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/bdoh-inrae/bdoh-doc" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdoh-doc
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Onglets" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Accueil
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../overview/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Vue d'ensemble
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../model/" class="md-tabs__link">
+          
+  
+  
+  Modèle de données
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../standards/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Standards
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Décisions
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="BDOH — Modèle de données" class="md-nav__button md-logo" aria-label="BDOH — Modèle de données" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    BDOH — Modèle de données
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/bdoh-inrae/bdoh-doc" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdoh-doc
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accueil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue d'ensemble
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modèle de données
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modèle de données
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/actors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Acteurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Référentiels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/geography/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Géographie
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/network/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Réseau de surveillance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/instrumentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instrumentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/observation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/transformation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/organisation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Organisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Standards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Décisions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Décisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Sur cette page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Sur cette page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#adr-001-sta-comme-base-etendu-par-odm2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-001 — STA comme base, étendu par ODM2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-002-timeserie-comme-contrat-analytique" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-002 — TimeSerie comme contrat analytique
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-003-station-vs-featureofinterest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-003 — Station vs FeatureOfInterest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-004-pattern-resourcetype-resourceid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-004 — Pattern resourceType + resourceId
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-005-historical-pattern-uniforme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-005 — Historical* : pattern uniforme
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-006-project-et-historicalproject-source-de-verite-unique" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-006 — Project et HistoricalProject : source de vérité unique
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-007-lims-hors-modele" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-007 — LIMS hors modèle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-008-property-champs-directs-vs-keyword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-008 — Property : champs directs vs Keyword
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-009-identifiants-uuid-code-lisible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-009 — Identifiants : UUID + code lisible
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-010-deployment-grouper-les-capteurs-co-localises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-010 — Deployment : grouper les capteurs co-localisés
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-011-samplingfeature-frontiere-avec-featureofinterest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-011 — SamplingFeature : frontière avec FeatureOfInterest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-012-codes-pour-les-property-symbol-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-012 — Codes pour les Property : symbol + code
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-013-variabletype-intensive-vs-extensive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-013 — variableType : intensive vs extensive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#points-ouverts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Points ouverts
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Sur cette page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Sur cette page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#adr-001-sta-comme-base-etendu-par-odm2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-001 — STA comme base, étendu par ODM2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-002-timeserie-comme-contrat-analytique" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-002 — TimeSerie comme contrat analytique
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-003-station-vs-featureofinterest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-003 — Station vs FeatureOfInterest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-004-pattern-resourcetype-resourceid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-004 — Pattern resourceType + resourceId
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-005-historical-pattern-uniforme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-005 — Historical* : pattern uniforme
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-006-project-et-historicalproject-source-de-verite-unique" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-006 — Project et HistoricalProject : source de vérité unique
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-007-lims-hors-modele" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-007 — LIMS hors modèle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-008-property-champs-directs-vs-keyword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-008 — Property : champs directs vs Keyword
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-009-identifiants-uuid-code-lisible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-009 — Identifiants : UUID + code lisible
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-010-deployment-grouper-les-capteurs-co-localises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-010 — Deployment : grouper les capteurs co-localisés
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-011-samplingfeature-frontiere-avec-featureofinterest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-011 — SamplingFeature : frontière avec FeatureOfInterest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-012-codes-pour-les-property-symbol-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-012 — Codes pour les Property : symbol + code
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-013-variabletype-intensive-vs-extensive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-013 — variableType : intensive vs extensive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#points-ouverts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Points ouverts
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/bdoh-inrae/bdoh-doc/edit/main/docs/decisions/index.md" title="Editer cette page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="decisions-de-conception">Décisions de conception<a class="headerlink" href="#decisions-de-conception" title="Permanent link">&para;</a></h1>
+<p>Ce journal documente les choix structurants du modèle — pourquoi telle option a été retenue, quelles alternatives ont été écartées et pour quelle raison. L'objectif est de rendre le modèle maintenable dans le temps sans avoir à reconstruire le raisonnement depuis zéro.</p>
+<hr />
+<h2 id="adr-001-sta-comme-base-etendu-par-odm2">ADR-001 — STA comme base, étendu par ODM2<a class="headerlink" href="#adr-001-sta-comme-base-etendu-par-odm2" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : utiliser OGC SensorThings API comme modèle de base et l'enrichir avec les métadonnées d'ODM2.</p>
+<p><strong>Contexte</strong> : STA est léger, REST/JSON, orienté IoT — mais trop générique pour les observatoires environnementaux. ODM2 est riche sémantiquement mais daté technologiquement (XML, WaterOneFlow).</p>
+<p><strong>Choix retenu</strong> : STA pour la structure et l'interface, ODM2 pour la sémantique des métadonnées environnementales. C'est exactement l'approche de Horsburgh et al. (2024) avec HydroServer.</p>
+<p><strong>Références</strong> : Horsburgh et al. (2024), <em>Environmental Modelling and Software</em> doi:10.1016/j.envsoft.2024.106241</p>
+<hr />
+<h2 id="adr-002-timeserie-comme-contrat-analytique">ADR-002 — TimeSerie comme contrat analytique<a class="headerlink" href="#adr-002-timeserie-comme-contrat-analytique" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : la <code>TimeSerie</code> porte tout ce qui est fixe pour toute la série — capteur, variable, protocole analytique, milieu. Elle ne porte pas les observations individuelles.</p>
+<p><strong>Contexte</strong> : dans STA, le <code>Datastream</code> est déjà ce concept. BDOH le renforce en y attachant explicitement <code>procedure.observation</code> comme contrat immuable.</p>
+<p><strong>Conséquence</strong> : si un paramètre analytique change (nouveau protocole, nouvel instrument avec impact sur la mesure), c'est une nouvelle <code>TimeSerie</code>. Le changement de capteur sans impact sur la comparabilité est tracé via <code>HistoricalSensor</code>.</p>
+<hr />
+<h2 id="adr-003-station-vs-featureofinterest">ADR-003 — Station vs FeatureOfInterest<a class="headerlink" href="#adr-003-station-vs-featureofinterest" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : distinguer explicitement la <code>Station</code> (plateforme physique qui porte les capteurs) de la <code>FeatureOfInterest</code> (entité réelle du monde observée).</p>
+<p><strong>Contexte</strong> : certaines implémentations STA confondent les deux en faisant pointer <code>FeatureOfInterest</code> vers la position de la station. C'est une simplification pratique mais sémantiquement incorrecte selon OGC O&amp;M.</p>
+<p><strong>Choix retenu</strong> : la <code>Station</code> est le <em>Thing</em> STA — elle porte les capteurs. La <code>FeatureOfInterest</code> est l'eau de surface, les sédiments, la nappe — ce qu'on observe réellement. Une même station peut avoir plusieurs <code>FeatureOfInterest</code>.</p>
+<hr />
+<h2 id="adr-004-pattern-resourcetype-resourceid">ADR-004 — Pattern resourceType + resourceId<a class="headerlink" href="#adr-004-pattern-resourcetype-resourceid" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : utiliser un pattern polymorphique <code>resourceType + resourceId</code> pour les entités transversales (<code>Memory</code>, <code>Identifier</code>, <code>HistoricalLocation</code>, <code>HistoricalProject</code>, <code>HistoricalSensor</code>).</p>
+<p><strong>Contexte</strong> : deux alternatives ont été étudiées :
+- colonnes séparées (<code>observatory_id</code>, <code>site_id</code>, <code>station_id</code>...) → intégrité référentielle automatique en base mais schéma verbeux
+- <code>resourceType + resourceId</code> → perd la FK constraint mais schéma uniforme et extensible</p>
+<p><strong>Choix retenu</strong> : <code>resourceType + resourceId</code> pour trois raisons :
+1. cohérence : une seule convention pour toutes les entités transversales
+2. extensibilité : ajouter un nouveau type de ressource = ajouter une valeur dans l'enum, pas modifier le schéma
+3. alignement avec les standards récents : STAplus, STAMPLATE utilisent ce pattern</p>
+<p><strong>Contrainte</strong> : l'intégrité référentielle est garantie par l'application, pas par la base.</p>
+<hr />
+<h2 id="adr-005-historical-pattern-uniforme">ADR-005 — Historical* : pattern uniforme<a class="headerlink" href="#adr-005-historical-pattern-uniforme" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : toutes les entités <code>Historical*</code> (<code>HistoricalLocation</code>, <code>HistoricalProject</code>, <code>HistoricalSensor</code>) partagent la même structure : <code>resourceType + resourceId + validFrom + validTo</code>.</p>
+<p><strong>Contexte</strong> : <code>HistoricalSensor</code> aurait pu pointer directement vers <code>TimeSerie</code> avec une FK directe. C'est plus simple techniquement et garantit l'intégrité référentielle.</p>
+<p><strong>Choix retenu</strong> : pattern uniforme pour la cohérence des requêtes — un développeur qui connaît <code>HistoricalLocation</code> comprend immédiatement <code>HistoricalSensor</code>. La légère perte d'intégrité automatique est acceptable.</p>
+<hr />
+<h2 id="adr-006-project-et-historicalproject-source-de-verite-unique">ADR-006 — Project et HistoricalProject : source de vérité unique<a class="headerlink" href="#adr-006-project-et-historicalproject-source-de-verite-unique" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : le lien entre un <code>Project</code> et les ressources qu'il porte (Observatory, Site, Station, TimeSerie) passe <strong>uniquement</strong> par <code>HistoricalProject</code>.</p>
+<p><strong>Contexte</strong> : une première approche ajoutait <code>Project.observatory</code> pour un accès direct. Le risque était d'avoir deux sources d'information contradictoires si l'une était modifiée sans l'autre.</p>
+<p><strong>Choix retenu</strong> : <code>HistoricalProject</code> est la source de vérité unique. <code>Project</code> n'a pas de lien direct vers les ressources. Cela évite toute incohérence et force à passer par l'historique — ce qui est de toute façon nécessaire puisqu'un même observatoire peut être porté successivement par OSR6, OSR7, OSR8.</p>
+<hr />
+<h2 id="adr-007-lims-hors-modele">ADR-007 — LIMS hors modèle<a class="headerlink" href="#adr-007-lims-hors-modele" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : la chaîne analytique interne au laboratoire (réception, préparation, analyse) est hors modèle. Le lien se fait via <code>ValidatedObservation.limsReference</code>.</p>
+<p><strong>Contexte</strong> : ODM2 modélise des <code>Action</code> chaînées pour tracer toute la chaîne de préparation d'un échantillon. C'est très riche mais très complexe, et cette complexité appartient au LIMS (Laboratory Information Management System) — un SI distinct avec ses propres contraintes réglementaires (COFRAC, ISO 17025).</p>
+<p><strong>Choix retenu</strong> : BDOH décrit <strong>ce qui est observé sur le terrain</strong> (SamplingFeature) et <strong>le résultat certifié</strong> (ValidatedObservation). La boîte noire du labo est documentée par <code>limsReference</code> — un pointeur opaque vers le LIMS.</p>
+<hr />
+<h2 id="adr-008-property-champs-directs-vs-keyword">ADR-008 — Property : champs directs vs Keyword<a class="headerlink" href="#adr-008-property-champs-directs-vs-keyword" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : <code>discipline</code> et <code>theme</code> sont des champs directs dans <code>Property</code>, pas des <code>Keyword</code>.</p>
+<p><strong>Contexte</strong> : l'approche générique aurait tout mis dans <code>Keyword</code> avec des <code>keywordType</code> différents. Cela aurait été cohérent avec ISO 19115 mais peu pratique pour filtrer et gérer les variables.</p>
+<p><strong>Choix retenu</strong> : <code>discipline</code> et <code>theme</code> sont des enums fixes gérés par les curateurs — au même titre que <code>samplingMedium</code> ou <code>aggregationType</code>. Ils ne varient pas selon le contexte et ne pointent pas vers des thésaurus externes. Les liens vers les thésaurus (Theia/OZCAR, NERC...) passent par <code>identifier</code>. <code>Keyword</code> reste réservé à la classification éditoriale pour les catalogues (Observatory, TimeSerie, TimeSeriesBundle).</p>
+<hr />
+<h2 id="adr-009-identifiants-uuid-code-lisible">ADR-009 — Identifiants : UUID + code lisible<a class="headerlink" href="#adr-009-identifiants-uuid-code-lisible" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : chaque entité a deux identifiants distincts — un <code>id</code> UUID (clé primaire technique) et un <code>code</code> lisible humainement (utilisé dans les URLs).</p>
+<p><strong>Contexte</strong> : un entier auto-incrémenté est plus simple mais prévisible (fuite d'information sur le volume) et difficile à fusionner entre bases. Un UUID seul est illisible dans les URLs et les logs.</p>
+<p><strong>Choix retenu</strong> : UUID immuable pour toutes les relations en base, <code>code</code> kebab-case pour les URLs et l'affichage. Le <code>code</code> peut être modifié sans casser les relations. Convention hiérarchique : <code>{parent.code}-{segment}</code>.</p>
+<hr />
+<h2 id="adr-010-deployment-grouper-les-capteurs-co-localises">ADR-010 — Deployment : grouper les capteurs co-localisés<a class="headerlink" href="#adr-010-deployment-grouper-les-capteurs-co-localises" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : introduire une entité <code>Deployment</code> pour regrouper des capteurs sur une même plateforme physique (ligne verticale, bouée, station multi-capteurs).</p>
+<p><strong>Contexte</strong> : pour reconstruire un profil vertical dans une retenue (température + salinité + position à plusieurs profondeurs), il faut lier les séries entre elles. Plusieurs approches ont été étudiées :
+- <code>pairedTimeSerie</code> sur <code>TimeSerie</code> → couplage au niveau des séries, mais fragile si les capteurs sont séparables
+- <code>pairedSensor</code> sur <code>Sensor</code> → couplage physique, mais incorrect si un capteur peut être déployé seul dans un autre contexte
+- <code>Deployment</code> + <code>deploymentDepth</code> sur <code>Sensor</code> → regroupement physique + position relative</p>
+<p><strong>Choix retenu</strong> : <code>Deployment</code> comme entité à part entière. Le <code>deploymentDepth</code> sur chaque <code>Sensor</code> positionne le capteur sur la ligne et groupe implicitement les co-localisés (même profondeur = co-localisés). La requête "donne-moi toutes les séries de la ligne à l'instant T" se fait simplement par <code>deployment_id</code>.</p>
+<hr />
+<h2 id="adr-011-samplingfeature-frontiere-avec-featureofinterest">ADR-011 — SamplingFeature : frontière avec FeatureOfInterest<a class="headerlink" href="#adr-011-samplingfeature-frontiere-avec-featureofinterest" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : <code>SamplingFeature</code> représente l'<strong>acte de prélèvement</strong> (événement daté, unique), pas l'entité géographique observée.</p>
+<p><strong>Contexte</strong> : dans STA standard, <code>FeatureOfInterest</code> joue les deux rôles selon le contexte — c'est soit le lieu de mesure, soit l'échantillon prélevé. ODM2 distingue proprement <code>SamplingFeature</code> (station, point de prélèvement) de <code>Specimen</code> (échantillon physique).</p>
+<p><strong>Choix retenu</strong> :
+- <code>FeatureOfInterest</code> = entité réelle du monde (tronçon de rivière, nappe, sol) — stable, avec un <code>code</code> et une géométrie
+- <code>SamplingFeature</code> = acte de prélèvement terrain — événement daté, lié à une <code>ValidatedObservation</code></p>
+<hr />
+<h2 id="adr-012-codes-pour-les-property-symbol-code">ADR-012 — Codes pour les Property : symbol + code<a class="headerlink" href="#adr-012-codes-pour-les-property-symbol-code" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : <code>Property</code> a deux champs distincts — <code>code</code> (kebab-case, utilisé dans les URLs de TimeSerie) et <code>symbol</code> (symbole scientifique universel, optionnel).</p>
+<p><strong>Contexte</strong> : "Q" est le symbole universel du débit mais trop court et ambigu dans une URL. "debit" est lisible dans une URL mais n'est pas un symbole scientifique. Les deux ont leur utilité.</p>
+<p><strong>Choix retenu</strong> :
+- <code>code</code> obligatoire, 2-8 caractères kebab-case, saisi par les curateurs : "debit", "no3", "bact-div"
+- <code>symbol</code> optionnel, notation scientifique standard : "Q", "NO3", "DOC"</p>
+<p>Les codes de <code>TimeSerie</code> sont générés par concaténation : <code>{station.code}-{property.code}</code> → "yzr-mer-d610-no3"</p>
+<hr />
+<h2 id="adr-013-variabletype-intensive-vs-extensive">ADR-013 — variableType : intensive vs extensive<a class="headerlink" href="#adr-013-variabletype-intensive-vs-extensive" title="Permanent link">&para;</a></h2>
+<p><strong>Décision</strong> : ajouter <code>variableType</code> (<code>intensive</code> / <code>extensive</code>) sur <code>Property</code> pour guider les calculs de delta.</p>
+<p><strong>Contexte</strong> : pour calculer un écart entre deux valeurs, la méthode dépend de la nature physique de la variable. Un delta de température = T2 - T1 (variable intensive). Un delta de débit = (Q2 - Q1) / Q1 (variable extensive). Cette information ne peut pas être déduite du nom ou de l'unité.</p>
+<p><strong>Choix retenu</strong> : champ <code>variableType</code> explicite sur <code>Property</code>, géré par les curateurs. Évite d'encoder une règle de calcul dans le code applicatif qui ne connaît pas la physique de chaque variable.</p>
+<hr />
+<h2 id="points-ouverts">Points ouverts<a class="headerlink" href="#points-ouverts" title="Permanent link">&para;</a></h2>
+<p>Les questions suivantes n'ont pas encore été tranchées et feront l'objet de décisions ultérieures :</p>
+<ul>
+<li><strong>Plateforme mobile</strong> : si des capteurs embarqués sur des bateaux ou drones sont intégrés, <code>HistoricalLocation</code> devra inclure <code>Sensor</code> dans son <code>resourceType</code> (YAGNI pour l'instant).</li>
+<li><strong>samplingPeriod</strong> : le format MM-JJ est une simplification. Une année hydrologique peut commencer à des dates différentes selon le contexte géographique — à préciser.</li>
+<li><strong>TransformedTimeSerie et processingLevel</strong> : la valeur <code>derived</code> est toujours fixe — à confirmer qu'aucun cas ne nécessite <code>raw</code> ou <code>validated</code> sur une série dérivée.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Retour en haut de la page
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.suggest", "content.action.edit", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
