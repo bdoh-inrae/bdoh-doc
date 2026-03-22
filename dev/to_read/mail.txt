@@ -1,0 +1,148 @@
+Mail Sylvain : S.Grellet@brgm.fr
+
+______________________________________________________________________
+
+
+Bonsoir Louis,
+
+Comme discuté tout à l'heure, je te transmets des liens sur des exemples d'implémentation de SensorThings et des descriptions de SI d'autres instituts.
+
+---
+
+Système d'Informations du Helmolz Center (Allemagne) qui gère entre autres les données du réseau TERENO
+Description du système:
+Bumberger, J., Abbrent, M., Brinckmann, N., Hemmen, J., Kunkel, R., Lorenz, C., Lünenschloss, P., Palm, B., Schnicke, T., Schulz, C., van der Schaaf, H., and Schäfer, D.: Digital ecosystem for FAIR time series data management in environmental system science, SoftwareX, 29, 102038, https://doi.org/10.1016/j.softx.2025.102038, 2025.
+
+Dont outil de gestion des capteurs SMS:
+https://zenodo.org/records/18845213
+https://github.com/sensor-management-system
+
+Implémentation de SensorThings et proposition d'extension
+https://hmc-stamplate.github.io/JSONSchema/properties.html
+https://notes.desy.de/hKhtD-0jRfilON3TasH6Eg
+
+Outils automatiques de Quality assessment, quality check:
+Schmidt, L., Schäfer, D., Geller, J., Lünenschloss, P., Palm, B., Rinke, K., Rebmann, C., Rode, M., and Bumberger, J.: System for automated Quality Control (SaQC) to enable traceable and reproducible data streams in environmental science, Environmental Modelling & Software, 169, 105809, https://doi.org/10.1016/j.envsoft.2023.105809, 2023.
+
+---
+
+Outils développés à l'UMR SAS
+https://geosas.fr/web/?page_id=5065
+et leur API SensorThings: https://geosas.fr/sofair-book/intro.html
+
+Contacts:
+BRGM Sylvain Grellet: s.grellet@brgm.fr
+UMR SAS: Hervé Squivdant, Mario Adam: herve.squividant@agrocampus-ouest.fr Mario.Adam@inrae.fr
+
+---
+
+Vision du CUASHI (USA)
+Horsburgh, J. S., Lippold, K., and Slaugh, D. L.: Adapting OGC's SensorThings API and data model to support data management and sharing for environmental sensors, Environmental Modelling & Software, 183, 106241, https://doi.org/10.1016/j.envsoft.2024.106241, 2025.
+
+Et leur modèle de données (qui inclut les échantillons)
+Horsburgh, J. S., Aufdenkampe, A. K., Mayorga, E., Lehnert, K. A., Hsu, L., Song, L., Jones, A. S., Damiano, S. G., Tarboton, D. G., Valentine, D., Zaslavsky, I., and Whitenack, T.: Observations Data Model 2: A community information model for spatially discrete Earth observations, Environmental Modelling & Software, 79, 55-74, http://doi.org/10.1016/j.envsoft.2016.01.010, 2016.
+
+Bonne lecture
+Isabelle 
+
+
+______________________________________________________________________
+
+
+
+Bonjour à toutes et à tous,
+
+Une initiative qui peut peut-être être inspirante pour la réflexion en cours sur BDOH.
+Il s'agit d'outils déployés par nos collègues du SNO HYBAM pour la gestion de leurs données (beaucoup d'hydrométrie).
+
+Bonne fin d'après-midi
+Isabelle
+
+
+-------- Message transféré --------
+Sujet : 	Re: Suite réunion HydroScannR
+Date : 	Wed, 4 Mar 2026 08:24:13 -0400
+De : 	William Santini <william.santini@ird.fr>
+Organisation : 	IRD – SO HyBAm
+Pour : 	Guillaume Nord <guillaume.nord@univ-grenoble-alpes.fr>, ALEXANDRE BEBON <alexANDRe.bebon@univ-grenoble-alpes.fr>, 'Benoît Camenen' <benoit.camenen@inrae.fr>, 'Jérôme Le Coz' <jerome.lecoz@inrae.fr>, 'Dramais Guillaume' <guillaume.dramais@inrae.fr>
+Copie à : 	joana roussillon <joana.roussillon@ird.fr>, jonathan.prunier@ird.fr, Martinez Jean-Michel <jean-michel.martinez@ird.fr>, Brice Boudevillain <brice.boudevillain@univ-grenoble-alpes.fr>, CEDRIC LEGOUT <cedric.legout@univ-grenoble-alpes.fr>, Braud Isabelle <isabelle.braud@inrae.fr>
+
+
+Re-bonjour Guillaume,
+
+J'ajoute Brice et Cédric à la discussion.
+
+Merci. J'avais tenté de soumettre ce projet comme thème transverse mais l'accueil a été plutôt réservé. J'ai compris qu'OZCAR était plutôt sur les standards d'échange que sur l'idée de la création d'un outil métier commun, ce qui ce défend, notamment en terme de souplesse. Mais je pense pour ma part qu'il faut FAIRiser les outils, pas seulement les données.
+
+J'avais eu une réunion avec Brice, qui m'avait permis de progresser dans ma vision de l'outil et de le rendre aligné OGC sensorthings. N'ayant pas d'avantage de retour d'OZCAR, j'ai travaillé seul avec un VI. Peut-être que les choses sont plus mûres maintenant pour tenter de d'avancer dans un cadre OZCAR, ou avec un nombre réduit de SNO qui seraient intéressés. 
+
+Si l'IGE (j'imagine que Brice est impliqué) travaille sur la FAIRisatation d'outils de critique/validation de séries temporelles, oui il serait vraiment important de discuter de nouveau afin de ne pas avancer en parallèle. C'était justement l'idée de RIO, mutualiser et FAIRiser ce qui se fait dans nos SNO.
+
+Je reviens vers vous très vite avec un sondage pour une présentation de RIO et une discussion.
+
+Encore merci,
+
+W.
+
+PS: Pour Brice et Cédric, le ppt sur RIO (ex. WiSSkHy) est sous le lien ici:
+J’ai lié un fichier à ce message :
+
+    2026-02-WiSSkHy_GET_V2.pdf
+
+    Taille : 1.3 Mo
+
+    Dropbox
+    Lien : https://www.dropbox.com/scl/fi/8a7fx9lo58dge83oiewdd/2026-02-WiSSkHy_GET_V2.pdf?rlkey=4b2eha8odvpy8oo0noda6ldr1&dl=0
+
+Démo (attendre quelques secondes pour que la base charge, ~10 s) : https://sno-hybam.shinyapps.io/WiSSkHy/
+
+Quelques explications (encore en chantier) : https://github.com/william-santini/WiSSkHy
+
+Le 04/03/2026 à 05:46, Guillaume Nord a écrit :
+>
+> Bonjour William,
+>
+> Merci pour ce message qui me fait prendre connaissance de tes travaux. Cédric Legoût m'en avait un peu parler.
+>
+> J'ai fait suivre ton message à quelques collègues de l'IGE. Je pense que la portée dépasse ce que nous allons faire ensemble avec les données de l'hydroScannR. Il y a des pratiques similaires en cours de développement à l'IGE sur la critique/validation des séries temporelles d'observation pour professionnaliser cette tâche et la rendre plus FAIR. Je me dis que ça vaudrait peut-être le coup de monter un thème transversal à l'IR OZCAR pour fédérer les différentes actions en cours dans ce domaine. A discuter.
+>
+> En tout cas, ce serait bien de nous faire une présentation du framework RIO.
+>
+> à +
+>
+> Guillaume
+>
+>
+> Le 03/03/2026 à 20:55, William Santini a écrit :
+>> Bonjour Guillaume et Alexandre,
+>>
+>> J’élargis la discussion aux collègues de l’INRAE. Voici les liens vers le SI RIO (ex. WiSSkHy) que nous développons dans HyBAm, ainsi qu’en pièce jointe une courte présentation de l’outil.
+>>
+>> Démo (attendre quelques secondes pour que la base charge, ~10 s) : https://sno-hybam.shinyapps.io/WiSSkHy/
+>>
+>> Quelques explications (encore en chantier) : https://github.com/william-santini/WiSSkHy
+>>
+>> Dans RIO, il est possible d’importer et de traiter/valider des jaugeages ADCP (pour l’instant uniquement RDI) directement dans la base de données (Discrete measurements -> ADCP).
+>>
+>> Ensuite, dans Advanced Tools, le module Hydsed-ADCP permet d’aller plus loin : extraction du fond mobile, profils de vitesses, estimation de u*, ajustement de profils de concentration, calcul de profils théoriques de concentration en sable à partir des données de fond mobile, etc. L’outil n’est pas encore complètement finalisé, mais il est déjà bien avancé.
+>>
+>> L’intérêt d’intégrer les jaugeages dans la base est bien sûr de pouvoir travailler non pas sur un seul jaugeage, mais sur un ensemble important de mesures (validées). Cela peut par exemple devenir intéressant pour explorer des relations comme celle entre vitesse maximale et vitesse moyenne, comme nous en avons discuté ce matin.
+>>
+>> Si cela correspond à certains de vos besoins, je serai ravi de vous présenter plus en détail le framework RIO.
+>>
+>> Bien à vous,
+>> W.
+>>
+>>
+
+-- 
+Isabelle BRAUD
+INRAE
+RiverLy, Equipe Hydrologie des bassins versants.
+5 Rue de la Doua. Bureau 145
+CS 20244
+69625 VILLEURBANNE Cedex
+Tel: +33 4 72 20 87 78
+Fax: +33 4 78 47 78 75
+E-mail: isabelle.braud@inrae.fr
+

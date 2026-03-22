@@ -1,0 +1,384 @@
+
+
+ENTITÉ : Role
+Utilisé par : Observatory, Site, Station, TimeSerie (via resourceType + resourceId)
+Note : lie une Person à une ressource du modèle avec un rôle fonctionnel.
+       Distinct de Person.organization qui décrit l'appartenance institutionnelle.
+
+Champ          Cardinalité     Définition                        Exemple / Valeurs
+─────────────────────────────────────────────────────────────────────────────────────
+id             1               Identifiant unique                uuid
+person         1 →Person       Personne responsable              → Person
+organization   0..1 →Org       Organisation impliquée            → Organization
+role           1               Rôle fonctionnel                  principal_investigator
+                                                                 field_operator
+                                                                 data_manager
+                                                                 validator
+                                                                 contact
+                                                                 contributor
+resourceType   1               Type de ressource ciblée          Observatory
+                                                                 Site
+                                                                 Station
+                                                                 TimeSerie
+resourceId     1               UUID de la ressource ciblée       uuid
+validFrom      0..1            Début de responsabilité           "2022-01-01"
+validTo        0..1            Fin de responsabilité             null si toujours actif
+isPrimary      0..1            Contact principal sur la res.     true / false
+
+
+
+
+ENTITÉ : Organization
+Utilisé par : Person (organization), Sensor (laboratory), Station (operator),
+              Equipment (owner), Observatory (operator), Role (organization)
+
+Champ          Cardinalité     Définition                        Exemple / Valeurs
+─────────────────────────────────────────────────────────────────────────────────────
+id             1               Identifiant unique                uuid
+name           1               Nom complet                       "Institut national de recherche
+                                                                  pour l'agriculture"
+acronym        0..1            Sigle                             "INRAE"
+type           1               Catégorie d'organisation          laboratory
+                                                                 monitoring_network
+                                                                 research
+                                                                 agency
+                                                                 university
+country        1               Pays                              "FR"
+url            0..1            Site web                          "https://www.inrae.fr"
+
+
+
+
+ENTITÉ : Person
+Utilisé par : SamplingFeature (operator), ValidatedObservation (validatedBy), Role (person)
+
+Champ          Cardinalité     Définition                        Exemple / Valeurs
+─────────────────────────────────────────────────────────────────────────────────────
+id             1               Identifiant unique                uuid
+firstName      1               Prénom                            "Julie"
+lastName       1               Nom de famille                    "Dupont"
+email          0..1            Adresse email                     "j.dupont@inrae.fr"
+orcid          0..1            Identifiant chercheur ORCID       "0000-0002-1825-0097"
+organization   0..1 →Org       Employeur / labo de rattachement  → Organization
+
+
+
+
+
+
+### Observatory
+Entité racine. Agrège des `Site` et porte la description du réseau de surveillance global.
+
+| Champ         | Type           | Notes                                 |
+|---------------|----------------|---------------------------------------|
+| `id`          | UUID           |                                       |
+| `name`        | string         |                                       |
+| `description` | string         |                                       |
+| `operator`    | → Organization | organisme gestionnaire                |
+| `location`    | → Location     | emprise géographique globale          |
+| `startDate`   | date           |                                       |
+| `endDate`     | date           | null si actif                         |
+| `url`         | string         | optionnel, site web du réseau         |
+| `license`     | string         | licence des données (ex: ODbL, CC-BY) |
+
+
+### Site
+Subdivision géographique d'un `Observatory`. Regroupe des `Station` sur une entité physique cohérente (bassin versant, lac, zone humide…).
+
+| Champ         | Type           | Notes                                             |
+|---------------|----------------|---------------------------------------------------|
+| `id`          | UUID           |                                                   |
+| `name`        | string         |                                                   |
+| `description` | string         |                                                   |
+| `observatory` | → Observatory  |                                                   |
+| `type`        | enum CV        | watershed / lake / wetland / aquifer / catchment… |
+| `location`    | → Location     | géométrie (polygone ou point)                     |
+| `area`        | float          | optionnel, en km²                                 |
+| `operator`    | → Organization | optionnel si différent de l'Observatory           |
+
+
+### Station
+Point de mesure physique. Peut porter son propre équipement fixe (capteurs en continu, préleveurs automatiques installés à poste).
+
+| Champ              | Type           | Notes                                          |
+|--------------------|----------------|------------------------------------------------|
+| `id`               | UUID           |                                                |
+| `name`             | string         |                                                |
+| `code`             | string         | code réseau unique (ex: "LBR-04")              |
+| `description`      | string         |                                                |
+| `site`             | → Site         |                                                |
+| `type`             | enum CV        | streamgage / weatherstation / well / soilpit…  |
+| `location`         | → Location     | point GPS                                      |
+| `elevation`        | float          | altitude en mètres NGF                         |
+| `operator`         | → Organization | optionnel                                      |
+| `installationDate` | date           |                                                |
+| `status`           | enum           | active / inactive / discontinued               |
+| `equipment`        | → Equipment[]  | équipements fixes installés à la station       |
+
+
+### Location / HistoricalLocation
+Commun à `Observatory`, `Site`, `Station`, `SamplingFeature`. `HistoricalLocation` trace les déplacements dans le temps (station déplacée, repère modifié).
+
+| Champ          | Type     | Notes                                    |
+|----------------|----------|------------------------------------------|
+| `id`           | UUID     |                                          |
+| `encodingType` | string   | `application/geo+json` (conformité STA)  | 
+| `geometry`     | GeoJSON  | point, polygone ou linestring            |
+| `crs`          | string   | ex: EPSG:4326                            |
+| `description`  | string   | optionnel                                |
+| `validFrom`    | datetime | pour HistoricalLocation                  |
+| `validTo`      | datetime | pour HistoricalLocation, null si courant |
+
+
+### Property
+Variable observée. Réutilisée par `TimeSerie` et `TransformedTimeSerie`.
+
+| Champ          | Type    | Notes                                           |
+|----------------|---------|-------------------------------------------------|
+| `id`           | UUID    |                                                 |
+| `name`         | string  | ex: "Nitrate"                                   |
+| `definition`   | string  | URI vers vocabulaire (ex: QUDT, EnvThes)        |
+| `description`  | string  |                                                 |
+| `type`         | enum CV | physical / chemical / biological / hydrological |
+| `unit`         | → Unit  | unité par défaut                                |
+| `speciationOf` | string  | optionnel, ex: "NO3-N" vs "NO3"                 |
+
+
+### Unit
+Entité normalisée pour les unités de mesure, réutilisable par `Property` et `TimeSerie`.
+
+| Champ        | Type   | Notes                     |
+|--------------|--------|---------------------------|
+| `id`         | UUID   |                           |
+| `name`       | string | ex: "milligram per litre" |
+| `symbol`     | string | ex: "mg/L"                |
+| `definition` | string | URI QUDT ou UCUM          |
+
+
+### Procedure
+Entité générique réutilisée par `Procedure.Observation`, `Procedure.Validation`, `Procedure.Control`, `Procedure.Transformation`. Le `type` discrimine le rôle.
+
+| Champ          | Type   | Notes                                               |
+|----------------|--------|-----------------------------------------------------|
+| `id`           | UUID   |                                                     |
+| `name`         | string | ex: "NF EN ISO 10304-1"                             |
+| `type`         | enum   | observation / validation / control / transformation |
+| `description`  | string |                                                     |
+| `version`      | string | optionnel                                           |
+| `reference`    | string | URI ou DOI du document normatif                     |
+| `encodingType` | string | conformité STA                                      |
+
+
+### FeatureOfInterest
+L'entité réelle du monde observée — le cours d'eau, la nappe, le sol — indépendamment de la station ou du prélèvement.
+
+| Champ          | Type    | Notes                                          |
+|----------------|---------|------------------------------------------------|
+| `id`           | UUID    |                                                |
+| `name`         | string  | ex: "Rivière Saône tronçon amont Lyon"         |
+| `type`         | enum CV | river / lake / groundwater / soil / atmosphere |
+| `encodingType` | string  | `application/geo+json`                         |
+| `geometry`     | GeoJSON | emprise de l'entité observée                   |
+| `description`  | string  |                                                |
+
+
+### ControlObservation
+Observation de contrôle qualité (blanc terrain, duplicate, étalon). Structure parallèle à `ValidatedObservation` mais avec un rôle QC explicite.
+
+| Champ               | Type                | Notes                                             |
+|---------------------|---------------------|---------------------------------------------------|
+| `id`                | UUID                |                                                   |
+| `timeSerie`         | → TimeSerie         |                                                   |
+| `datetime`          | datetime            |                                                   |
+| `type`              | enum                | field_blank / duplicate / standard / spike        |
+| `result`            | float               |                                                   |
+| `expectedResult`    | float               | optionnel, valeur théorique pour étalon           |
+| `qualityFlag`       | enum                | pass / warn / fail                                |
+| `sensor`            | → Sensor            | peut différer si instrument de contrôle différent |
+| `procedure.control` | → Procedure         | protocole QC appliqué                             |
+| `samplingFeature`   | → SamplingFeature   | optionnel                                         |
+| `featureOfInterest` | → FeatureOfInterest | optionnel                                         |
+
+
+### TransferFunction / HistoricalTransferFunction
+Fonction de conversion d'une mesure brute en valeur physique (ex: hauteur d'eau → débit via courbe de tarage). `HistoricalTransferFunction` trace les changements de courbe dans le temps.
+
+| Champ            | Type           | Notes                                             |
+|------------------|----------------|---------------------------------------------------|
+| `id`             | UUID           |                                                   |
+| `name`           | string         | ex: "Courbe de tarage Station LBR-04 v3"          |
+| `station`        | → Station      |                                                   |
+| `inputProperty`  | → Property     | variable en entrée (ex: hauteur)                  |
+| `outputProperty` | → Property     | variable en sortie (ex: débit)                    |
+| `type`           | enum           | rating_curve / linear / polynomial / lookup_table |
+| `parameters`     | JSON           | coefficients ou table de valeurs                  |
+| `validFrom`      | datetime       | pour HistoricalTransferFunction                   |
+| `validTo`        | datetime       | null si courante                                  |
+| `procedure`      | → Procedure    | méthode de construction de la courbe              |
+| `operator`       | → Organization | optionnel                                         |
+
+
+### TransformedTimeSerie
+Série dérivée d'une ou plusieurs `TimeSerie` via une `Transformation`. Exemple : débit calculé à partir de hauteur d'eau.
+
+| Champ                      | Type             | Notes               |
+|----------------------------|------------------|---------------------|
+| `id`                       | UUID             |                     |
+| `name`                     | string           |                     |
+| `description`              | string           |                     |
+| `station`                  | → Station        |                     |
+| `property`                 | → Property       | variable produite   |
+| `unit`                     | → Unit           |                     |
+| `processingLevel`          | enum             | derived (toujours)  |
+| `procedure.transformation` | → Procedure      | algorithme appliqué |
+| `transformation`           | → Transformation | instance de calcul  |
+| `sourceSeries`             | → TimeSerie[]    | séries sources      |
+| `status`                   | enum             | active / inactive   |
+
+
+### Transformation
+Instance d'exécution d'une transformation — lie les séries sources à la série produite via une `TransferFunction`.
+
+| Champ              | Type                   | Notes                           |
+|--------------------|------------------------|---------------------------------|
+| `id`               | UUID                   |                                 |
+| `transferFunction` | → TransferFunction     | fonction appliquée              |
+| `inputSeries`      | → TimeSerie[]          |                                 |
+| `outputSeries`     | → TransformedTimeSerie |                                 |
+| `appliedAt`        | datetime               | date d'exécution                |
+| `appliedBy`        | → Person               | optionnel                       |
+| `validFrom`        | datetime               | période de validité du résultat |
+| `validTo`          | datetime               |                                 |
+
+
+### TimeSeriesBundle
+Regroupe des `TimeSerie` et `TransformedTimeSerie` pour faciliter la publication, la diffusion ou l'accès thématique groupé.
+
+| Champ               | Type                     | Notes                                   |
+|---------------------|--------------------------|-----------------------------------------|
+| `id`                | UUID                     |                                         |
+| `name`              | string                   |                                         |
+| `description`       | string                   |                                         |
+| `observatory`       | → Observatory            |                                         |
+| `series`            | → TimeSerie[]            |                                         |
+| `transformedSeries` | → TransformedTimeSerie[] |                                         |
+| `theme`             | string                   | optionnel, ex: "qualité eau 2024"       |
+| `license`           | string                   | optionnel si différent de l'Observatory |
+
+
+### Memory
+Objet libre associé à l'`Observatory` ou à un `Site` pour stocker des notes contextuelles, documents, événements marquants non structurés.
+
+| Champ         | Type          | Notes                           |
+|---------------|---------------|---------------------------------|
+| `id`          | UUID          |                                 |
+| `observatory` | → Observatory |                                 |
+| `location`    | → Location    | optionnel, si mémo géolocalisé  |
+| `datetime`    | datetime      |                                 |
+| `type`        | enum          | note / event / document / photo |
+| `content`     | string        | texte libre ou URI vers fichier |
+| `author`      | → Person      | optionnel                       |
+
+
+### TimeSerie
+Porte tout ce qui est **fixe et commun à toute la série**. C'est le contrat analytique qui garantit la comparabilité de tous les points.
+
+| Champ                   | Type        | Notes                                         |
+|-------------------------|-------------|-----------------------------------------------|
+| `id`                    | UUID        |                                               |
+| `name`                  | string      | nom lisible de la série                       |
+| `description`           | string      |                                               |
+| `station`               | → Station   | rattachement spatial                          |
+| `sensor`                | → Sensor    | instrument d'analyse                          |
+| `property`              | → Property  | variable mesurée (NO3, pH, Cd…)               |
+| `unit`                  | → Unit      | unité de mesure (URI vocabulaire contrôlé)    |
+| `procedure.observation` | → Procedure | protocole analytique (ex: NF EN ISO 10304)    |
+| `procedure.validation`  | → Procedure | règles de validation des données              |
+| `processingLevel`       | enum        | raw / validated / derived                     |
+| `sampledMedium`         | enum CV     | surfaceWater / groundwater / soil / sediment… |
+| `observationType`       | enum        | sensor_continuous / lab_sample                |
+| `startDate`             | datetime    |                                               |
+| `endDate`               | datetime    | null si active                                |
+| `status`                | enum        | active / inactive / discontinued              |
+
+
+### ValidatedObservation
+Porte **un point de mesure** de la série, avec son contexte de validation. Optionnellement rattaché à un prélèvement terrain.
+
+| Champ             | Type              | Notes                                 |
+|-------------------|-------------------|---------------------------------------|
+| `id`              | UUID              |                                       |
+| `timeSerie`       | → TimeSerie       |                                       |
+| `datetime`        | datetime          | horodatage de la mesure               |
+| `result`          | float             | valeur numérique                      |
+| `qualityFlag`     | enum              | good / suspect / bad / missing        |
+| `qualityComment`  | string            | optionnel, justification              |
+| `validatedBy`     | → Person          | optionnel                             |
+| `validatedAt`     | datetime          | optionnel                             |
+| `limsReference`   | string            | identifiant externe LIMS, optionnel   |
+| `samplingFeature` | → SamplingFeature | optionnel (absent si capteur continu) |
+
+
+### SamplingFeature
+Porte **l'acte de prélèvement terrain**. Présent uniquement pour les séries de type `lab_sample`.
+
+| Champ                 | Type              | Notes                                 |
+|-----------------------|-------------------|---------------------------------------|
+| `id`                  | UUID              |                                       |
+| `datetime`            | datetime          | horodatage du prélèvement             |
+| `specimenType`        | enum CV           | water / soil / sediment / poreWater…  |
+| `medium`              | enum CV           | surface / depth / groundwater…        |
+| `depth`               | float             | optionnel, en mètres                  |
+| `volume`              | float             | optionnel, en litres                  |
+| `filtrationOnSite`    | boolean           | optionnel                             |
+| `filtrationThreshold` | float             | optionnel, en µm                      |
+| `operator`            | → Person          | qui a prélevé                         |
+| `equipment`           | → Equipment       | avec quoi                             |
+| `location`            | geometry point    | optionnel, si différent de la Station |
+| `condition`           | string            | observations terrain libres           |
+| `derivedFrom`         | → SamplingFeature | optionnel, si sous-échantillon        |
+
+
+### Equipment
+Porte la description du **matériel de collecte terrain**. Entité réutilisable entre plusieurs prélèvements.
+
+| Champ                | Type           | Notes                                          |
+|----------------------|----------------|------------------------------------------------|
+| `id`                 | UUID           |                                                |
+| `name`               | string         | ex: "Flacon HDPE 1L bouchon bleu"              |
+| `type`               | enum CV        | bottle / pump / autosampler / corer / syringe… |
+| `material`           | string         | HDPE, verre ambré, inox…                       |
+| `volume`             | float          | contenance en litres                           |
+| `preservationMethod` | string         | acidification HNO3, congélation, obscurité…    |
+| `manufacturer`       | string         | optionnel                                      |
+| `serialNumber`       | string         | optionnel                                      |
+| `owner`              | → Organization | optionnel                                      |
+
+
+### Sensor
+Porte la description de l'**instrument d'analyse**. Rattaché à la `TimeSerie`, fixe pour toute la série.
+
+| Champ                    | Type           | Notes                                      |
+|--------------------------|----------------|--------------------------------------------|
+| `id`                     | UUID           |                                            |
+| `name`                   | string         | ex: "ICP-MS Thermo iCAP RQ"                |
+| `type`                   | enum CV        | icp_ms / spectrophotometer / hplc / probe… |
+| `make`                   | string         | fabricant                                  |
+| `model`                  | string         |                                            |
+| `serialNumber`           | string         |                                            |
+| `laboratory`             | → Organization | labo qui opère l'instrument                |
+| `calibrationDate`        | date           | optionnel                                  |
+| `calibrationCertificate` | string         | référence ou URI du certificat             |
+| `encodingType`           | string         | conformité STA (URI)                       |
+| `metadata`               | string         | URI fiche technique                        |
+
+
+### Ce qui tient ensemble
+La cohérence du modèle repose sur deux séparations claires : `TimeSerie` porte le **protocole analytique fixe** (ce qui rend les points comparables), `SamplingFeature` porte le **contexte terrain variable** (ce qui documente chaque prélèvement). Entre les deux, `limsReference` sur la `ValidatedObservation` ouvre la porte vers le LIMS sans l'absorber.
+
+Deux objets transverses servent de ciment à l'ensemble : `Person` est référencé dans `SamplingFeature`, `ValidatedObservation`, `Transformation`, `Memory` et `Organization`. `Organization` est référencée dans `Observatory`, `Site`, `Station`, `Sensor`, `Equipment`. Ils n'appartiennent pas à une branche de la hiérarchie — ce sont des entités partagées du domaine.
+
+
+
+Option A : [ Coller une URL ]  "https://www.inrae.fr/logo.svg"
+Option B : [ Déposer un fichier ]  → upload S3 → stocke l'URL S3 automatiquement

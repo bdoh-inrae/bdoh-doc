@@ -1,0 +1,106 @@
+HYBAM - WiSSkHy ______________________________________________________________
+RESSOURCES
+- support pdf : 2026-02-WiSSkHy_GET_V2.pdf
+- demo : https://sno-hybam.shinyapps.io/WiSSkHy/
+- git : https://github.com/william-santini/WiSSkHy
+
+NOTES
+- Accord sur le faite de ne pas utiliser les datastreams de l'OGC mais un nouvel objet nommé TimeSerie -> similaire à BDOH backend
+  -- "time series = parameter+ label + temporal resolution" ce n'est pas clair ce qu'est leur objet
+  -- "WiSSkHy n’utilise pas directement des « datastream » (norme OGC) car les données « sensors » peuvent être dérivées, critiquées, qualifiées et validées"
+
+- La qualité comme objet scientifique avec un ensemble de code :
++------+------------+----------------------------------------------+--------------+
+| code | label      | description                                  | quality_flag |
++------+------------+----------------------------------------------+--------------+
+| RAW  | Raw        | No QC applied                                | 0            |
+| SCR  | Screened   | Basic automatic QC                           | 1            |
+| PROV | Provisional| Preliminary or partial quality control       | 2            |
+| PART | Partial    | Incomplete but usable measurement            | 2            |
+| GOOD | Good       | Fully validated observation                  | 3            |
+| EST  | Estimated  | Modelled or interpolated value               | 4            |
+| SUS  | Suspect    | Doubtful or uncertain value                  | 5            |
+| BAD  | Bad        | Invalid or rejected observation              | 6            |
+| MISS | Missing    | No observation available                     | 7            |
++------+------------+----------------------------------------------+--------------+
+
+- A pour but de permettre de bankariser les piplines de traitement de données -> similaire à BDOH workflow
+
+
+SI TERENO ____________________________________________________________
+RESSOURCES
+- article : https://doi.org/10.1016/j.softx.2025.102038
+- STA augmenté : https://hmc-stamplate.github.io/JSONSchema/properties.html
+- STA augmenté différent : https://notes.desy.de/hKhtD-0jRfilON3TasH6Eg#
+- framework pour la qualification : https://doi.org/10.1016/j.envsoft.2023.105809
+- vocabulaire controllé : https://sms-cv.helmholtz.cloud/sms/cv/api/v1/
+
+NOTES
+- (S-)FTP pour le legacy support
+- PID de capteurs : EUDAT B2INST
+- c'est particulièrement aboutit mais finalement ne semble pas avoir poussé à l'engouement, c'est un peu décevant presque
+- automatic workflow pour la qualification et le pré traitement des données, c'est très bien et très poussé pour le traitement du signal mais peut être trop rigide et automatique
+- ce qu'il y a de rassurant une nouvelle fois c'est que je converge vers la même architecture
+- notion de plateforme d'expérimentation qui a la fin semble juste être une Thing
+- on a accès au capteurs la mais honnètement on s'en fout, le détails de cette couche ne semble pas si important dans la diffusion des résultats
+- leur STA est une bonne source pour comparé avec notre travail
+- mise en avant de la notion d'observation qualifiées ou non -> similaire à BDOH backend
+- meme idée des photos pour chaque Thing -> similaire à BDOH backend
+- se baser sur https://notes.desy.de/hKhtD-0jRfilON3TasH6Eg# pour enrichir nos métadonnées
+
+
+UMR SAS ______________________________________________________________
+RESSOURCES
+site web : https://geosas.fr/sofair-book/intro.html
+
+NOTES
+- Thing est vu comme l'exutoire d'un BV donc une station de mesure ? donc la localisation données c'est ? il faut rajouter un localisation au sensor ?
+- Thing "Qu’est-ce qui nous intéresse ? Un objet physique ou virtuel qu’on l’on souhaite étudier."
+Dans le cas d’un observatoire, tout dépend du grain de précision souhaité, une Thing peut faire référence à : un point ou une zone de mesure, une centrale de mesure, un capteur, ...
+
+> Reflexion
+> Si une Thing est un avion rempli de sensor, si une Thing est l'objet physique ou virtuel qu’on l’on souhaite étudier, c'est donc le BV, la zone d'étude de l'environnement, représenté virtuellement par une station de mesure. Reste donc la question de la position exacte du sensor/de l'observation.
+
+- Cette ressource est à fournir au gestionnaire d'observatoire et personnel de terrain pour choisir au mieux les métadonnées
+- /!\ Je ne suis pas d'accord avec la definition de FeatureOfInterest
+
+
+CUASHI _______________________________________________________________
+RESSOURCES
+- article impletentation de STA : https://doi.org/10.1016/j.envsoft.2024.106241
+- article ODM2 : http://doi.org/10.1016/j.envsoft.2016.01.010
+
+NOTES
+- A Python/Django implementation of OGC SensorThings API (STA) was developed
+- utilisation des mêmes techno que pour BDOH
+- crée une entité ProcessingLevel explicite (ex: "Données brutes", "Données validées", "Données dérivées") associée à chaque Datastream -> question pour BDOH
+- Les Annotations ODM permettent d'attacher des commentaires qualifiants à des valeurs individuelles (ex: "capteur hors eau", "pic de crue suspect", "maintenance effectuée"). 
+- toute observation = une Action + un Résultat : une Action effectuée sur ou à une SamplingFeature qui produit un Résultat d'observation, et un Result qui est l'issue de cette Action : qu'une seule Action produise plusieurs Résultats ; que des Actions soient de types variés (visite de site, calibration, déploiement de capteur, collecte d'échantillon, préparation d'échantillon...) ; et que les Résultats soient de types multiples (mesure individuelle, série temporelle, profil en profondeur...)
+- Un Specimen/SamplingFeatures possède notamment : SpecimenType (type de matériau), SpecimenMedium (milieu : eau, sol, air...), localisation de prélèvement (coordonnées ou lien vers le Site parent), taille/volume prélevé.
+- définir explicitement des relations hiérarchiques entre SamplingFeatures ("was collected at", "was derived from"))
+- Qui a prélevé, avec quel matérielPeople + Equipment liés à l'Action
+
+exemple intéressant :
+Action 1 : "Specimen collection"
+  → Méthode : prélèvement manuel ISO 5667
+  → Équipement : bouteille HDPE 1L
+  → Opérateur : personne X
+  → Résultat : Specimen "EAU-2024-001" (SamplingFeature)
+  → Lieu : Site "Station LBR-04"
+
+Action 2 : "Specimen preparation"
+  → Méthode : filtration 0.45µm
+  → Équipement : filtre Whatman
+  → Résultat : Specimen enfant "EAU-2024-001-F"
+  → Relation : "was derived from" EAU-2024-001
+
+Action 3 : "Laboratory analysis"
+  → Méthode : ICP-MS
+  → Équipement : spectromètre Thermo
+  → Résultat : MeasurementResult (NO3 = 2.4 mg/L)
+
+Question : est ce qu'on veut se détail ? est ce que ça va être renseigner puisque dépendant des laboratoire ? est ce que qu'on vaut pas simplement tager l'échantillon de terrain onc le SamplingFeature et la Protocol de la mesure à côté qui regroupe la préparation et l'analyse qui donne l'Observation ?
+
+Donc si je rajoute un equipement attaché a une sampling feature je complète mon modèle mais il me manquera toujours le tracage des étape intérmédiaire typiquement en labo mais la je pense que c'est a mettre dans la procédure car ca sort de la gestion d'observatoire en tant que tel et ca serait plus a rattacher de manière annexe a l'échantillon dans un autre SI LIMS par un ExternalIdentifiers/limsReference
+
+

@@ -1,0 +1,7 @@
+.env*
+*~ 
+*#
+tmp
+old
+.python_env
+__pycache__

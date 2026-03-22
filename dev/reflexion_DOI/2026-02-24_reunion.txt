@@ -1,0 +1,15 @@
+ 
+granularité des jeux de données
+BDOH -> déléguer le choix des DOI au gestionnaire d'obsevatoire
+- par lieu variable chronique cohérence scientifique
+
+PB :
+- je veux voir évoluer mon jeu de données
+- les datapapers veulent tout voir dans un jeu de données (ex : OHM-CV)
+- fermer dans leur DOI d'obsevatoire
+
+- 
+
+
+Question
+Flora : BODH dupliquer chronique dans jdd BDOH
