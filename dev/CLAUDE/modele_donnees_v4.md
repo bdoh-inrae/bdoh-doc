@@ -74,7 +74,7 @@ Utilisé par : Person (organization), Sensor (laboratory), Station (operator),
 ### Responsibility
 Aligné avec : ISO 19115 CI_Responsibility + CI_RoleCode, ODM2 Affiliations,
              STAMPLATE schema.org/Role
-Utilisé par : Observatory, Site, Station, TimeSerie, Project
+Utilisé par : Observatory, Site, Station, TimeSerie, Project, TransferFunction
              (via resourceType + resourceId)
 Note : lie une Person ou une Organization à une ressource avec un rôle fonctionnel.
        Distinct de Person.organization (appartenance institutionnelle).
@@ -86,7 +86,7 @@ Note : lie une Person ou une Organization à une ressource avec un rôle fonctio
 | `person`       | 0..1 →Per   | Personne responsable                     | → Person                                                         |
 | `organization` | 0..1 →Org   | Organisation responsable                 | → Organization                                                   |
 | `role`         | 1           | Rôle fonctionnel CI_RoleCode ISO 19115   | `pointOfContact` \| `principalInvestigator` \| `author` \| `processor` \| `publisher` \| `custodian` \| `owner` \| `distributor` \| `originator` \| `resourceProvider` \| `user` |
-| `resourceType` | 1           | Type de ressource ciblée                 | `Observatory` \| `Site` \| `Station` \| `TimeSerie` \| `Project` |
+| `resourceType` | 1           | Type de ressource ciblée                 | `Observatory` \| `Site` \| `Station` \| `TimeSerie` \| `Project` \| `TransferFunction` |
 | `resourceId`   | 1           | UUID de la ressource ciblée              | uuid                                                             |
 | `validFrom`    | 0..1        | Début de responsabilité                  | "2022-01-01"                                                     |
 | `validTo`      | 0..1        | Fin, null si toujours actif              | "2024-12-31" \| null                                             |
@@ -209,7 +209,7 @@ Note : permet autant de PIDs que nécessaire sur n'importe quelle ressource.
 | `code`         | 1           | Valeur de l'identifiant ou URI          | "V3015810" \| "https://w3id.org/ozcar-theia/c_xxx"             |
 | `codeType`     | 1           | Type d'identifiant                      | `localCode` \| `uri` \| `doi` \| `orcid` \| `ror` \| `sandre` \| `wigos` \| `igsn` \| `other` |
 | `codeSource`   | 1           | Système ou organisme émetteur           | "SANDRE" \| "TheiaOZCAR" \| "NERC" \| "DataCite" \| "ROR"     |
-| `resourceType` | 1           | Type de ressource ciblée                | `Observatory` \| `Site` \| `Station` \| `Sensor` \| `Equipment` \| `TimeSerie` \| `Person` \| `Organization` \| `SamplingFeature` \| `Property` \| `Project` |
+| `resourceType` | 1           | Type de ressource ciblée                | `Observatory` \| `Site` \| `Station` \| `Sensor` \| `Equipment` \| `TimeSerie` \| `Person` \| `Organization` \| `SamplingFeature` \| `Property` \| `Project` \| `TransferFunction` |
 | `resourceId`   | 1           | UUID de la ressource ciblée             | uuid                                                            |
 
 ---
@@ -565,20 +565,20 @@ Note : contrainte — `datastream` ou `datastreamId` doit être renseigné, pas 
 ---
 
 ### TimeSerie
-Aligné avec : STA Datastream (enrichi), HydroServer Datastream,
-             ODM2 Results (TimeSeries), OZCAR pivot model "Observation"
 Utilisé par : Station (timeSeries), ValidatedObservation (timeSerie),
-             ControlObservation (timeSerie), TransferFunction (inputSeries),
-             Transformation (inputSeries)
+             ControlObservation (timeSerie), Transformation (inputSeries)
 Note : porte tout ce qui est fixe et commun à toute la série.
        Contrat analytique garantissant la comparabilité de tous les points.
+       Une procédure de validation unique par série — plusieurs validations
+       parallèles sur la même variable impliquent des TimeSerie distinctes.
        OZCAR note que leur "Observation" pivot correspond à un Datastream STA.
-       Code généré : {station.code}-{property.code} ex: "yzr-mer-d610-hea"
+       Code généré : {station.code}-{property.code}-{procedure.code}
+       ex: "yzr-mer-d610-hea-wiski"
 
 | Champ                   | Cardinalité    | Définition                                    | Valeurs possibles                                         |
 |-------------------------|----------------|-----------------------------------------------|-----------------------------------------------------------|
 | `id`                    | 1              | Identifiant technique, clé primaire           | uuid                                                      |
-| `code`                  | 1              | Code généré station + property.code           | "yzr-mer-d610-hea"                                        |
+| `code`                  | 1              | Code généré station + property + procedure    | "yzr-mer-d610-hea-wiski"                                  |
 | `name`                  | 1              | Nom lisible de la série                       | "Hauteur d'eau — Mercier au pont D610"                    |
 | `description`           | 0..1           | Description libre                             |                                                           |
 | `station`               | 1 →Sta         | Station de rattachement                       | → Station                                                 |
@@ -587,8 +587,7 @@ Note : porte tout ce qui est fixe et commun à toute la série.
 | `property`              | 1 →Prop        | Variable mesurée                              | → Property                                                |
 | `unit`                  | 1 →Unit        | Unité de mesure                               | → Unit                                                    |
 | `procedure.observation` | 1 →Proc        | Protocole analytique fixe pour toute la série | → Procedure (type=observation)                            |
-| `procedure.validation`         | 0..* →Proc | Procédures de validation applicables | → Procedure (type=validation)[] |
-| `referenceValidationProcedure` | 0..1 →Proc | Procédure faisant foi                | → Procedure (type=validation)   |
+| `procedure.validation`  | 1 →Proc        | Procédure de validation de cette série        | → Procedure (type=validation)          |
 | `sampledMedium`         | 1              | Milieu échantillonné (CV ODM2)                | `surfaceWater` \| `groundwater` \| `soil` \| `sediment` \| `poreWater` \| `atmosphere` |
 | `observationType`       | 1              | Mode d'acquisition                            | `sensor_continuous` \| `lab_sample`                       |
 | `startDate`             | 1              | Date de début de la série                     | "1997-01-14T08:01:00Z"                                    |
@@ -646,6 +645,7 @@ Utilisé par : TimeSerie (observations)
 Note : point de mesure validé par opérateur humain ou pipeline automatique.
        Lien vers données brutes : TimeSerie → TimeSerieDatastream + phenomenonTime.
        Métadonnées de session (validatedBy, validatedAt, log) portées par ValidationBatch.
+       La procédure de validation est portée par la TimeSerie parente.
        validationBatch 0..1 — une observation peut être validée hors batch.
 
 | Champ               | Cardinalité | Définition                                          | Valeurs possibles                                          |
@@ -658,7 +658,6 @@ Note : point de mesure validé par opérateur humain ou pipeline automatique.
 | `qualityFlag`       | 1           | Indicateur qualité (mapping ODM2/SANDRE en annexe)  | `good` \| `suspect` \| `bad` \| `missing`                  |
 | `qualityComment`    | 0..1        | Justification libre du flag qualité                 | "pic de crue suspect"                                      |
 | `validationBatch`   | 0..1 →VB    | Batch de validation parent                          | → ValidationBatch                                          |
-| `procedure`         | 0..1 →Proc  | Procédure ayant produit cette validation            | → Procedure (type=validation)                              |
 | `samplingFeature`   | 0..1 →SF    | Prélèvement terrain associé (lab_sample uniquement) | → SamplingFeature                                          |
 | `featureOfInterest` | 0..1 →FOI   | Entité réelle observée                              | → FeatureOfInterest                                        |
 
@@ -725,46 +724,115 @@ Note : acte de prélèvement terrain. Présent pour les séries de type lab_samp
 ## 8. TRANSFORMATION
 
 ### TransferFunction
-Aligné avec : ODM2 Methods (dérivation), HydroServer rating curve,
-             WMO hydrological data standards
-Utilisé par : Station (transferFunctions), Transformation (transferFunction)
-Note : fonction de conversion d'une mesure brute en valeur physique.
-       Exemple : hauteur d'eau → débit via courbe de tarage.
-       Historique géré par plusieurs TransferFunction avec validFrom/validTo
-       successifs sur la même Station + inputProperty + outputProperty.
+Aligné avec : ODM2 Methods, WMO rating curve standards
+Utilisé par : TransferFunctionSet (transferFunction)
+Note : fonction de conversion liée à une station — analogue à TimeSerie.
+       Les points de calibration (couples x/y) définissent la fonction empiriquement.
+       Code généré : {station.code}-{inputProperty.code}-{outputProperty.code}
+       ex: "yzr-mer-d610-hea-qmj"
 
-| Champ            | Cardinalité | Définition                              | Valeurs possibles                                               |
-|------------------|-------------|-----------------------------------------|-----------------------------------------------------------------|
-| `id`             | 1           | Identifiant technique, clé primaire     | uuid                                                            |
-| `name`           | 1           | Nom de la fonction                      | "Courbe de tarage Mercier D610 v3"                              |
-| `station`        | 1 →Sta      | Station associée                        | → Station                                                       |
-| `inputProperty`  | 1 →Prop     | Variable en entrée                      | → Property (ex: hauteur)                                        |
-| `outputProperty` | 1 →Prop     | Variable en sortie                      | → Property (ex: débit)                                          |
-| `type`           | 1           | Type de fonction                        | `rating_curve` \| `linear` \| `polynomial` \| `lookup_table`    |
-| `parameters`     | 1           | Coefficients ou table de valeurs (JSON) | {"a":2.1,"b":1.5}                                               |
-| `procedure`      | 0..1 →Proc  | Méthode de construction de la courbe    | → Procedure                                                     |
-| `operator`       | 0..1 →Org   | Organisation responsable                | → Organization                                                  |
-| `validFrom`      | 1           | Début de validité                       | "2020-01-01T00:00:00Z"                                          |
-| `validTo`        | 0..1        | Fin de validité, null si courante       | null                                                            |
+| Champ            | Cardinalité    | Définition                             | Valeurs possibles                                            |
+|------------------|----------------|----------------------------------------|--------------------------------------------------------------|
+| `id`             | 1              | Identifiant technique, clé primaire    | uuid                                                         |
+| `code`           | 1              | Code généré station + properties       | "yzr-mer-d610-hea-qmj"                                       |
+| `name`           | 1              | Nom de la fonction                     | "Courbe de tarage Mercier D610 v3"                           |
+| `description`    | 0..1           | Description libre                      |                                                              |
+| `station`        | 1 →Sta         | Station associée                       | → Station                                                    |
+| `inputProperty`  | 1 →Prop        | Variable en entrée                     | → Property (ex: hauteur)                                     |
+| `outputProperty` | 1 →Prop        | Variable en sortie                     | → Property (ex: débit)                                       |
+| `type`           | 1              | Type de fonction                       | `rating_curve` \| `linear` \| `polynomial` \| `lookup_table` |
+| `parameters`     | 0..1           | Coefficients analytiques (JSON)        | {"a":2.1,"b":1.5}                                            |
+| `procedure`      | 0..1 →Proc     | Méthode de construction de la fonction | → Procedure (type=transformation)                            |
+| `responsibility` | 0..* →Resp     | Personnes et organisations responsables| → Responsibility[]                                           |
+| `startDate`      | 1              | Date de début de validité              | "2024-01-01T00:00:00Z"                                       |
+| `endDate`        | 0..1           | Date de fin, null si active            | null                                                         |
+| `status`         | 1              | État de la fonction                    | `active` \| `inactive` \| `deprecated`                       |
+| `point`          | 0..* →TFP      | Points de calibration (couples x/y)    | → TransferFunctionPoint[]                                    |
+| `identifier`     | 0..* →Ident    | Codes externes et PID                  | → Identifier[]                                               |
+| `memory`         | 0..* →Mem      | Notes et événements                    | → Memory[]                                                   |
 
 ---
 
-### Transformation
-Aligné avec : ODM2 Actions (dérivation), W3C PROV-O wasGeneratedBy
-Utilisé par : TransformedTimeSerie (transformation)
-Note : instance d'exécution d'une transformation.
-       Lie les séries sources à la série produite via une TransferFunction.
+### TransferFunctionPoint
+Utilisé par : TransferFunction (point)
+Note : couple de valeurs (x/y) définissant empiriquement la fonction.
+       Analogue à ValidatedObservation — c'est là que vivent les données.
+       Ex : (hauteur=1.23m, débit=4.5m³/s) pour une courbe de tarage.
+       Ex : (turbidité=120NTU, MES=245mg/L) pour une relation turbidité/MES.
 
-| Champ              | Cardinalité | Définition                             | Valeurs possibles          |
-|--------------------|-------------|----------------------------------------|----------------------------|
-| `id`               | 1           | Identifiant technique, clé primaire    | uuid                       |
-| `transferFunction` | 1 →TF       | Fonction appliquée                     | → TransferFunction         |
-| `inputSeries`      | 1..* →TS    | Séries sources                         | → TimeSerie[]              |
-| `outputSeries`     | 1 →TTS      | Série produite                         | → TransformedTimeSerie     |
-| `appliedAt`        | 1           | Date d'exécution                       | "2024-04-01T08:00:00Z"     |
-| `appliedBy`        | 0..1 →Per   | Personne ayant lancé la transformation | → Person                   |
-| `validFrom`        | 1           | Début de validité du résultat          | "2024-01-01T00:00:00Z"     |
-| `validTo`          | 0..1        | Fin de validité                        | null                       |
+| Champ      | Cardinalité | Définition                          | Valeurs possibles      |
+|------------|-------------|-------------------------------------|------------------------|
+| `id`       | 1           | Identifiant technique, clé primaire | uuid                   |
+| `function` | 1 →TF       | Fonction parente                    | → TransferFunction     |
+| `x`        | 1           | Valeur en entrée                    | 1.23                   |
+| `y`        | 1           | Valeur en sortie                    | 4.5                    |
+| `datetime` | 0..1        | Date du jaugeage ou de la mesure    | "2024-03-15T09:30:00Z" |
+| `comment`  | 0..1        | Commentaire libre                   | "jaugeage crue"        |
+
+---
+
+### TransferFunctionSet
+Aligné avec : WMO hydrological standards, ODM2 Methods
+Utilisé par : TransformationBatch (transferFunctionSet)
+Note : conteneur obligatoire pour une ou plusieurs TransferFunction sur une station.
+       Même avec une seule TF on passe toujours par un TFSet.
+       Plusieurs TFSet peuvent coexister sur une station sans hiérarchie imposée.
+       type=identity ou manual -> transferFunction null, pas de calcul via TF.
+
+| Champ              | Cardinalité | Définition                          | Valeurs possibles                      |
+|--------------------|-------------|-------------------------------------|----------------------------------------|
+| `id`               | 1           | Identifiant technique, clé primaire | uuid                                   |
+| `name`             | 1           | Nom du jeu                          | "Barème Mercier D610 2024"             |
+| `description`      | 0..1        | Description libre                   |                                        |
+| `station`          | 1 →Sta      | Station associée                    | → Station                              |
+| `transferFunction` | 0..1 →TF    | Fonction appliquée si type=function | → TransferFunction                     |
+| `type`             | 1           | Type de transformation              | `function` \| `identity` \| `manual`  |
+| `validFrom`        | 1           | Début de validité                   | "2024-01-01T00:00:00Z"                 |
+| `validTo`          | 0..1        | Fin de validité, null si courant    | null                                   |
+| `comment`          | 0..1        | Justification du choix              | "nouveau jaugeage après crue"          |
+| `memory`           | 0..* →Mem   | Notes et événements                 | → Memory[]                             |
+
+Contrainte : si type=function -> transferFunction obligatoire.
+             si type=identity ou manual -> transferFunction null.
+
+---
+
+### TransformationBatch
+Aligné avec : ODM2 Actions (dérivation), W3C PROV-O wasGeneratedBy
+Utilisé par : TransformedObservation (transformationBatch)
+Note : acte de calcul sur une ou plusieurs TimeSerie sources.
+       Analogue à ValidationBatch — factorisation des métadonnées de calcul.
+       Les points calculés sont dans TransformedObservation.
+
+| Champ                  | Cardinalité | Définition                          | Valeurs possibles          |
+|------------------------|-------------|-------------------------------------|----------------------------|
+| `id`                   | 1           | Identifiant technique, clé primaire | uuid                       |
+| `transformedTimeSerie` | 1 →TTS      | Série produite                      | → TransformedTimeSerie     |
+| `transferFunctionSet`  | 1 →TFS      | Jeu de fonctions appliqué           | → TransferFunctionSet      |
+| `inputSeries`          | 1..* →TS    | Séries sources                      | → TimeSerie[]              |
+| `appliedAt`            | 1           | Date d'exécution du calcul          | "2024-04-01T08:00:00Z"     |
+| `appliedBy`            | 0..1 →Per   | Personne ayant lancé le calcul      | → Person                   |
+| `validFrom`            | 1           | Début de la période calculée        | "2024-01-01T00:00:00Z"     |
+| `validTo`              | 0..1        | Fin de la période calculée          | null                       |
+| `status`               | 1           | État du batch                       | `pending` \| `done` \| `failed` |
+| `comment`              | 0..1        | Commentaire libre                   |                            |
+
+---
+
+### TransformedObservation
+Aligné avec : STA Observation (enrichie), ODM2 DerivedResults
+Utilisé par : TransformedTimeSerie (observations)
+Note : point calculé par un TransformationBatch.
+       Analogue à ValidatedObservation — c'est là que vivent les données calculées.
+
+| Champ                  | Cardinalité | Définition                          | Valeurs possibles                         |
+|------------------------|-------------|-------------------------------------|-------------------------------------------|
+| `id`                   | 1           | Identifiant technique, clé primaire | uuid                                      |
+| `transformedTimeSerie` | 1 →TTS      | Série parente                       | → TransformedTimeSerie                    |
+| `transformationBatch`  | 0..1 →TB    | Batch de calcul parent              | → TransformationBatch                     |
+| `phenomenonTime`       | 1           | Instant ou période du phénomène     | "2024-03-15T09:30:00Z"                    |
+| `result`               | 1           | Valeur calculée                     | "4.5"                                     |
+| `qualityFlag`          | 0..1        | Indicateur qualité                  | `good` \| `suspect` \| `bad` \| `missing` |
 
 ---
 
@@ -772,28 +840,32 @@ Note : instance d'exécution d'une transformation.
 Aligné avec : STA Datastream (enrichi), ODM2 DerivedResults,
              HydroServer Datastream (processingLevel=derived)
 Utilisé par : Station (transformedSeries), TimeSeriesBundle (transformedSeries),
-             Transformation (outputSeries)
-Note : série dérivée d'une ou plusieurs TimeSerie via une Transformation.
-       Exemple : débit calculé à partir de hauteur d'eau.
-       Code généré : {station.code}-{property.code} ex: "yzr-mer-d610-debit"
+             TransformationBatch (transformedTimeSerie)
+Note : série dérivée d'une ou plusieurs TimeSerie via des TransformationBatch.
+       Analogue à TimeSerie — même structure de métadonnées.
+       Code généré : {station.code}-{property.code}-{procedure.code}
+       ex: "yzr-mer-d610-debit-tarage"
 
-| Champ                      | Cardinalité | Définition                                 | Valeurs possibles                               |
-|----------------------------|-------------|--------------------------------------------|-------------------------------------------------|
-| `id`                       | 1           | Identifiant technique, clé primaire        | uuid                                            |
-| `code`                     | 1           | Code généré station + property.code        | "yzr-mer-d610-debit"                            |
-| `name`                     | 1           | Nom de la série dérivée                    | "Débit Mercier au pont D610"                    |
-| `description`              | 0..1        | Description libre                          |                                                 |
-| `station`                  | 1 →Sta      | Station de rattachement                    | → Station                                       |
-| `property`                 | 1 →Prop     | Variable produite                          | → Property                                      |
-| `unit`                     | 1 →Unit     | Unité de la série dérivée                  | → Unit                                          |
-| `procedure.transformation` | 1 →Proc     | Algorithme appliqué                        | → Procedure (type=transformation)               |
-| `transformation`           | 1 →Trans    | Instance de calcul                         | → Transformation                                |
-| `sourceSeries`             | 1..* →TS    | Séries sources utilisées                   | → TimeSerie[]                                   |
-| `status`                   | 1           | État de la série                           | `active` \| `inactive`                          |
-| `license`                  | 0..1        | Licence des données                        | `ODbL` \| `CC-BY` \| `CC-BY-SA`                 |
-| `access`                   | 1           | Niveau d'accès aux données                 | `open` \| `restricted` \| `closed` \| `unknown` |
-| `identifier`               | 0..* →Ident | Codes externes et PID                      | → Identifier[]                                  |
-| `memory`                   | 0..* →Mem   | Notes et événements                        | → Memory[]                                      |
+| Champ                      | Cardinalité    | Définition                          | Valeurs possibles                               |
+|----------------------------|----------------|-------------------------------------|-------------------------------------------------|
+| `id`                       | 1              | Identifiant technique, clé primaire | uuid                                            |
+| `code`                     | 1              | Code généré                         | "yzr-mer-d610-debit-tarage"                     |
+| `name`                     | 1              | Nom de la série dérivée             | "Débit Mercier au pont D610"                    |
+| `description`              | 0..1           | Description libre                   |                                                 |
+| `station`                  | 1 →Sta         | Station de rattachement             | → Station                                       |
+| `property`                 | 1 →Prop        | Variable produite                   | → Property                                      |
+| `unit`                     | 1 →Unit        | Unité de la série dérivée           | → Unit                                          |
+| `procedure.transformation` | 1 →Proc        | Procédure de transformation         | → Procedure (type=transformation)               |
+| `startDate`                | 1              | Date de début de la série           | "2024-01-01T00:00:00Z"                          |
+| `endDate`                  | 0..1           | Date de fin, null si active         | null                                            |
+| `status`                   | 1              | État de la série                    | `active` \| `inactive` \| `discontinued`        |
+| `license`                  | 0..1           | Licence des données                 | `ODbL` \| `CC-BY` \| `CC-BY-SA`                 |
+| `access`                   | 1              | Niveau d'accès aux données          | `open` \| `restricted` \| `closed` \| `unknown` |
+| `historicalProject`        | 0..* →HistProj | Succession des projets porteurs     | → HistoricalProject[]                           |
+| `keyword`                  | 0..* →Keyw     | Keywords thématiques pour catalogues| → Keyword[]                                     |
+| `identifier`               | 0..* →Ident    | Codes externes et PID               | → Identifier[]                                  |
+| `memory`                   | 0..* →Mem      | Notes et événements                 | → Memory[]                                      |
+
 
 ---
 
@@ -831,7 +903,7 @@ Note : note contextuelle ou événement daté attaché à n'importe quelle resso
 | Champ          | Cardinalité | Définition                          | Valeurs possibles                                               |
 |----------------|-------------|-------------------------------------|-----------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                            |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Sensor` \| `Equipment` \| `TimeSerie` \| `TransformedTimeSerie` \| `Deployment` \| `Project` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Sensor` \| `Equipment` \| `TimeSerie` \| `TransformedTimeSerie` \| `Deployment` \| `Project` \| `TransferFunction` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                            |
 | `datetime`     | 1           | Date de la note ou de l'événement   | "2014-04-17T00:00:00Z"                                          |
 | `type`         | 1           | Type de mémo                        | `note` \| `event` \| `document` \| `photo` \| `installation` \| `hydraulic_change` \| `maintenance` \| `incident` \| `calibration` |
