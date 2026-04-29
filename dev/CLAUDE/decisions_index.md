@@ -1,18 +1,18 @@
 # Décisions de conception
 
-Ce journal documente les choix structurants du modèle — pourquoi telle option
+Ce journal documente les choix structurants du modèle -- pourquoi telle option
 a été retenue, quelles alternatives ont été écartées et pour quelle raison.
 L'objectif est de rendre le modèle maintenable dans le temps sans avoir à
 reconstruire le raisonnement depuis zéro.
 
 ---
 
-## ADR-001 — STA comme base, étendu par ODM2
+## ADR-001 -- STA comme base, étendu par ODM2
 
 **Décision** : utiliser OGC SensorThings API comme modèle de base et l'enrichir
 avec les métadonnées d'ODM2.
 
-**Contexte** : STA est léger, REST/JSON, orienté IoT — mais trop générique pour
+**Contexte** : STA est léger, REST/JSON, orienté IoT -- mais trop générique pour
 les observatoires environnementaux. ODM2 est riche sémantiquement mais daté
 technologiquement (XML, WaterOneFlow).
 
@@ -25,9 +25,9 @@ doi:10.1016/j.envsoft.2024.106241
 
 ---
 
-## ADR-002 — TimeSerie comme contrat analytique
+## ADR-002 -- TimeSerie comme contrat analytique
 
-**Décision** : la `TimeSerie` porte tout ce qui est fixe pour toute la série —
+**Décision** : la `TimeSerie` porte tout ce qui est fixe pour toute la série --
 capteur, variable, protocole analytique, milieu.
 
 **Contexte** : dans STA, le `Datastream` est déjà ce concept. BDOH le renforce
@@ -39,7 +39,7 @@ Le changement de capteur sans impact sur la comparabilité est tracé via
 
 ---
 
-## ADR-003 — Station vs FeatureOfInterest
+## ADR-003 -- Station vs FeatureOfInterest
 
 **Décision** : distinguer explicitement la `Station` (plateforme physique) de la
 `FeatureOfInterest` (entité réelle du monde observée).
@@ -49,7 +49,7 @@ de surface, les sédiments, la nappe. Une même station peut avoir plusieurs FOI
 
 ---
 
-## ADR-004 — Pattern resourceType + resourceId
+## ADR-004 -- Pattern resourceType + resourceId
 
 **Décision** : pattern polymorphique pour les entités transversales (`Memory`,
 `Identifier`, `HistoricalLocation`, `HistoricalProject`).
@@ -59,17 +59,17 @@ garantie par l'application, pas par la base.
 
 ---
 
-## ADR-005 — Historical* : pattern uniforme
+## ADR-005 -- Historical* : pattern uniforme
 
 **Décision** : toutes les entités `Historical*` partagent la même structure :
 `resourceType + resourceId + validFrom + validTo`.
 
-**Choix retenu** : cohérence des requêtes — un développeur qui connaît
+**Choix retenu** : cohérence des requêtes -- un développeur qui connaît
 `HistoricalLocation` comprend immédiatement les autres.
 
 ---
 
-## ADR-006 — Project et HistoricalProject : source de vérité unique
+## ADR-006 -- Project et HistoricalProject : source de vérité unique
 
 **Décision** : le lien Project → ressources passe uniquement par `HistoricalProject`.
 
@@ -78,18 +78,18 @@ Un même observatoire peut être porté successivement par OSR6, OSR7, OSR8.
 
 ---
 
-## ADR-007 — LIMS hors modèle
+## ADR-007 -- LIMS hors modèle
 
 **Décision** : la chaîne analytique interne au laboratoire est hors modèle.
 Le lien se fait via `SamplingFeature.limsReference`.
 
 **Contexte** : `limsReference` est sur `SamplingFeature` (pas sur
 `ValidatedObservation`) car c'est le prélèvement qui reçoit un numéro de dossier
-LIMS — plusieurs observations peuvent découler du même prélèvement.
+LIMS -- plusieurs observations peuvent découler du même prélèvement.
 
 ---
 
-## ADR-008 — Property : champs directs vs Keyword
+## ADR-008 -- Property : champs directs vs Keyword
 
 **Décision** : `discipline` et `theme` sont des champs directs dans `Property`,
 pas des `Keyword`.
@@ -99,7 +99,7 @@ pas des `Keyword`.
 
 ---
 
-## ADR-009 — Identifiants : UUID + code lisible
+## ADR-009 -- Identifiants : UUID + code lisible
 
 **Décision** : `id` UUID immuable + `code` kebab-case lisible sur toutes les entités.
 
@@ -107,14 +107,14 @@ pas des `Keyword`.
 
 ---
 
-## ADR-010 — Deployment : grouper les capteurs co-localisés
+## ADR-010 -- Deployment : grouper les capteurs co-localisés
 
 **Décision** : entité `Deployment` pour les plateformes multi-capteurs.
 `deploymentDepth` sur `Sensor` groupe les capteurs co-localisés.
 
 ---
 
-## ADR-011 — SamplingFeature vs FeatureOfInterest
+## ADR-011 -- SamplingFeature vs FeatureOfInterest
 
 **Décision** :
 - `FeatureOfInterest` = entité réelle du monde, stable, avec géométrie
@@ -125,21 +125,21 @@ de OMS/STA 2.0 draft sans adopter la terminologie non finalisée.
 
 ---
 
-## ADR-012 — Property : symbol + code
+## ADR-012 -- Property : symbol + code
 
 **Décision** : `code` obligatoire (2-8 cars kebab-case) + `symbol` optionnel
 (notation scientifique standard).
 
 ---
 
-## ADR-013 — variableType : intensive vs extensive
+## ADR-013 -- variableType : intensive vs extensive
 
 **Décision** : champ `variableType` explicite sur `Property` pour guider les
 calculs de delta.
 
 ---
 
-## ADR-014 — Architecture deux couches IoT / backend
+## ADR-014 -- Architecture deux couches IoT / backend
 
 **Décision** : une seule base TimescaleDB, deux couches applicatives distinctes.
 
@@ -150,13 +150,13 @@ une instance centralisée par déploiement. BDOH choisit l'approche centralisée
 **Choix retenu** :
 - Couche IoT STA 1.1 : Datastream + Observation (données brutes, raw)
 - Couche métier BDOH : TimeSerie + ValidatedObservation (données validées)
-- Même base TimescaleDB — TimescaleDB scale largement au-delà des besoins
+- Même base TimescaleDB -- TimescaleDB scale largement au-delà des besoins
   d'une dizaine d'observatoires
 - Deux API sur la même base : FastAPI (STA) + Django (BDOH métier)
 
 ---
 
-## ADR-015 — TimeSerieDatastream remplace HistoricalSensor
+## ADR-015 -- TimeSerieDatastream remplace HistoricalSensor
 
 **Décision** : `TimeSerieDatastream` lie une `TimeSerie` à ses `Datastream`
 sources successifs dans le temps. `HistoricalSensor` est supprimé.
@@ -175,12 +175,12 @@ TimeSerieDatastream
   validFrom / validTo
 ```
 
-Contrainte : `datastream` ou `datastreamId` — pas les deux null, pas les deux
+Contrainte : `datastream` ou `datastreamId` -- pas les deux null, pas les deux
 renseignés simultanément.
 
 ---
 
-## ADR-016 — processingLevel absent du modèle
+## ADR-016 -- processingLevel absent du modèle
 
 **Décision** : `processingLevel` supprimé de `TimeSerie` et `TransformedTimeSerie`.
 
@@ -193,7 +193,7 @@ Répéter cette information dans un champ est redondant.
 
 ---
 
-## ADR-017 — unitOfMeasurement gardé sur Datastream
+## ADR-017 -- unitOfMeasurement gardé sur Datastream
 
 **Décision** : BDOH garde `unitOfMeasurement` comme FK vers `Unit` sur `Datastream`,
 plutôt que le `resultType` SWE-Common de STA 2.0 draft.
@@ -208,7 +208,7 @@ implémentations de référence.
 
 ---
 
-## ADR-018 — license + access sur les flux de données
+## ADR-018 -- license + access sur les flux de données
 
 **Décision** : `license 0..1` et `access 1` sur `TimeSerie`, `Datastream`,
 `TransformedTimeSerie`. Pas de `license` sur `Observatory`.
@@ -222,115 +222,108 @@ license  0..1  "ODbL" | "CC-BY" | "CC-BY-SA" | "proprietary" | ...
 access   1     open | restricted | closed | unknown
 ```
 
-`access` toujours obligatoire — on sait toujours si une donnée est accessible,
+`access` toujours obligatoire -- on sait toujours si une donnée est accessible,
 même si la licence formelle n'est pas encore définie.
 
 ---
 
-## ADR-019 — ValidationBatch pour les sessions de validation
+## ADR-019 -- ValidationBatch pour les sessions de validation
 
 **Décision** : objet `ValidationBatch` séparé pour grouper les observations
 validées en une même session.
 
 **Contexte** : sans batch, `validatedBy`, `validatedAt`, `validationLogUrl`
-seraient répétés sur chaque `ValidatedObservation` — redondance massive sur
+seraient répétés sur chaque `ValidatedObservation` -- redondance massive sur
 des tables volumineuses.
 
 **Choix retenu** : `ValidationBatch` porte les métadonnées de session.
-`ValidatedObservation.validationBatch 0..1` — une observation peut être
+`ValidatedObservation.validationBatch 0..1` -- une observation peut être
 validée hors batch (correction ponctuelle).
 
-Les fichiers CSV d'import ne sont pas stockés dans S3 — la base de données
+Les fichiers CSV d'import ne sont pas stockés dans S3 -- la base de données
 est la source de vérité. `validationLogUrl` pointe vers les logs externes
 si ils existent (Wiski, Hydrolab...).
 
 ---
 
-## ADR-020 — Validations parallèles et procédure de référence
+## ADR-020 -- TimeSerie : une procédure de validation unique
 
-**Décision** : plusieurs `ValidatedObservation` peuvent coexister pour le même
-`phenomenonTime` sur une `TimeSerie` (validation manuelle, pipeline automatique,
-IA...). `TimeSerie.referenceValidationProcedure` dit laquelle fait foi.
+**Décision** : `procedure.validation` est unique et obligatoire sur `TimeSerie`.
+`referenceValidationProcedure` est supprimé.
+
+**Contexte** : l'ancien modèle permettait plusieurs `ValidatedObservation`
+parallèles pour le même instant sur une même `TimeSerie`, avec
+`referenceValidationProcedure` pour désigner laquelle fait foi.
+
+**Choix retenu** : une procédure par série. Plusieurs validations parallèles
+sur la même variable et la même station = plusieurs `TimeSerie` distinctes.
+La `Station` est le point de regroupement naturel -- on filtre par
+`(station, property, procedure)` pour naviguer entre séries concurrentes.
+
+**Conséquence** : `ValidatedObservation` ne porte plus de `procedure` --
+elle est portée par la `TimeSerie` parente. `ValidationBatch.procedure`
+également supprimé -- la cohérence est garantie par le choix de la
+`TimeSerie` cible au moment du dépôt.
+
+---
+
+## ADR-021 -- TransferFunction analogue à TimeSerie
+
+**Décision** : `TransferFunction` est repositionnée comme analogue à
+`TimeSerie` -- elle est liée à une station et porte les données
+(points de calibration).
+
+**Contexte** : l'ancien modèle traitait `TransferFunction` comme une fonction
+pure réutilisable sans ancrage physique. En pratique une courbe de tarage
+est toujours liée à une section de rivière précise.
+
+**Analogie complète** :
+```
+TimeSerie              <-> TransferFunction
+ValidationBatch        <-> TransformationBatch
+ValidatedObservation   <-> TransformedObservation
+TransformedTimeSerie      (inchangé, output final)
+```
+
+**Objets supprimés** : `HistoricalTransferFunction` (remplacé par
+`validFrom/validTo` directement sur `TransferFunctionSet`).
+`Transformation` renommée `TransformationBatch`.
+
+**`TransferFunction`** gagne : `station 1`, `code`, `startDate`, `endDate`,
+`status`, `responsibility`, `identifier`, `memory`.
+Perd : `operator`.
+
+**`TransferFunctionSet`** : conteneur obligatoire même pour une seule TF.
+`isReference` supprimé -- plusieurs TFSet coexistent sans hiérarchie imposée.
+`inputProperty`/`outputProperty` supprimés -- portés par `TransferFunction`.
+
+---
+
+## ADR-022 -- TransformationBatch et TransformedObservation
+
+**Décision** : `Transformation` renommée `TransformationBatch`, nouvel objet
+`TransformedObservation` pour les points calculés.
+
+**Contexte** : cohérence avec le pattern `ValidationBatch` /
+`ValidatedObservation` côté observation.
 
 **Structure** :
 ```
-TimeSerie
-  procedure.validation       0..*  procédures autorisées
-  referenceValidationProcedure 0..1  laquelle fait foi
+TransformationBatch
+  transformedTimeSerie  1 ->TTS
+  transferFunctionSet   1 ->TFS
+  inputSeries           1..* ->TS
+  appliedAt / appliedBy / validFrom / validTo / status / comment
 
-ValidatedObservation
-  procedure  0..1  procédure ayant produit cette validation
-  validationBatch 0..1  session parente
-```
-
-**Choix retenu** : pas de champ `isReference` sur l'observation — trop fragile
-à maintenir. La procédure de référence est une métadonnée de la `TimeSerie`,
-modifiable sans toucher aux observations.
-
----
-
-## ADR-021 — TransferFunctionSet et HistoricalTransferFunction
-
-**Décision** : refonte complète de la section transformation avec quatre objets
-distincts aux rôles clairs.
-
-**Contexte** : l'ancien modèle avec `TransferFunction.validFrom/validTo` ne
-permettait pas de gérer la coexistence de plusieurs barèmes ni les cas
-identité/manuel.
-
-**Nouveaux objets** :
-
-```
-TransferFunction          → fonction pure, pas de date, réutilisable
-                            contient des TransferFunctionPoint (couples x/y)
-
-TransferFunctionPoint     → couple (x, y) de calibration empirique
-                            ex: (hauteur=1.23m, débit=4.5m³/s)
-
-TransferFunctionSet       → jeu propre à une station + paire de variables
-                            isReference dit lequel fait foi parmi plusieurs
-                            Contrainte : inputProperty/outputProperty doivent
-                            être compatibles avec les TF qu'il référence
-
-HistoricalTransferFunction → lie une TF à un TFSet avec période de validité
-                             type : function | identity | manual
-                             si identity ou manual → transferFunction null
-```
-
-**Analogie avec STA** :
-```
-TransferFunction     ≈ Datastream (définit le flux)
-TransferFunctionPoint ≈ Observation (les valeurs)
-TransferFunctionSet  ≈ contrat d'utilisation dans le temps
-HistoricalTransferFunction ≈ HistoricalLocation (temporalité)
+TransformedObservation
+  transformedTimeSerie  1 ->TTS
+  transformationBatch   0..1 ->TB
+  phenomenonTime / result / qualityFlag
 ```
 
 ---
 
-## ADR-022 — Transformation : acte de calcul générique
-
-**Décision** : `Transformation` est l'acte de calcul — comme une `Observation`
-est un acte de mesure. Peut utiliser un `TransferFunctionSet` ou une `Procedure`
-algorithmique pure.
-
-**Structure** :
-```
-Transformation
-  transferFunctionSet  0..1  si calcul empirique (courbe de tarage...)
-  procedure            0..1  si algorithme pur (script Python, filtre...)
-  inputSeries          1..*
-  outputSeries         1 →TTS
-  appliedAt / appliedBy / validFrom / validTo
-```
-
-Contrainte : `transferFunctionSet` ou `procedure` obligatoire — pas les deux null.
-
-**TransformedTimeSerie** garde `procedure.transformation 0..1` pour le cas
-algorithmique pur sans TFSet.
-
----
-
-## ADR-023 — samplingPeriod sur Property : trois champs
+## ADR-023 -- samplingPeriod sur Property : trois champs
 
 **Décision** : `samplingPeriod` remplacé par trois champs sur `Property`.
 
@@ -350,7 +343,7 @@ Contrainte : `samplingPeriodStart` ou `samplingPeriodMode` doit être renseigné
 
 ---
 
-## ADR-024 — qualityFlag : vocabulaire unique mappé vers standards
+## ADR-024 -- qualityFlag : vocabulaire unique mappé vers standards
 
 **Décision** : un seul champ `qualityFlag` avec quatre valeurs internes BDOH,
 documenté par un mapping vers les standards dans `standards/index.md`.
@@ -364,7 +357,7 @@ documenté par un mapping vers les standards dans `standards/index.md`.
 
 ---
 
-## ADR-025 — Instance centralisée nationale
+## ADR-025 -- Instance centralisée nationale
 
 **Décision** : une seule instance BDOH centralisée pour tous les observatoires
 français, pas une instance par observatoire.
@@ -383,14 +376,26 @@ n'importe quel STA externe sans modifier le modèle.
 
 ```
 TRANSFORMATION
-- Asymétrie TimeSerie/TransformedTimeSerie :
-  changement de TransferFunctionSet de référence →
-  recalcul TTS existante ou nouvelle TTS ?
-  qui déclenche ? comment tracer dans Transformation ?
+- Transformation algorithmique pure :
+  Une TransformedTimeSerie peut être produite sans TransferFunctionSet
+  (agrégation temporelle, filtre, script Python, correction offset...).
+  TransformationBatch.transferFunctionSet est actuellement obligatoire (1),
+  ce qui exclut ces cas. Deux options : passer à 0..1 avec contrainte
+  applicative (soit transferFunctionSet soit procedure.transformation obligatoire),
+  ou confirmer hors périmètre v1 (YAGNI).
+  A trancher avant toute implémentation de TransformationBatch.
+
+- Série de référence entre TransformedTimeSerie concurrentes :
+  Plusieurs TTS peuvent coexister sur la même station et la même variable
+  sans hiérarchie formelle (isReference supprimé, ADR-021).
+  Décision actée : pas de désignation de référence dans le modèle,
+  c'est le contexte scientifique et l'expertise technique qui tranchent,
+  comme pour les TimeSerie concurrentes (ADR-020).
+  Voir ADR-026.
 
 SCIENCE OUVERTE
 - Incertitude de mesure sur ValidatedObservation
-  (resultUncertainty — ODM2, Helmholtz SMS)
+  (resultUncertainty -- ODM2, Helmholtz SMS)
 - Catalogue et découverte FAIR :
   DataCite DOI sur TimeSeriesBundle,
   lien CSW / OGC API Records
@@ -401,3 +406,54 @@ DIVERS
 - Format CSV d'import : spécification API (pas modèle de données)
 - Pipeline de validation automatique : workflow à définir
 ```
+
+---
+
+## ADR-026 -- Coexistence sans hiérarchie des TransformedTimeSerie
+
+**Décision** : plusieurs `TransformedTimeSerie` peuvent coexister sur la même
+station et la même variable sans qu'aucune soit désignée "de référence" dans
+le modèle. Aucun champ `isReference` n'est ajouté.
+
+**Contexte** : un opérateur externe peut fournir un débit calculé avec sa propre
+procédure de transformation, pendant que BDOH produit le sien via son pipeline
+de tarage. Les deux coexistent légitimement. Le `code` (unique par Station) et
+le `status` permettent de naviguer entre elles.
+
+**Choix retenu** : même principe que pour `TimeSerie` (ADR-020) -- la Station
+est le point de regroupement, c'est le contexte scientifique et l'expertise
+technique qui désignent laquelle utiliser selon le besoin. Le modèle ne tranche
+pas à la place des scientifiques.
+
+**Conséquence** : les URLs API permettent de lister toutes les TTS d'une station
+pour une variable donnée. La désignation de référence est une métadonnée
+éditoriale, pas une contrainte du modèle de données.
+
+---
+
+## ADR-027 -- code slug obligatoire avec scopes d'unicité
+
+**Décision** : `code` est obligatoire (`1`) sur toutes les entités. Il est unique
+dans son scope parent (pas globalement sauf pour les entités racines). Il est
+modifiable par l'utilisateur. Une suggestion automatique est proposée à la
+création depuis `name` (ou `serialNumber` pour Sensor et Equipment).
+
+**Contexte** : l'UUID est la clé technique immuable, exposée via un permalink
+stable (`/resources/{uuid}`) adapté aux citations scientifiques. Le `code` est
+le slug lisible pour les URLs courantes de l'API et l'interface utilisateur.
+Les codes externes (SANDRE, TheiaOZCAR, WIGOS...) passent par `identifier`.
+
+**Scopes d'unicité** :
+- Unique globalement : Observatory, Organization, Sensor, Equipment, Project,
+  Procedure, Property, Unit
+- Unique par Observatory : Site
+- Unique par Site : Station
+- Unique par Station : Deployment, TimeSerie, Datastream, TransferFunction,
+  TransformedTimeSerie
+
+**Conséquence** : suppression des conventions de code auto-généré
+({station.code}-{property.code}-{procedure.code}) dans les notes des entités.
+Ces conventions restent des suggestions indicatives dans la documentation
+utilisateur, pas des contraintes du modèle. `serialNumber` sur Sensor et
+Equipment reste distinct du `code` -- c'est la valeur brute fabricant,
+le `code` en est le slug normalisé.

@@ -1,4 +1,4 @@
-# CLAUDE.md — Instructions pour futures conversations BDOH
+# CLAUDE.md -- Instructions pour futures conversations BDOH
 
 ## Contexte du projet
 
@@ -17,7 +17,7 @@ Le modèle de données est aligné avec :
 ## Fichiers de référence
 
 ```
-modele_donnees_v3.md     ← modèle de données principal — SOURCE DE VÉRITÉ
+modele_donnees_v5.md     ← modèle de données principal -- SOURCE DE VÉRITÉ
 bdoh-doc/                ← dépôt MkDocs Material (documentation web)
   mkdocs.yml
   docs/
@@ -51,7 +51,7 @@ Observatory → Site → Station → TimeSerie → ValidatedObservation
                              → TransformedTimeSerie
 ```
 
-### Patterns transversaux — NE PAS MODIFIER SANS ADR
+### Patterns transversaux -- NE PAS MODIFIER SANS ADR
 
 - `resourceType + resourceId` : lien polymorphique (Memory, Identifier,
   HistoricalLocation, HistoricalProject)
@@ -75,12 +75,12 @@ Observatory → Site → Station → TimeSerie → ValidatedObservation
                     ValidationBatch, ValidatedObservation,
                     ControlObservation, SamplingFeature
 8. TRANSFORMATION   TransferFunction, TransferFunctionPoint,
-                    TransferFunctionSet, HistoricalTransferFunction,
-                    Transformation, TransformedTimeSerie
+                    TransferFunctionSet, TransformationBatch,
+                    TransformedObservation, TransformedTimeSerie
 9. ORGANISATION     TimeSeriesBundle, Memory
 ```
 
-## Décisions clés — à ne pas remettre en question sans contexte
+## Décisions clés -- à ne pas remettre en question sans contexte
 
 - `processingLevel` absent : la structure encode le niveau
   (Observation=raw, ValidatedObservation=validated, TransformedTimeSerie=derived)
@@ -94,13 +94,28 @@ Observatory → Site → Station → TimeSerie → ValidatedObservation
 - `qualityFlag` unique (good/suspect/bad/missing), mapping ODM2/SANDRE
   documenté dans standards/index.md
 - `ValidationBatch` pour grouper les sessions de validation
-- `referenceValidationProcedure` sur TimeSerie pour dire quelle
-  procédure fait foi parmi plusieurs validations parallèles
-- `TransferFunctionSet` + `HistoricalTransferFunction` pour gérer
-  l'historique et la coexistence de barèmes différents
+- `procedure.validation` unique sur `TimeSerie` -- plusieurs validations
+  parallèles sur la même variable impliquent des TimeSerie distinctes
+- `referenceValidationProcedure` absent : l'unicité de procédure par
+  TimeSerie rend ce champ inutile
+- `TransferFunction` liée à une station, porte les points de calibration
+  et les métadonnées (analogue à TimeSerie)
+- `TransferFunctionSet` conteneur obligatoire d'une ou plusieurs TF,
+  avec validFrom/validTo -- HistoricalTransferFunction supprimé
+- `TransformationBatch` pour grouper les actes de calcul (analogue à
+  ValidationBatch)
+- `TransformedObservation` pour les points calculés (analogue à
+  ValidatedObservation)
+- `isReference` absent sur TransferFunctionSet et TransformedTimeSerie :
+  plusieurs séries coexistent sans hiérarchie imposée -- c'est le contexte
+  scientifique qui désigne laquelle utiliser (même principe que TimeSerie)
 - `TransferFunctionPoint` pour les couples x/y de calibration
+- `code` obligatoire (1) sur toutes les entités, slug unique par scope parent,
+  modifiable -- suggestion automatique à la création depuis name ou serialNumber.
+  UUID = clé technique immuable, exposée via permalink /resources/{uuid}.
+  Codes externes (SANDRE, TheiaOZCAR...) via identifier, pas via code.
 
-## Contraintes de formatage — IMPORTANT
+## Contraintes de formatage -- IMPORTANT
 
 Les tableaux Markdown du modèle de données doivent faire **150 caractères
 de large maximum**. Quelques lignes peuvent dépasser si vraiment nécessaire
@@ -158,10 +173,10 @@ bdoh-doc/
 
 ### Processus de régénération
 
-1. Lire `modele_donnees_v3.md` en entier
+1. Lire `modele_donnees_v5.md` en entier
 2. Découper en pages selon la structure ci-dessus
 3. Ajouter les liens internes entre entités (ex: `→ [Station](network.md#station)`)
-4. Mettre à jour `decisions/index.md` avec les nouveaux ADR
+4. Mettre à jour `decisions/index.md` avec les nouveaux ADR (ADR-026, ADR-027)
 5. Mettre à jour `standards/index.md` avec les alignements vérifiés
 6. Tester avec `mkdocs serve` avant de pousser
 
@@ -170,38 +185,27 @@ bdoh-doc/
 - Chaque entité doit avoir son en-tête `Aligné avec` vérifié
 - Les liens internes utilisent des ancres depuis les titres `###`
 - `rawdata.md` est une nouvelle page à créer (section 4bis)
-- `transformation.md` a été profondément remanié — ne pas partir
+- `transformation.md` a été profondément remanié -- ne pas partir
   de l'ancienne version
 - Le vocabulaire `qualityFlag` et son mapping doit apparaître dans
   `standards/index.md`
 
 ## Points ouverts pour prochaines sessions
 
-### TRANSFORMATION — priorité haute
+### TRANSFORMATION -- point ouvert
 ```
-1. Asymétrie TimeSerie / TransformedTimeSerie
-
-Sur une `TimeSerie`, plusieurs `ValidatedObservation` parallèles peuvent coexister pour le même instant — la `referenceValidationProcedure` dit laquelle fait foi. Sur une `TransformedTimeSerie`, la question est différente : quand on change de `TransferFunctionSet` de référence (nouveau barème, nouvelle courbe de tarage), que se passe-t-il sur les valeurs déjà calculées ?
-
-Trois sous-questions non tranchées :
-- Est-ce qu'on recalcule la `TransformedTimeSerie` existante avec le nouveau `TransferFunctionSet` ? Si oui, qui déclenche ce recalcul et comment le tracer dans `Transformation` ?
-- Ou est-ce qu'on crée une nouvelle `TransformedTimeSerie` parallèle, et l'ancienne devient inactive ?
-- Si recalcul, comment distinguer dans l'historique des `Transformation` le calcul initial du recalcul ?
-
-2. Coexistence de plusieurs TransformedTimeSerie parallèles
-
-Plusieurs `TransformedTimeSerie` peuvent produire la même variable sur la même station — par exemple deux séries de débit issues de deux barèmes différents. `TransferFunctionSet.isReference` dit lequel fait foi à un instant T. Mais la contrainte d'unicité n'est pas encore formalisée :
-
-- Un seul `isReference=true` par `(station, property)` à un instant T ?
-- Ou un seul par `TransformedTimeSerie` ?
-- Comment on gère le basculement de référence dans le temps — est-ce que `isReference` a lui aussi un `validFrom/validTo` ?
-
-3. Transformation algorithmique pure
-
-Une `TransformedTimeSerie` peut être produite sans `TransferFunctionSet` — via un script Python, un filtre, une agrégation temporelle. Dans ce cas `procedure.transformation` sur `TransformedTimeSerie` porte l'algorithme. La contrainte est : `procedure.transformation` ou au moins une `Transformation` avec `transferFunctionSet` doit être renseignée — pas les deux null. Cette contrainte est documentée mais pas encore formalisée comme ADR.
+1. Transformation algorithmique pure
+   Une TransformedTimeSerie peut être produite sans TransferFunctionSet
+   (agrégation temporelle, filtre, script Python, correction offset...).
+   TransformationBatch.transferFunctionSet est actuellement obligatoire (1).
+   Deux options :
+   - Passer a 0..1 avec contrainte applicative (soit transferFunctionSet
+     soit procedure.transformation obligatoire)
+   - Confirmer hors périmètre v1 (YAGNI)
+   A trancher avant toute implémentation de TransformationBatch.
 ```
 
-### SCIENCE OUVERTE — priorité moyenne
+### SCIENCE OUVERTE -- priorité moyenne
 ```
 3. Incertitude de mesure
    → resultUncertainty sur ValidatedObservation ?
@@ -214,7 +218,7 @@ Une `TransformedTimeSerie` peut être produite sans `TransferFunctionSet` — vi
    → comment un chercheur externe découvre les données ?
 ```
 
-### DOCUMENTATION — priorité haute
+### DOCUMENTATION -- priorité haute
 ```
 5. Régénérer bdoh-doc depuis modele_donnees_v3.md
    → intégrer tous les changements de la longue session de travail
@@ -229,7 +233,7 @@ Une `TransformedTimeSerie` peut être produite sans `TransferFunctionSet` — vi
    → clarifier STA 2.0 draft non adopté
 ```
 
-### INGESTION — priorité basse (v2)
+### INGESTION -- priorité basse (v2)
 ```
 7. Format CSV d'import
    → spécification du format attendu par l'API
