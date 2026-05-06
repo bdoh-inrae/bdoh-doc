@@ -1,0 +1,90 @@
+InstrumentUsage - scope des ressources
+Est-ce qu'un instrument peut être directement lié à un Observatory ou un Site, sans passer par une Station ? Cas concret : une centrale météo qui couvre tout un bassin versant sans station précise. Actuellement resourceType supporte Station | TimeSerie | Deployment | SamplingFeature -- pas Observatory ni Site.
+
+---
+
+observationType - ambiguïté entre couche IoT et couche métier
+Dans le modèle actuel, observationType apparaît sur deux objets avec des sémantiques différentes :
+Sur Datastream (couche IoT STA) : c'est l'URI OGC qui décrit le type de résultat brut -- OM_Measurement, OM_CountObservation, etc. C'est une contrainte technique STA, fixe.
+Sur TimeSerie (couche métier) : c'est notre distinction métier sensor_continuous | lab_sample -- est-ce que la série vient d'un capteur en continu ou de mesures ponctuelles sur échantillon. C'est une information qui guide les formulaires de saisie et la logique de validation.
+Le problème supplémentaire : une observation peut être horodatée à un instant précis (phenomenonTime = "2024-03-15T09:30:00Z") ou valide sur une plage de temps (phenomenonTime = "2024-03-15T09:00:00Z/10:00:00Z"). Cette distinction n'est actuellement pas explicitement encodée dans le modèle -- elle est implicite dans le format de phenomenonTime.
+Questions à trancher :
+
+Est-ce que sensor_continuous | lab_sample sur TimeSerie est le bon endroit et les bonnes valeurs pour distinguer le mode d'acquisition ? Ou est-ce que ça devrait être un keyword contrôlé ?
+Faut-il encoder explicitement si les observations d'une série sont ponctuelles ou sur plage -- et si oui, où ?
+Est-ce que le nom observationType est à éviter sur TimeSerie pour ne pas créer de confusion avec le observationType STA de Datastream ?
+
+--- 
+
+SamplingFeature.medium -> SamplingFeature.samplingMedium
+
+
+---
+
+La FOI est portée par la TS et le DS, donc pas les observations, ca allege mais c'est pas STA ready, est ce que c'est ok ?
+On fait quoi pour control observation ? on laisse la FOI dessus ou on dit justement que ca doit etre la même en principe
+-> documenté que si entité différente obs on ajoute une FOI sur l'obs sinon FOI DS par défaut ??
+
+---
+
+données à pas de temps variable comment on le documente, on a observationFrequency mais pas forcément ready pour ce cas ?
+
+---
+
+4bis ? trop bizarre le rangement pourquoi c'est la ?
+
+---
+
+est ce qu'on rajoute sampling feature comme objet possible associé a un projet ?
+
+---
+
+dans InstrumentUsage manque DS ou non parce que un capteur 1 DS ?
+comment se fait le lien correcte avec sensor pour un DS avec deployment
+
+---
+
+rajouter type continue disconitnue sur DS / verifier double valeur temporel pour observation avec echantillonnage
+generaliser script d'application de fonction pour la transformation
+
+est ce que sensor sur time serie uniquement si pas de depot de datastream ? si que time serie, pas de datastreamtimeserie donc sensor ?
+utilisation de instrumentusage avec sensor sur datastream permet de dater quand c'est utiliser au meme endroit mais risque de non unicité datastream/senso
+mais on a aussi sensor actif sur TS finalement
+
+historisisé les débits selon les jeux de bareme, changement de jeux de bareme, changement de version de chronique de débit donc versionning
+
+---
+
+manque un lien administratif : person org sur sensor
+
+---
+
+objet projet sur SF alors que ca devrait etre par HistoricalProject
+manque procedure sampling sur SF ou alors procedure sampling sur TS comme pour procedure observation, volonté d'unification
+equipement encore sur SF
+
+---
+
+deployement doit avoir une loc qui peut bouger ?
+
+---
+
+vocab pref loi de transformation
+
+---
+
+Person pas forcéement humaine IA ou auto pour transformation
+
+---
+
+
+person a 0..* comme relation a org
+
+-
+
+Responsibility -> TPC
+
+-
+
+RESTE EN SUSPEND :
+- 

@@ -1,5 +1,7 @@
 # CLAUDE.md -- Instructions pour futures conversations BDOH
 
+---
+
 ## Contexte du projet
 
 BDOH (Base de Données des Observatoires Hydrologiques) est un système
@@ -14,127 +16,215 @@ Le modèle de données est aligné avec :
 - NERC NVS P01 + Theia/OZCAR thesaurus (variables)
 - STAMPLATE Helmholtz (extensions STA)
 
+---
+
 ## Fichiers de référence
 
 ```
-modele_donnees_v5.md     ← modèle de données principal -- SOURCE DE VÉRITÉ
-bdoh-doc/                ← dépôt MkDocs Material (documentation web)
-  mkdocs.yml
-  docs/
-    index.md
-    overview.md
-    model/               ← une page par section du modèle
-    standards/index.md
-    decisions/index.md
+modele_donnees_v6.md     <- modèle de données principal -- SOURCE DE VERITE
+decisions_index.md       <- journal des décisions de conception (ADR)
+SOUL.md                  <- comment travailler avec l'utilisateur
 ```
+
+---
+
+## Nature du fichier modele_donnees_v6.md
+
+C'est un modèle de données BDD, pas un ERD conceptuel ni un schéma API.
+Chaque tableau décrit les colonnes réelles d'une table SQL.
+Les relations inverses (0..*) n'apparaissent pas dans les tableaux --
+elles sont documentées dans les notes "Relations inverses" de chaque entité
+et accessibles via requête sur la table qui porte la FK.
+
+Pour l'API : toutes les relations inverses réapparaissent comme endpoints
+de navigation. Le fichier BDD est la source de vérité, l'API s'en déduit.
+
+---
 
 ## Architecture du modèle
 
 ### Deux couches distinctes
 
 ```
-Couche IoT STA 1.1 (optionnelle)
-  Datastream → données brutes par capteur
-  Observation → valeur brute horodatée, raw, sans qualityFlag
+Couche IoT STA 1.1
+  Datastream       -> flux de données brutes par capteur
+  Observation      -> valeur brute horodatée, raw, sans qualityFlag
+  ObservationBatch -> import groupé (saisie manuelle terrain)
 
-Couche métier BDOH (centrale, obligatoire)
-  TimeSerie → agrège N Datastreams via TimeSerieDatastream
-  ValidatedObservation → données validées par opérateur ou pipeline
-  TransformedTimeSerie → données dérivées via TransferFunctionSet
+Couche métier BDOH (centrale)
+  TimeSerie            -> contrat analytique, agrège N Datastreams
+  ValidatedObservation -> données validées par opérateur ou pipeline
+  TransformedTimeSerie -> données dérivées via TransformationBatch
 ```
 
-### Hiérarchie principale
-
-```
-Observatory → Site → Station → TimeSerie → ValidatedObservation
-                             → Datastream → Observation
-                             → TransformedTimeSerie
-```
-
-### Patterns transversaux -- NE PAS MODIFIER SANS ADR
-
-- `resourceType + resourceId` : lien polymorphique (Memory, Identifier,
-  HistoricalLocation, HistoricalProject)
-- `Historical*` : même structure partout (resourceType, resourceId,
-  validFrom, validTo)
-- `id` UUID immuable + `code` kebab-case lisible sur toutes les entités
-- `license 0..1` + `access 1` sur TimeSerie, Datastream, TransformedTimeSerie
-  (pas sur Observatory)
-
-## Sections du modèle (ordre dans le fichier)
+### Sections du modèle (ordre dans le fichier)
 
 ```
 1. ACTEURS          Person, Organization, Responsibility
-2. RÉFÉRENTIELS     Property, Unit, Procedure, Keyword, Identifier
-3. GÉOGRAPHIE       Location, HistoricalLocation
-4. RÉSEAU           Observatory, Site, Station
-4bis. DONNÉES BRUTES  Datastream, Observation  ← couche IoT
+2. REFERENTIELS     KeywordType, Keyword, KeywordAssignment, KeywordRequirement,
+                    License, Property, Unit, Procedure, Identifier
+3. GEOGRAPHIE       Location, HistoricalLocation
+4. RESEAU           Observatory, Site, Station
+4bis. DONNEES BRUTES  Datastream, ObservationBatch, Observation
 5. PROJET           Project, HistoricalProject
-6. INSTRUMENTATION  Deployment, Sensor, Equipment
+6. INSTRUMENTATION  InstrumentUsage, Deployment, Sensor, Equipment
 7. OBSERVATION      FeatureOfInterest, TimeSerieDatastream, TimeSerie,
                     ValidationBatch, ValidatedObservation,
                     ControlObservation, SamplingFeature
-8. TRANSFORMATION   TransferFunction, TransferFunctionPoint,
+8. TRANSFORMATION   TransferFunction, TransferFunctionPoint, TransferFunctionBatch,
                     TransferFunctionSet, TransformationBatch,
                     TransformedObservation, TransformedTimeSerie
 9. ORGANISATION     TimeSeriesBundle, Memory
 ```
 
-## Décisions clés -- à ne pas remettre en question sans contexte
+---
 
-- `processingLevel` absent : la structure encode le niveau
-  (Observation=raw, ValidatedObservation=validated, TransformedTimeSerie=derived)
-- `HistoricalSensor` absent : remplacé par TimeSerieDatastream
-- `license` absent sur Observatory : chaque flux porte sa propre licence
-- `unitOfMeasurement` gardé sur Datastream (choix HydroServer/USGS,
-  pas le resultType SWE-Common de STA 2.0 draft)
-- STA 2.0 Proximate/UltimateFOI non adopté : SamplingFeature +
-  FeatureOfInterest couvrent déjà ces cas
-- `limsReference` sur SamplingFeature, pas sur ValidatedObservation
-- `qualityFlag` unique (good/suspect/bad/missing), mapping ODM2/SANDRE
-  documenté dans standards/index.md
-- `ValidationBatch` pour grouper les sessions de validation
-- `procedure.validation` unique sur `TimeSerie` -- plusieurs validations
-  parallèles sur la même variable impliquent des TimeSerie distinctes
-- `referenceValidationProcedure` absent : l'unicité de procédure par
-  TimeSerie rend ce champ inutile
-- `TransferFunction` liée à une station, porte les points de calibration
-  et les métadonnées (analogue à TimeSerie)
-- `TransferFunctionSet` conteneur obligatoire d'une ou plusieurs TF,
-  avec validFrom/validTo -- HistoricalTransferFunction supprimé
-- `TransformationBatch` pour grouper les actes de calcul (analogue à
-  ValidationBatch)
-- `TransformedObservation` pour les points calculés (analogue à
-  ValidatedObservation)
-- `isReference` absent sur TransferFunctionSet et TransformedTimeSerie :
-  plusieurs séries coexistent sans hiérarchie imposée -- c'est le contexte
-  scientifique qui désigne laquelle utiliser (même principe que TimeSerie)
-- `TransferFunctionPoint` pour les couples x/y de calibration
-- `code` obligatoire (1) sur toutes les entités, slug unique par scope parent,
-  modifiable -- suggestion automatique à la création depuis name ou serialNumber.
-  UUID = clé technique immuable, exposée via permalink /resources/{uuid}.
-  Codes externes (SANDRE, TheiaOZCAR...) via identifier, pas via code.
+## Patterns transversaux -- NE PAS MODIFIER SANS ADR
 
-## Contraintes de formatage -- IMPORTANT
+### Tables polymorphiques (resourceType + resourceId)
+Ces tables portent la FK. Elles ne génèrent aucune colonne dans les tables cibles.
 
-Les tableaux Markdown du modèle de données doivent faire **150 caractères
-de large maximum**. Quelques lignes peuvent dépasser si vraiment nécessaire
-(valeurs possibles très longues) mais cest lexception.
-
-Ne jamais utiliser le tiret long dans les fichiers générés.
-Utiliser " - " ou reformuler.
-
-Les en-têtes dentité suivent toujours ce format :
 ```
-### NomEntité
-Aligné avec : standard1, standard2
-Utilisé par : Entite1 (champ), Entite2 (champ)
-Note : explication courte du rôle et des contraintes importantes.
+Identifier         -> PIDs vers référentiels externes
+Memory             -> notes, événements, photos (mediaUrl text[])
+Responsibility     -> rôles de personnes/organisations (ISO 19115 CI_RoleCode)
+KeywordAssignment  -> mots-clés et classifications contrôlées
+HistoricalLocation -> positions géographiques successives
+HistoricalProject  -> projets porteurs successifs
+InstrumentUsage    -> capteurs et équipements utilisés dans le temps
+```
+
+### Tables de jointure explicites (many-to-many)
+```
+person_organization              Person <-> Organization
+transformationbatch_inputseries  TransformationBatch <-> TimeSerie
+bundle_timeserie                 TimeSeriesBundle <-> TimeSerie
+bundle_transformedtimeserie      TimeSeriesBundle <-> TransformedTimeSerie
+```
+
+### Identifiants
+- UUID : clé primaire technique, immuable, permalink /resources/{uuid}
+- code : slug obligatoire (1), unique par scope parent, modifiable
+- Codes externes : via Identifier, jamais via code
+
+### Scopes d'unicité du code
+```
+Observatory, Organization, Sensor, Equipment,
+Project, Procedure, Property, Unit        -> unique globalement
+Site                                      -> unique par Observatory
+Station                                   -> unique par Site
+Deployment, TimeSerie, Datastream,
+TransferFunction, TransformedTimeSerie    -> unique par Station
 ```
 
 ---
 
-## Comment régénérer bdoh-doc
+## Système de vocabulaires contrôlés -- QUADRIPTYQUE KEYWORD (ADR-030)
+
+Tous les vocabulaires évolutifs passent par ce système, jamais par enums SQL.
+
+```
+KeywordType       -> types de métadonnées, alignés avec les standards
+                     (code, label_fr, label_en, standard, standardUri)
+Keyword           -> termes bilingues alignés avec thésaurus externes
+                     (term_fr, term_en, definition_fr, definition_en,
+                      keywordType ->KWT, thesaurus, uri)
+KeywordAssignment -> lien polymorphique multi-valeurs ressource -> keyword
+KeywordRequirement -> règles de complétion minimale configurables sans migration
+```
+
+Les champs "type" des entités (Station.type, Sensor.type, etc.) ont été
+supprimés des tableaux. Ils passent par KeywordAssignment avec un keywordType
+dédié. Les valeurs courantes sont documentées dans les notes des entités.
+
+### Enums SQL fixes (conditionnent du code applicatif -- ne pas mettre en keyword)
+```
+qualityFlag        good | suspect | bad | missing
+status             active | inactive | discontinued...
+validationMode     auto | manual
+transmissionMode   auto | manual
+depthReference     surfaceRelative | bottomRelative | absoluteElevation
+instrumentType     sensor | equipment (sur InstrumentUsage)
+codeType           doi | orcid | ror | sandre | wigos | igsn | pidinst | other
+Procedure.type     sampling | observation | modeling | aggregation | transformation | validation
+origin             observed | derived (sur Property)
+TransferFunctionSet.type  function | identity | manual
+```
+
+---
+
+## License -- table de référence obligatoire
+
+License est gérée par les administrateurs BDOH.
+Obligatoire (1) sur Datastream, TimeSerie, TransformedTimeSerie, TimeSeriesBundle.
+Remplace license 0..1 (enum) + access 1 (enum) -- l'accès est implicite
+dans la licence (CC-BY = open, contrat = closed).
+
+---
+
+## InstrumentUsage -- pattern clé pour les instruments (ADR-029)
+
+Remplace tous les liens directs Sensor/Equipment sur les entités parentes.
+Sensor et Equipment sont indépendants de tout contexte d'utilisation.
+Le contexte (profondeur, période, ressource) est dans InstrumentUsage.
+TimeSerie garde sensor 1 comme snapshot courant pour accès rapide.
+
+---
+
+## Décisions clés -- à ne pas remettre en question sans contexte
+
+- processingLevel absent : la structure encode le niveau
+- HistoricalSensor absent : remplacé par InstrumentUsage + TimeSerieDatastream
+- License obligatoire (1) sur chaque flux, pas sur Observatory
+- unitOfMeasurement gardé sur Datastream (choix HydroServer/USGS)
+- STA 2.0 Proximate/UltimateFOI non adopté
+- limsReference sur SamplingFeature, pas sur ValidatedObservation
+- qualityFlag unique (good/suspect/bad/missing), mapping ODM2/SANDRE
+- ValidationBatch pour grouper les sessions de validation
+- procedure.validation unique sur TimeSerie
+- Plusieurs TimeSerie et TransformedTimeSerie coexistent sans hiérarchie
+- isReference absent partout : contexte scientifique qui désigne
+- TimeSerieDatastream simplifié : datastream 1 ->DS, pas de source externe
+- Relations inverses absentes des tableaux BDD (ADR-028)
+- Station appartient à un seul Site (1, pas many-to-many)
+- Person.organization : table jointure (affiliation, distinct de Responsibility)
+- Memory.mediaUrl : colonne text[] PostgreSQL (seul cas de tableau de strings)
+- Identifier.codeType : uri supprimé (URIs thésaurus vont dans Keyword.uri)
+- Property : discipline/theme/samplingMedium supprimés, passent en KeywordAssignment
+- TransformationBatch.inputSeries : table jointure transformationbatch_inputseries
+- Procedure.type : aggregation ajouté pour les agrégations temporelles
+- ObservationBatch : optionnel, pour saisie manuelle terrain uniquement
+- Datastream : observationFrequency (ISO 8601) + transmissionMode (auto/manual)
+- TimeSerie : validationFrequency + validationMode pour les pipelines auto
+
+---
+
+## Contraintes de formatage -- IMPORTANT
+
+- Tableaux Markdown : 150 caractères de large maximum
+- Jamais de tiret long dans les fichiers générés, utiliser " - " ou reformuler
+- En-têtes d'entité :
+```
+### NomEntité
+> Mini-définition en une ligne.
+Aligné avec : standard1, standard2
+Utilisé par : Entite1 (champ), Entite2 (champ)
+Relations inverses (requêter par resourceType='X') : Table1, Table2
+Note : rôle, contraintes, valeurs courantes si keyword.
+```
+
+---
+
+## Mode de collaboration
+
+Modifications mineures (un champ, une ligne) : indiquer et laisser
+l'utilisateur éditer dans son propre éditeur.
+Modifications larges (plusieurs entités, passes transversales) :
+édition programmatique via str_replace ou script Python.
+
+---
+
+## Comment régénérer bdoh-doc -- À VÉRIFER
 
 ### Prérequis
 
@@ -190,20 +280,31 @@ bdoh-doc/
 - Le vocabulaire `qualityFlag` et son mapping doit apparaître dans
   `standards/index.md`
 
+---
+
 ## Points ouverts pour prochaines sessions
 
-### TRANSFORMATION -- point ouvert
-```
-1. Transformation algorithmique pure
-   Une TransformedTimeSerie peut être produite sans TransferFunctionSet
-   (agrégation temporelle, filtre, script Python, correction offset...).
-   TransformationBatch.transferFunctionSet est actuellement obligatoire (1).
-   Deux options :
-   - Passer a 0..1 avec contrainte applicative (soit transferFunctionSet
-     soit procedure.transformation obligatoire)
-   - Confirmer hors périmètre v1 (YAGNI)
-   A trancher avant toute implémentation de TransformationBatch.
-```
+### TRANSFORMATION -- session dédiée recommandée (point majeur)
+
+Trois cas à couvrir par TransformationBatch :
+1. Application barème (TransferFunctionSet) -- couvert actuellement
+2. Agrégation temporelle via fichier config externe (QJXA, etc.)
+3. Script ad hoc externe (comblement lacunes, correction chimie...)
+
+Problème central : transferFunctionSet est obligatoire (1) sur
+TransformationBatch, bloquant les cas 2 et 3.
+
+Piste validée non implémentée :
+- transferFunctionSet 0..1
+- parameterUrl 0..1 (pointe vers S3/git)
+- Contrainte : au moins un des deux renseigné
+
+Question architecturale non tranchée (conditionne tout) :
+Est-ce que BDOH exécute les transformations (backend Python) ou
+documente des transformations exécutées ailleurs ?
+
+TransferFunction.type (rating_curve/linear/polynomial/lookup_table) :
+à garder ou supprimer ?
 
 ### SCIENCE OUVERTE -- priorité moyenne
 ```
@@ -233,6 +334,18 @@ bdoh-doc/
    → clarifier STA 2.0 draft non adopté
 ```
 
+### QUESTIONS NON TRANCHEES
+```
+- InstrumentUsage.resourceType : inclure Observatory ou Site ?
+  (capteur couvrant tout un bassin sans station précise)
+- observationType sur TimeSerie : ambiguïté avec observationType STA
+  sur Datastream -- renommer ?
+- Bundle et RDG : métadonnées obligatoires pour publication ?
+  Question pour les collègues
+- Export vocabulaires BDOH avec URIs persistantes
+  (infrastructure à prévoir pour termes sans équivalent externe)
+```
+
 ### INGESTION -- priorité basse (v2)
 ```
 7. Format CSV d'import
@@ -243,14 +356,4 @@ bdoh-doc/
 8. Pipeline de validation automatique
    → workflow Wiski/Hydrolab → ValidationBatch
    → validationLogUrl suffit pour l'instant
-```
-
-### QUESTIONS NON TRANCHÉES
-```
-9. Plateforme mobile (bateau, drone)
-   → HistoricalLocation sur Sensor ? (YAGNI pour l'instant)
-
-10. samplingPeriod sur Property
-    → contrainte documentée mais pas testée sur cas réels
-    → samplingPeriodStart ou samplingPeriodMode obligatoire
 ```

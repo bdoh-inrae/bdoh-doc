@@ -1,0 +1,17 @@
+Avant de commencer, lis dans l'ordre :
+1. SOUL.md — comment on travaille ensemble en se basant sur l'expertise d'une précédente conversation CLAUDE (BDOH STA fondation du modele)
+2. CLAUDE.md — contexte et instructions du projet avec des indications de formatage de tes réponses et l'état des lieux des réflexions
+3. decisions_index.md — ADR à jour qu'il sera nécessaire de mettre à jour après chaque séance de travail lorsque des décisions majeures sont prises
+4. modele_donnees_vx.md — SOURCE DE VÉRITÉ actuelle, notre document de travail prioritaire dont il faut assurer la cohérence et robustesse 
+5. sources.md — aperçu de la bibliographie sur le sujet, c'est les standard que l'on se doit de garder en tête pour produire notre modèle de données
+
+Puis fais-moi un résumé de ce que tu as compris :
+- l'état actuel du modèle
+- les points ouverts prioritaires
+- comment tu comptes travailler avec moi
+
+Mon but est tout d'abord de voir si tu as bien compris le contexte, je tiens à ce que tu montes en compétence seul avant que l'on démarre la discussion.
+
+---
+
+Tu peux dans un deuxieme temps prendre le temps de chercher sur internet les sources actuelles pour améliorer ton niveau de connaissance du sujet.

@@ -154,6 +154,16 @@ une instance centralisée par déploiement. BDOH choisit l'approche centralisée
   d'une dizaine d'observatoires
 - Deux API sur la même base : FastAPI (STA) + Django (BDOH métier)
 
+**Ce qui définit "brut" dans la couche IoT** : une donnée est brute dès lors
+qu'elle est telle que mesurée -- sans modification, sans jugement de qualité.
+Peu importe le mode d'arrivée :
+- capteur télétransmis en continu -> Observation sans batch
+- technicien qui récupère des données sur une centrale d'acquisition
+  terrain non connectée et les importe manuellement -> Observation via ObservationBatch
+
+Dans les deux cas la donnée est brute. C'est dans la couche métier
+(ValidationBatch + ValidatedObservation) que commence le jugement de qualité.
+
 ---
 
 ## ADR-015 -- TimeSerieDatastream remplace HistoricalSensor
@@ -457,3 +467,199 @@ Ces conventions restent des suggestions indicatives dans la documentation
 utilisateur, pas des contraintes du modèle. `serialNumber` sur Sensor et
 Equipment reste distinct du `code` -- c'est la valeur brute fabricant,
 le `code` en est le slug normalisé.
+
+---
+
+## ADR-028 -- Relations inverses absentes des tableaux BDD
+
+**Décision** : les relations inverses (listes 0..*) ne sont jamais des champs
+dans les tableaux des entités. Elles sont accessibles via requête sur la table
+qui porte la FK.
+
+**Contexte** : plusieurs entités portaient des champs comme `responsibility 0..*`,
+`historicalProject 0..*`, `historicalLocation 0..*`, `equipment 0..*` -- ces
+champs n'existent pas en BDD, ce sont des vues API. Le modèle documente des
+tables, pas des vues.
+
+**Règle** : si une entité B pointe vers une entité A via une FK, A ne liste pas
+B dans son tableau. L'accès se fait par requête `WHERE resource_id={id}`.
+Seule exception : les snapshots courants (`location 1 →Loc`, `sensor 1 →Sen`)
+qui sont de vraies FK directes pour accès rapide.
+
+---
+
+## ADR-029 -- ResourceInstrument : jointure temporalisée pour les instruments
+
+**Décision** : `ResourceInstrument` remplace tous les liens directs entre
+ressources et instruments (Sensor, Equipment).
+
+**Contexte** : un capteur ou un équipement peut être utilisé successivement
+sur plusieurs stations, déploiements, séries temporelles ou prélèvements.
+Les liens directs ne permettent pas de tracer cette mobilité dans le temps.
+
+**Structure** :
+```
+ResourceInstrument
+  resourceType   Station | TimeSerie | Deployment | SamplingFeature
+  resourceId     uuid
+  instrumentType sensor | equipment
+  instrumentId   uuid
+  deploymentDepth 0..1
+  depthReference  0..1
+  validFrom       0..1
+  validTo         0..1
+```
+
+**Ce qui est supprimé** :
+- `Sensor.deployment`, `Sensor.deploymentDepth`, `Sensor.depthReference`,
+  `Sensor.laboratory`
+- `TimeSerie.deployment`
+- `Station.equipment`, `Deployment.equipment`
+- `responsibility 0..*` sur toutes les entités (géré via Responsibility polymorphique)
+
+**Ce qui est gardé** :
+- `TimeSerie.sensor 1` -- snapshot courant du capteur actif, accès rapide
+- `Responsibility.resourceType` étendu à `Equipment` et `Sensor`
+
+---
+
+## ADR-030 -- Système de vocabulaires contrôlés via quadriptyque Keyword
+
+**Décision** : tous les vocabulaires contrôlés évolutifs passent par un
+quadriptyque de tables : `KeywordType`, `Keyword`, `KeywordAssignment`,
+`KeywordRequirement`. Les enums SQL restent uniquement pour les valeurs
+techniques fixes qui conditionnent du code applicatif.
+
+**Contexte** : les champs enum comme `discipline`, `theme`, `samplingMedium`,
+`stationType`, `sensorType` etc. nécessitent une gouvernance par les curateurs
+sans migration de schéma. Une table unique de vocabulaire contrôlé avec
+discriminant de type est plus flexible et extensible qu'une table par vocabulaire
+(approche ODM2) ou des enums SQL rigides.
+
+**Structure du quadriptyque** :
+- `KeywordType` : types de métadonnées, alignés avec les standards (ISO 19115, ODM2...)
+- `Keyword` : termes bilingues (fr/en) alignés avec des thésaurus externes autant que possible
+- `KeywordAssignment` : lien polymorphique multi-valeurs entre keyword et ressource
+- `KeywordRequirement` : règles de complétion minimale configurables sans migration
+
+**Deux usages de Keyword** :
+1. Via `KeywordAssignment` -- toutes les classifications (discipline, theme,
+   stationType, sensorType...) -- mono ou multi-valeur
+2. Les valeurs courantes de chaque keywordType sont documentées dans les notes
+   des entités, pas hardcodées dans le schéma
+
+**Champs supprimés des entités** (passent en KeywordAssignment) :
+Organization.type, Site.type, Station.type, Deployment.type, Sensor.type,
+Equipment.type, FeatureOfInterest.type, Memory.type, ControlObservation.type,
+Property.discipline, Property.theme, Property.samplingMedium,
+TimeSerie.sampledMedium, SamplingFeature.specimenType, SamplingFeature.medium,
+TimeSeriesBundle.theme
+
+**Enums SQL conservés** (conditionnent du code) :
+qualityFlag, status, validationMode, transmissionMode, depthReference,
+instrumentType, codeType, Procedure.type, origin, TransferFunctionSet.type
+
+**Alignement FAIR** : chaque Keyword doit idéalement avoir une URI vers un
+thésaurus reconnu (ODM2, TheiaOZCAR, SANDRE, NERC...). Les termes BDOH sans
+équivalent externe utilisent thesaurus='BDOH' et devraient être publiés
+avec des URIs persistantes.
+
+---
+
+## ADR-031 -- License obligatoire sur les flux de données
+
+**Décision** : `License` devient une table de référence gérée par les
+administrateurs BDOH. Le champ `license` est obligatoire (1) sur
+Datastream, TimeSerie, TransformedTimeSerie et TimeSeriesBundle.
+
+**Contexte** : les anciens champs `license 0..1` (enum) et `access 1` (enum)
+étaient redondants et trop rigides. L'accès est implicite dans la licence --
+une CC-BY est ouverte, une licence contractuelle est fermée.
+
+**Structure** :
+```
+License : id, code, name, url
+```
+
+**Conséquence** : `access` supprimé de toutes les entités.
+Les administrateurs BDOH gèrent la liste des licences disponibles.
+
+---
+
+## ADR-032 -- TimeSerieDatastream simplifié
+
+**Décision** : `TimeSerieDatastream` ne supporte que les Datastreams internes
+à BDOH. Les champs `datastreamId`, `sourceUrl`, `sourceType` sont supprimés.
+
+**Contexte** : le cas "source externe STA tiers" n'est pas dans le périmètre v1.
+Si on adopte BDOH, on adopte tout le stack. La complexité multi-source
+est reportée en v2.
+
+**Structure simplifiée** :
+```
+TimeSerieDatastream : id, timeSerie 1->TS, datastream 1->DS, validFrom, validTo
+```
+
+---
+
+## ADR-033 -- Procedure.type : ajout de aggregation
+
+**Décision** : `Procedure.type` gagne la valeur `aggregation` pour documenter
+les procédures d'agrégation temporelle ou spatiale.
+
+**Contexte** : l'agrégation (QJXA, cumuls pluviométriques...) est un cas
+distinct de la transformation -- elle produit une nouvelle variable depuis
+une TimeSerie existante selon des règles de calcul documentées.
+
+**Valeurs complètes** :
+```
+sampling | observation | modeling | aggregation | transformation | validation
+```
+
+---
+
+## ADR-034 -- Sensor et Equipment indépendants du contexte
+
+**Décision** : Sensor et Equipment ne portent aucun champ de contexte
+d'utilisation. Tous les champs contextuels passent dans InstrumentUsage.
+
+**Champs supprimés de Sensor** :
+`deployment`, `deploymentDepth`, `depthReference`, `laboratory`
+
+**Champs portés par InstrumentUsage** :
+`deploymentDepth`, `depthReference`, `validFrom`, `validTo`
+
+**Conséquence** : un capteur peut être utilisé sur plusieurs ressources
+successivement sans ambiguïté. TimeSerie garde `sensor 1` comme snapshot
+courant pour accès rapide.
+
+---
+
+## ADR-035 -- ObservationBatch pour les imports manuels terrain
+
+**Décision** : `ObservationBatch` est optionnel sur `Observation`.
+Il est créé uniquement quand un technicien importe manuellement des données
+récupérées sur une centrale d'acquisition terrain non connectée.
+
+**Contexte** : un capteur télétransmis en continu ne crée pas de batch --
+ce serait absurde de créer un batch par mesure. Le batch existe quand
+il y a un acte humain ou une sync groupée qui mérite d'être tracée.
+
+---
+
+## Points ouverts -- TRANSFORMATION (session dédiée recommandée)
+
+**Problème central** : `TransformationBatch.transferFunctionSet 1` obligatoire
+bloque les cas sans barème structuré dans BDOH.
+
+**Cas à couvrir** :
+1. Barème (TransferFunctionSet dans BDOH) -- couvert
+2. Agrégation via fichier config externe (QJXA, paramètres S3/git)
+3. Script ad hoc (comblement lacunes, correction chimie)
+
+**Piste** : `transferFunctionSet 0..1` + `parameterUrl 0..1`,
+contrainte applicative : au moins un des deux renseigné.
+
+**Question architecturale non tranchée** : BDOH exécute-t-il les
+transformations (backend Python) ou documente-t-il des transformations
+exécutées ailleurs ? Cette décision conditionne l'implémentation.
