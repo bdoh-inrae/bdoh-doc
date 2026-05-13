@@ -1,6 +1,5 @@
 # Modélisation de l'entité Agent dans un système FAIR : synthèse
 
----
 
 ## Le problème
 
@@ -12,7 +11,7 @@ En modélisation relationnelle, trois stratégies canoniques répondent à ce ty
 
 Le choix entre ces stratégies ne se réduit pas à une question de performance ou de commodité d'implémentation. Il engage une prise de position sur ce que le schéma est censé dire sur le monde.
 
----
+
 
 ## Le fil philosophique
 
@@ -36,7 +35,7 @@ Le Wittgenstein des Recherches Philosophiques abandonne l'idée d'un langage id�
 
 TPC est la traduction structurelle de ces leçons. Il reconnaît deux jeux de langage distincts sans prétendre les unifier. Il modélise une ressemblance de famille sans postuler d'essence commune. Il porte la règle dans les données via le discriminant `agentType`, lisible à l'export sans documentation externe.
 
----
+
 
 ## Analyse des stratégies et de leurs alternatives
 
@@ -48,7 +47,7 @@ TPC est la traduction structurelle de ces leçons. Il reconnaît deux jeux de la
 
 Les **alternatives modernes** ne résolvent pas le problème de fond. JSONB déplace le schéma hors du schéma : la structure des attributs spécifiques devient un jeu de langage privé que seule l'application connaît, opaque pour tout outil externe. L'héritage PostgreSQL natif (`INHERITS`) a été conçu pour le partitionnement physique, pas pour la modélisation sémantique : les contraintes d'unicité, les FK et les index de la table parente ne couvrent pas les tables filles, rendant les garanties d'intégrité illusoires. Les tables de liaison polymorphiques intermédiaires n'apportent rien par rapport à TPC direct sinon une complexité supplémentaire. DuckDB et les triplestores RDF résolvent le problème différemment mais ne sont pas adaptés comme moteur de stockage transactionnel pour une API en production.
 
----
+
 
 ## Conclusion : règles de décision et mesures de mitigation
 
@@ -67,6 +66,14 @@ Six mesures techniques compensent la perte de la FK native et doivent être cons
 Une contrainte `CHECK` sur le discriminant garantit que seules les valeurs connues et contrôlées sont acceptées. Un trigger `BEFORE INSERT OR UPDATE` sur chaque table cliente vérifie que l'identifiant référencé existe bien dans la table correspondant au type déclaré : c'est le substitut direct de la FK native. Un trigger d'interdiction des suppressions physiques sur les tables référencées force la suppression logique via un champ `archived_at` ou `status`, ce qui correspond par ailleurs à une exigence de traçabilité scientifique indépendante de TPC. Des vues encapsulent les `UNION ALL` nécessaires aux requêtes transversales une fois pour toutes, sans répétition dans chaque endpoint de l'API. Des commentaires PostgreSQL sur les colonnes `agentType` et `agentId` documentent le contrat polymorphique directement dans le schéma, lisible par tout outil d'inspection. Enfin, des requêtes de vérification d'intégrité exécutées périodiquement détectent toute référence orpheline qui aurait pu passer entre les mailles des triggers.
 
 L'ensemble de ces mesures suppose une discipline d'écriture centralisée sur l'API : aucune écriture directe en base ne doit être possible pour les utilisateurs applicatifs.
+
+### Pourquoi PostgreSQL malgré ses limites
+
+Les mesures de mitigation décrites ci-dessus sont nécessaires précisément parce que PostgreSQL ne résout pas le problème polymorphique nativement. Des moteurs alternatifs comme TypeDB le feraient : leur système de types somme permet de déclarer qu'un agent est soit une personne soit une machine comme une propriété du schéma lui-même, avec une garantie d'intégrité moteur que PostgreSQL ne peut pas offrir sur une FK en deux colonnes. Sur le plan philosophique, c'est la réponse correcte.
+
+Sur le plan opérationnel, ces moteurs n'ont pas aujourd'hui la maturité nécessaire pour des données scientifiques à long terme : pas d'ORM stable, pas d'écosystème Django ou FastAPI, pas d'équivalent à TimescaleDB pour les séries temporelles, et une communauté trop restreinte pour garantir la pérennité sur 20 ou 30 ans.
+
+Le choix de rester sur PostgreSQL n'est donc pas un renoncement philosophique. C'est une décision d'ingénierie lucide : accepter une limite structurelle connue du modèle relationnel, la compenser par des mesures explicites et auditables, et attendre que des moteurs philosophiquement plus corrects atteignent la maturité opérationnelle que des données de recherche exigent.
 
 ### Le choix en une phrase
 
