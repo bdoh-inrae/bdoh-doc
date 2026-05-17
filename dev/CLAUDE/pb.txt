@@ -13,56 +13,12 @@ vocab pref loi de transformation
  
 
 
----
 
-## Datastream
 
-3. `Datastream.station` -- est-ce que Datastream doit connaître Station, ou est-ce que ce lien appartient uniquement à la couche métier ?
-4. Comment documenter les observations à pas de temps variable dans Datastream ?
-5. Faut-il ajouter un type continu/discontinu sur Datastream ? la nomenclature est peut etre pas la bonne, plus précisément le cas des données avec un temps d'intégration donc une observation valide de tel date a tel date (données discontinue)
 
----
 
-## Station / Deployment / System
 
-6. Un Deployment doit-il avoir une location qui peut évoluer dans le temps (HistoricalLocation) ? ou alors c'est une time serie du deployement qui porte la position ?
-7. Faut-il un lien administratif Person/Organization sur System ?
-
----
-
-## TimeSerie
-
-8. `observationType` sur TimeSerie -- garder `sensor_continuous | lab_sample` ? Et renommer pour éviter la confusion avec `observationType` STA de Datastream ?
-9. `ControlObservation`  doit se rattacher aussi à une `TransformedTimeSerie` pas que `TimeSerie` ?
-
----
-
-## Specimen
-
-10. Il faut rattacher Specimen à un Project via HistoricalProject plutôt que FK directe non ?
-11. Il faut une `procedure` de prélèvement sur Specimen et ou une procedure de sampling sur une TS chimique pour assurer la coherence ?
-12. Est ce que specimen doit etre rattacher a datastream ou datastream n'est que pour les données brute hors données chimiques ?
-12. Est ce que Specimen doit etre rattacher a Station ?
-
----
-
-## FOI
-
-12. FOI absente de Datastream et Observation -- est-ce STA-compatible ? Comment documenter la règle de résolution ?
-13. FOI sur `TransformedTimeSerie` -- manquante ?
-
----
-
-## Organisation / Responsabilités
-
-15. Plusieurs organisations sur Project -- comment modéliser ? est ce qu'il peut avoir des role pour chaque organisation ? 
-16. `archived_at` -- faut-il un mécanisme de suppression logique universel pour ne pas casser les relation TPC ?
-
----
-
-## Points déjà résolus à nettoyer dans le modèle
 
 17. `TimeSeriesBundle` -- renommer ?
 18. Revoir `integrity_checks.md` à la lumière des changements v9.
 
----

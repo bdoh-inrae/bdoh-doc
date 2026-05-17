@@ -40,7 +40,24 @@ Elles ne génèrent aucune colonne dans les tables cibles.
 | `HistoricalProject` | Projets porteurs successifs              | Observatory, Site, Station, TimeSerie                                              |
 | `bundle_serie`      | Séries et fonctions regroupées en bundle | TimeSerie, TransformedTimeSerie, TransferFunction, ControlObservation              |
 
-### Pattern TPC agent (agentType + agentId)
+### Pattern TPC anchor (anchorType + anchorId)
+
+Plusieurs entités doivent se rattacher à un contexte géographique qui peut être
+Observatory, Site ou Station selon la granularité. Le pattern TPC est appliqué
+plutôt que trois FK optionnelles.
+
+| Champ        | Type | Valeurs                                    |
+|--------------|------|--------------------------------------------|
+| `anchorType` | enum | `observatory` \| `site` \| `station`       |
+| `anchorId`   | uuid | uuid de l'Observatory, Site ou Station     |
+
+Tables portant ce pattern : `Deployment` (anchorType + anchorId),
+`Datastream` (anchorType + anchorId), `TimeSerie` (anchorType + anchorId),
+`TransformedTimeSerie` (anchorType + anchorId).
+
+Règle de cohérence : `Datastream.anchorType/anchorId` doit être cohérent avec
+l'ancrage du Deployment du System de ce Datastream. Contrainte vérifiable
+périodiquement (voir integrity_checks.md).
 
 Plusieurs tables tracent l'acteur d'un acte ou d'une responsabilité.
 Cet acteur peut être un humain (Person), un agent automatisé (Machine) ou une organisation (Organization).
@@ -98,10 +115,10 @@ Unit                 unique globalement
 Site                 unique par Observatory
 Station              unique par Site
 Deployment           unique par Station
-TimeSerie            unique par Station
-Datastream           unique par Station
-TransferFunction     unique par Station
-TransformedTimeSerie unique par Station
+TimeSerie            unique par ancre (Observatory, Site ou Station)
+Datastream           unique par ancre (Observatory, Site ou Station)
+TransferFunction     unique par ancre (Observatory, Site ou Station)
+TransformedTimeSerie unique par ancre (Observatory, Site ou Station)
 ```
 
 Les codes externes (SANDRE, TheiaOZCAR, WIGOS...) sont portés par `identifier`,
@@ -642,7 +659,9 @@ Cas drone (campagne mobile) :
           └── System "Bateau drone Yzeron" (systemType=platform)
                 └── Deployment [2024-05-10/12]
                       └── System "Sonde conductivité" (systemType=sensor)
-                            └── Datastream → HistoricalDatastream → TimeSerie "Cond surface"
+                            └── Datastream (anchorType='site', anchorId=uuid_site)
+                                  └── HistoricalDatastream → TimeSerie "Cond surface"
+                                        (anchorType='site', anchorId=uuid_site)
 ```
 
 ---
@@ -723,17 +742,18 @@ Note : trace toutes les relations physiques entre Systems, et entre Systems et l
 ## 5. MONDE IoT
 
 ### Datastream
-> Flux de données brutes issu d'un unique System de type sensor sur une station -- couche IoT STA.
+> Flux de données brutes issu d'un unique System de type sensor -- couche IoT STA.
 Aligné avec : STA 1.1 Datastream, FROST-Server, HydroServer Datastream
 Utilisé par : HistoricalDatastream (datastream), Observation (datastream)
-Note : flux de données brutes pour un unique Thing + System(sensor) + ObservedProperty.
+Note : flux de données brutes pour un unique System(sensor) + ObservedProperty.
        Un changement de capteur crée un nouveau Datastream (règle métrologique et STA).
        Plusieurs Datastreams successifs → une TimeSerie via HistoricalDatastream.
        BDOH garde unitOfMeasurement comme FK vers Unit (choix HydroServer/USGS).
        API STA : system → Sensor dans les réponses /Datastreams.
        FOI absente de la couche IoT -- portée par Station et TimeSerie (couche métier).
-       L'API STA résout la FOI à la demande : TimeSerie.featureOfInterest
-       si renseignée, sinon Station.featureOfInterest.
+       anchorType + anchorId : pattern TPC pour le rattachement géographique.
+       Cas station fixe : anchorType='station'. Cas drone : anchorType='site'.
+       Doit être cohérent avec l'ancrage du Deployment du System associé.
 
 | Champ                  | Cardinalité | Définition                                | Valeurs possibles                                                      |
 |------------------------|-------------|-------------------------------------------|------------------------------------------------------------------------|
@@ -742,7 +762,8 @@ Note : flux de données brutes pour un unique Thing + System(sensor) + ObservedP
 | `description`          | 0..1        | Description libre                         |                                                                        |
 | `observationType`      | 1           | Type de résultat (URI OGC OM 2.0)         | "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement" |
 | `unitOfMeasurement`    | 1 →Unit     | Unité de mesure                           | → Unit                                                                 |
-| `station`              | 1 →Sta      | Station source (= Thing STA)              | → Station                                                              |
+| `anchorType`           | 1           | Type d'ancrage géographique               | `observatory` \| `site` \| `station`                                   |
+| `anchorId`             | 1           | UUID de l'Observatory, Site ou Station    | uuid                                                                   |
 | `system`               | 1 →Sys      | Capteur source (systemType=sensor)        | → System                                                               |
 | `property`             | 1 →Prop     | Variable mesurée (= ObservedProperty STA) | → Property                                                             |
 | `procedure`            | 0..1 →Proc  | Protocole de mesure                       | → Procedure                                                            |
@@ -835,12 +856,12 @@ Relations inverses (requêter par resourceType='TimeSerie') :
   HistoricalProject, Responsibility, Identifier, Memory, KeywordAssignment
 Note : porte tout ce qui est fixe et commun à toute la série.
        Contrat analytique garantissant la comparabilité de tous les points.
+       anchorType + anchorId : pattern TPC -- station dans le cas standard,
+       site pour les séries de chimie sans station fixe ou campagnes mobiles.
        Le capteur courant se retrouve via HistoricalDatastream WHERE validTo IS NULL.
-       Le regroupement spatial avec d'autres séries co-localisées est via la hiérarchie
-       Deployment -- un Deployment de platform regroupe les capteurs co-localisés.
-       FOI : featureOfInterest porte la FOI proximate si elle diffère de celle de Station.
+       FOI : featureOfInterest porte la FOI proximate si elle diffère de l'ancre.
        Règle de résolution API STA : TimeSerie.featureOfInterest si renseignée,
-       sinon Station.featureOfInterest.
+       sinon anchor.featureOfInterest.
        Une procédure de validation unique par série -- plusieurs validations
        parallèles sur la même variable impliquent des TimeSerie distinctes.
        Plusieurs TimeSerie peuvent coexister sur la même station et la même
@@ -853,11 +874,12 @@ Note : porte tout ce qui est fixe et commun à toute la série.
 | Champ                   | Cardinalité | Définition                                    | Valeurs possibles                        |
 |-------------------------|-------------|-----------------------------------------------|------------------------------------------|
 | `id`                    | 1           | Identifiant technique, clé primaire           | uuid                                     |
-| `code`                  | 1           | Slug unique par Station                       | "hea-wiski"                              |
+| `code`                  | 1           | Slug unique par ancre                         | "hea-wiski"                              |
 | `name`                  | 1           | Nom lisible de la série                       | "Hauteur d'eau -- Mercier au pont D610"  |
 | `description`           | 0..1        | Description libre                             |                                          |
-| `station`               | 1 →Sta      | Station de rattachement                       | → Station                                |
-| `featureOfInterest`     | 0..1 →FOI   | FOI proximate si différente de Station        | → FeatureOfInterest                      |
+| `anchorType`            | 1           | Type d'ancrage géographique                   | `observatory` \| `site` \| `station`     |
+| `anchorId`              | 1           | UUID de l'Observatory, Site ou Station        | uuid                                     |
+| `featureOfInterest`     | 0..1 →FOI   | FOI proximate si différente de l'ancre        | → FeatureOfInterest                      |
 | `property`              | 1 →Prop     | Variable mesurée                              | → Property                               |
 | `unit`                  | 1 →Unit     | Unité de mesure                               | → Unit                                   |
 | `procedure.observation` | 1 →Proc     | Protocole analytique fixe pour toute la série | → Procedure (type=observation)           |
@@ -1029,15 +1051,16 @@ Relations inverses (requêter par resourceType='TransferFunction') :
   Responsibility, Identifier, Memory
 Note : fonction de conversion liée à une station -- analogue à TimeSerie.
        Les points de calibration (couples x/y) définissent la fonction empiriquement.
-       code unique par Station.
+       anchorType + anchorId : pattern TPC -- station dans le cas standard.
 
 | Champ            | Cardinalité    | Définition                             | Valeurs possibles                      |
 |------------------|----------------|----------------------------------------|----------------------------------------|
 | `id`             | 1              | Identifiant technique, clé primaire    | uuid                                   |
-| `code`           | 1              | Slug unique par Station                | "hea-qmj-v3"                           |
+| `code`           | 1              | Slug unique par ancre                  | "hea-qmj-v3"                           |
 | `name`           | 1              | Nom de la fonction                     | "Courbe de tarage Mercier D610 v3"     |
 | `description`    | 0..1           | Description libre                      |                                        |
-| `station`        | 1 →Sta         | Station associée                       | → Station                              |
+| `anchorType`     | 1              | Type d'ancrage géographique            | `observatory` \| `site` \| `station`   |
+| `anchorId`       | 1              | UUID de l'Observatory, Site ou Station | uuid                                   |
 | `inputProperty`  | 1 →Prop        | Variable en entrée                     | → Property (ex: hauteur)               |
 | `outputProperty` | 1 →Prop        | Variable en sortie                     | → Property (ex: débit)                 |
 | `parameters`     | 0..1           | Coefficients analytiques (JSON)        | {"a":2.1,"b":1.5}                      |
@@ -1106,7 +1129,8 @@ Note : conteneur obligatoire pour une ou plusieurs TransferFunction sur une stat
 | `id`               | 1           | Identifiant technique, clé primaire | uuid                                 |
 | `name`             | 1           | Nom du jeu                          | "Barème Mercier D610 2024"           |
 | `description`      | 0..1        | Description libre                   |                                      |
-| `station`          | 1 →Sta      | Station associée                    | → Station                            |
+| `anchorType`       | 1           | Type d'ancrage géographique         | `observatory` \| `site` \| `station` |
+| `anchorId`         | 1           | UUID de l'Observatory, Site ou Station | uuid                              |
 | `transferFunction` | 0..1 →TF    | Fonction appliquée si type=function | → TransferFunction                   |
 | `type`             | 1           | Type de transformation              | `function` \| `identity` \| `manual` |
 | `validFrom`        | 1           | Début de validité                   | "2024-01-01T00:00:00Z"               |
@@ -1184,10 +1208,11 @@ Note : série dérivée d'une ou plusieurs TimeSerie via des TransformationBatch
 | Champ                      | Cardinalité    | Définition                          | Valeurs possibles                        |
 |----------------------------|----------------|-------------------------------------|------------------------------------------|
 | `id`                       | 1              | Identifiant technique, clé primaire | uuid                                     |
-| `code`                     | 1              | Slug unique par Station             | "debit-tarage-bdoh"                      |
+| `code`                     | 1              | Slug unique par ancre               | "debit-tarage-bdoh"                      |
 | `name`                     | 1              | Nom de la série dérivée             | "Débit Mercier au pont D610"             |
 | `description`              | 0..1           | Description libre                   |                                          |
-| `station`                  | 1 →Sta         | Station de rattachement             | → Station                                |
+| `anchorType`               | 1              | Type d'ancrage géographique         | `observatory` \| `site` \| `station`     |
+| `anchorId`                 | 1              | UUID de l'Observatory, Site ou Station | uuid                                  |
 | `property`                 | 1 →Prop        | Variable produite                   | → Property                               |
 | `unit`                     | 1 →Unit        | Unité de la série dérivée           | → Unit                                   |
 | `procedure.transformation` | 1 →Proc        | Procédure de transformation         | → Procedure (type=transformation)        |
