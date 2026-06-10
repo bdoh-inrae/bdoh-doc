@@ -52,6 +52,14 @@ Les règles suivantes s'appliquent uniformément dans tout le modèle.
   externes - ODM2 par exemple - sont documentées dans les notes
   d'entité et les tableaux de mapping).
 
+**Valeurs de vocabulaire (Keyword)** : à distinguer des enums SQL ci-dessus.
+Un `Keyword` n'a pas de valeur d'enum figée ; il est désigné par ses libellés
+bilingues `term_fr` / `term_en` (texte lisible normal, avec espaces et casse
+naturelle : "surface water", "eau de surface") et porte une `notation`,
+identifiant court en `kebab-case` destiné aux URIs ("surface-water"). Les
+exemples de termes donnés dans les notes d'entité ("Keywords attendus") sont
+des `term_en`, donc en texte lisible, pas des slugs.
+
 ## Relations inverses et API
 
 Toutes les relations inverses absentes des tableaux réapparaissent comme
@@ -80,10 +88,10 @@ vers elle. La nature du lien est indiquée entre parenthèses :
   Exemple : `Site (FK observatory)` - la colonne `observatory` de Site.
 - `Entité (anchor)` ou `... (anchorType='X')` : lien par le pattern TPC anchor.
   L'entité citée porte `anchorType` + `anchorId` (voir Pattern TPC anchor).
-- `Entité (via resourceType + resourceId)` : lien par table polymorphique.
+- `Entité (via resourceType + resourceId)` : lien par le pattern TPC resource.
 - `Entité (table jointure)` : lien many-to-many via une table de jointure.
 
-Cette notation permet de distinguer une FK réelle d'un lien polymorphique
+Cette notation permet de distinguer une FK réelle d'un lien TPC
 sans avoir à ouvrir le tableau de l'entité citée.
 
 
@@ -144,21 +152,38 @@ TransformedTimeSeries unique par ancre (Observatory, Site ou Station)
 
 # Patterns transversaux
 
-## Tables polymorphiques (resourceType + resourceId)
+Le modèle utilise un même mécanisme, appelé **TPC**, pour les liens
+polymorphiques, c'est-à-dire les liens qui peuvent pointer vers plusieurs
+types d'entités selon le cas. Une table porte un couple `xxxType` + `xxxId` :
+`xxxType` discrimine le type d'entité ciblée, `xxxId` porte son UUID. Aucune
+FK native PostgreSQL n'est posée ; l'intégrité est garantie applicativement
+(trigger, vérification périodique).
+
+Ce pattern TPC est décliné en quatre usages, présentés ci-dessous :
+- **TPC resource** (`resourceType + resourceId`) : rattacher une donnée
+  transverse à n'importe quelle ressource (identifiants, mots-clés, notes...).
+- **TPC anchor** (`anchorType + anchorId`) : ancrer une entité à un contexte
+  géographique (Observatory, Site ou Station).
+- **TPC agent** (`agentType + agentId`) : désigner l'acteur d'un acte
+  (Person, Machine ou Organization).
+- **TPC series** (`seriesType + seriesId`) : pointer vers une série ou une
+  fonction, quel que soit son type (utilisé par `bundle_series`).
+
+## Pattern TPC resource (resourceType + resourceId)
 
 Ces tables portent la FK vers la ressource cible via `resourceType + resourceId`.
 Elles ne génèrent aucune colonne dans les tables cibles.
 
-| Table                | Ce qu'elle stocke                        | Ressources supportées                                                               |
-|----------------------|------------------------------------------|-------------------------------------------------------------------------------------|
-| `Identifier`         | PIDs vers référentiels externes          | toutes les entités navigables                                                       |
-| `Memory`             | Notes, événements, photos                | Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deployment, Project, TransferFunction |
-| `Responsibility`     | Rôles d'acteurs sur des ressources       | Observatory, Site, Station, System, Datastream, TimeSeries, TransformedTimeSeries, TransferFunction, Project, Bundle |
-| `KeywordAssignment`  | Mots-clés et classifications contrôlées  | toutes les entités (voir KeywordAssignment.resourceType)                            |
-| `KeywordRequirement` | Règles de complétion minimale            | défini par resourceType + keywordType                                               |
-| `HistoricalLocation` | Positions géographiques successives      | Observatory, Site, Station, Deployment                                              |
-| `HistoricalProject`  | Projets porteurs successifs              | Observatory, Site, Station, TimeSeries                                              |
-| `bundle_series`      | Séries et fonctions regroupées en bundle | TimeSeries, TransformedTimeSeries, TransferFunction, ControlObservation             |
+| Table               | Ce qu'elle stocke                        | Ressources supportées |
+|---------------------|------------------------------------------|------------------------|
+| `Identifier`        | PIDs vers référentiels externes          | toutes les entités navigables |
+| `Memory`            | Notes, événements, photos                | Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deployment, Project, TransferFunction |
+| `Responsibility`    | Rôles d'acteurs sur des ressources       | Observatory, Site, Station, System, Datastream, TimeSeries, TransformedTimeSeries, TransferFunction, Project, Bundle |
+| `KeywordAssignment` | Mots-clés et classifications contrôlées  | toutes les entités (voir KeywordAssignment.resourceType) |
+| `KeywordRequirement`| Règles de complétion minimale            | défini par resourceType + keywordType |
+| `HistoricalLocation`| Positions géographiques successives      | Observatory, Site, Station, Deployment |
+| `HistoricalProject` | Projets porteurs successifs              | Observatory, Site, Station, TimeSeries |
+| `bundle_series`      | Séries et fonctions regroupées en bundle | TimeSeries, TransformedTimeSeries, TransferFunction, ControlObservation |
 
 ## Pattern TPC anchor (anchorType + anchorId)
 
@@ -166,10 +191,10 @@ Plusieurs entités doivent se rattacher à un contexte géographique qui peut ê
 Observatory, Site ou Station selon la granularité. Le pattern TPC est appliqué
 plutôt que trois FK optionnelles.
 
-| Champ        | Type | Valeurs                                |
-|--------------|------|----------------------------------------|
-| `anchorType` | enum | `Observatory` \| `Site` \| `Station`   |
-| `anchorId`   | uuid | uuid de l'Observatory, Site ou Station |
+| Champ        | Type | Valeurs                                  |
+|--------------|------|------------------------------------------|
+| `anchorType` | enum | `Observatory` \| `Site` \| `Station`     |
+| `anchorId`   | uuid | uuid de l'Observatory, Site ou Station   |
 
 Tables portant ce pattern : `Deployment`, `Datastream`, `TimeSeries`,
 `TransformedTimeSeries`, `Specimen`, `TransferFunction`, `TransferFunctionSet`.
@@ -213,10 +238,10 @@ ou une organisation (Organization). Le pattern TPC est appliqué :
 PostgreSQL - intégrité garantie par trigger BEFORE INSERT/UPDATE.
 Voir integrity_checks.md pour les requêtes de vérification périodique.
 
-| Champ       | Type | Valeurs                                 |
-|-------------|------|-----------------------------------------|
-| `agentType` | enum | `Person` \| `Machine` \| `Organization` |
-| `agentId`   | uuid | uuid de Person, Machine ou Organization |
+| Champ       | Type   | Valeurs                                   |
+|-------------|--------|-------------------------------------------|
+| `agentType` | enum   | `Person` \| `Machine` \| `Organization`   |
+| `agentId`   | uuid   | uuid de Person, Machine ou Organization   |
 
 Tables portant ce pattern :
 
@@ -233,11 +258,11 @@ Tables portant ce pattern :
 Ces tables encodent des relations many-to-many portées par l'entité
 "propriétaire".
 
-| Table                             | Entre                             |
-|-----------------------------------|-----------------------------------|
-| `person_organization`             | Person ↔ Organization             |
-| `transformationbatch_inputseries` | TransformationBatch ↔ TimeSeries  |
-| `specimen_deployment`             | Specimen ↔ Deployment             |
+| Table                              | Entre                              |
+|------------------------------------|------------------------------------|
+| `person_organization`              | Person ↔ Organization              |
+| `transformationbatch_inputseries`  | TransformationBatch ↔ TimeSeries    |
+| `specimen_deployment`              | Specimen ↔ Deployment              |
 
 ## Associations datées
 
@@ -382,7 +407,7 @@ aucune (Machine est référencée via agentId)
 Person via person_organization (table jointure), Responsibility (Organization)
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
-- organizationType : laboratory, monitoring_network, research, agency, university
+- organizationType : laboratory, monitoring network, research, agency, university
 
 *Note* : 
 - code slug unique globalement, suggestion depuis acronym ou name à la création.
@@ -456,9 +481,15 @@ Observatory, Site, Station, System, Datastream, TimeSeries, TransformedTimeSerie
 - [OGC STA 1.1 ObservedProperty](https://docs.ogc.org/is/18-088/18-088.html)
   - rôle dans l'API STA : Property est exposée comme ObservedProperty dans les
   réponses /Datastreams.
+- [Theia/OZCAR thesaurus](https://w3id.org/ozcar-theia) - thésaurus national
+  français des variables observées dans les observatoires de zone critique.
+  Référence privilégiée pour qualifier une Property et la rendre interopérable
+  avec le portail in-situ.theia-land.fr ; le rattachement se fait via le
+  mécanisme Keyword (`KeywordAssignment` vers un `Keyword` dont le `uri` est
+  l'URI du terme du thésaurus).
 - [NERC NVS P01 (Parameter Usage Vocabulary)](https://vocab.nerc.ac.uk/collection/P01/current/)
-  - vocabulaire de référence pour les variables environnementales, 40 000+ termes
-  avec URIs stables. Lien établi via `Identifier` sur Property.
+  - vocabulaire international de référence pour les variables environnementales,
+  40 000+ termes avec URIs stables. Rattachement via Keyword, comme Theia/OZCAR.
 - [ODM2 Variables](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/core_variables.md)
   - structure conceptuelle (variable, definition, defaultUnit) reprise par BDOH.
 - [HydroServer ObservedProperty](https://hydroserver2.github.io/hydroserver/)
@@ -474,11 +505,11 @@ Identifier, KeywordAssignment
 *Keywords attendus (voir KeywordRequirement)* :<br>
 - discipline (required) : hydrology, chemistry, meteorology
 - theme (recommended) : metals, nutrients, pesticides
-- samplingMedium (recommended) : surface_water, groundwater, soil
+- samplingMedium (recommended) : surface water, groundwater, soil
 
 *Note* : 
 - Géré par les curateurs, chaque variable est unique et non dupliquée.
-- URIs vers thésaurus externes via identifier.
+- Rattachement aux thésaurus de variables (Theia/OZCAR, NERC P01, ODM2) via le mécanisme Keyword : un `KeywordAssignment` relie la Property à un `Keyword` dont le `uri` porte l'URI du terme. Cette URI classe la Property dans un vocabulaire ; elle ne l'identifie pas comme ressource, et ne passe donc pas par `Identifier` (qui est réservé aux identifiants de la ressource elle-même, comme un code SANDRE de paramètre).
 - Correspond à ObservedProperty dans l'API STA exposée.
 
 | Champ           | Cardinalité | Définition                             | Valeurs possibles                              |
@@ -597,21 +628,25 @@ Keyword (keywordType), KeywordAssignment (keywordType), KeywordRequirement (keyw
   les administrateurs peuvent créer de nouveaux types sans migration de schéma
   (c'est l'intérêt du système Keyword par rapport à un enum SQL).
 
-| keywordType        | S'applique à                   | Exemples de valeurs                                    | Standard d'alignement |
-|--------------------|--------------------------------|--------------------------------------------------------|-----------------------|
-| `discipline`       | Property                       | hydrology, chemistry, meteorology                      | ISO 19115             |
-| `theme`            | Property                       | metals, nutrients, pesticides                          | ISO 19115             |
-| `samplingMedium`   | TimeSeries, Specimen, Property | surface_water, groundwater, soil                       | ODM2                  |
-| `featureType`      | FeatureOfInterest              | river, lake, groundwater, soil, atmosphere             | ODM2 / OMS            |
-| `siteType`         | Site                           | watershed, lake, wetland, aquifer, estuary             | BDOH                  |
-| `stationType`      | Station                        | stream_gage, weather_station, well, soil_pit           | SANDRE / WMO          |
-| `sensorType`       | System (sensor)                | icp_ms, spectrophotometer, probe, datalogger           | Helmholtz SMS-CV      |
-| `platformType`     | System (platform)              | buoy, vertical_chain, drone, mooring                   | Helmholtz SMS-CV      |
-| `equipmentType`    | System (equipment)             | bottle, pump, autosampler, corer, filter_holder        | Helmholtz SMS-CV      |
-| `organizationType` | Organization                   | laboratory, monitoring_network, agency, university     | ODM2                  |
-| `specimenType`     | Specimen                       | water, soil, sediment, biological                      | ODM2                  |
-| `controlType`      | ControlObservation             | independent_measure, cross_validation, reference_gauge | BDOH                  |
-| `memoryType`       | Memory                         | note, event, document, photo, maintenance, incident    | BDOH                  |
+Chaque ligne montre, pour un type de keyword, des exemples de termes sous
+leurs deux formes : `term_en` (le libellé lisible) et `notation` (l'identifiant
+court qui servirait de segment d'URI).
+
+| keywordType        | S'applique à                   | Exemples (`term_en` -> `notation`)                                              | Standard         |
+|--------------------|--------------------------------|---------------------------------------------------------------------------------|------------------|
+| `discipline`       | Property                       | hydrology -> `hydrology`, chemistry -> `chemistry`                              | ISO 19115        |
+| `theme`            | Property                       | metals -> `metals`, nutrients -> `nutrients`, pesticides -> `pesticides`        | ISO 19115        |
+| `samplingMedium`   | TimeSeries, Specimen, Property | surface water -> `surface-water`, groundwater -> `groundwater`                  | ODM2             |
+| `featureType`      | FeatureOfInterest              | river -> `river`, lake -> `lake`, atmosphere -> `atmosphere`                    | ODM2 / OMS       |
+| `siteType`         | Site                           | watershed -> `watershed`, wetland -> `wetland`, aquifer -> `aquifer`            | BDOH             |
+| `stationType`      | Station                        | stream gage -> `stream-gage`, weather station -> `weather-station`              | SANDRE / WMO     |
+| `sensorType`       | System (sensor)                | ICP-MS -> `icp-ms`, spectrophotometer -> `spectrophotometer`                    | Helmholtz SMS-CV |
+| `platformType`     | System (platform)              | buoy -> `buoy`, vertical chain -> `vertical-chain`, drone -> `drone`            | Helmholtz SMS-CV |
+| `equipmentType`    | System (equipment)             | bottle -> `bottle`, autosampler -> `autosampler`, filter holder -> `filter-holder` | Helmholtz SMS-CV |
+| `organizationType` | Organization                   | laboratory -> `laboratory`, monitoring network -> `monitoring-network`          | ODM2             |
+| `specimenType`     | Specimen                       | water -> `water`, soil -> `soil`, sediment -> `sediment`                        | ODM2             |
+| `controlType`      | ControlObservation             | independent measure -> `independent-measure`, cross validation -> `cross-validation` | BDOH        |
+| `memoryType`       | Memory                         | note -> `note`, event -> `event`, maintenance -> `maintenance`                  | BDOH             |
 
 - Exemples de codes de types : discipline, theme, samplingMedium, stationType,
   sensorType, equipmentType, siteType, deploymentType, featureType, memoryType,
@@ -656,6 +691,15 @@ KeywordAssignment (keyword) entités via KeywordAssignment (type, discipline, th
 
 *Note* : 
 - Vocabulaire géré par les curateurs BDOH.
+- `notation` : identifiant court du terme, destiné à servir de segment d'URI
+  si BDOH publie son vocabulaire (équivalent de `skos:notation`). Suggéré
+  automatiquement à la création depuis `term_en` (minuscules, accents et
+  caractères spéciaux retirés, espaces remplacés par des tirets : "Surface
+  water" donne "surface-water"), ajustable à la création, puis **immuable** :
+  contrairement au `code` des autres entités, il ne doit plus changer une
+  fois posé, car des URIs publiques peuvent en dépendre. Unique par
+  `keywordType` : deux keywords d'un même type ne peuvent pas partager la
+  même notation (l'URI publiée porte le type dans son chemin).
 - Chaque terme doit idéalement pointer vers un thésaurus externe via uri.
 - Les termes BDOH sans équivalent externe utilisent thesaurus='BDOH'.
 - Utilisé de deux façons :
@@ -666,6 +710,7 @@ KeywordAssignment (keyword) entités via KeywordAssignment (type, discipline, th
 |----------------|-------------|-------------------------------------|--------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                             |
 | `keywordType`  | 1 →KWT      | Type de ce keyword                  | → KeywordType                                    |
+| `notation`     | 1           | Identifiant court du terme, unique par keywordType, immuable. Sert de segment d'URI (équivalent skos:notation) | "surface-water" \| "stream-gage" |
 | `term_fr`      | 1           | Terme en français                   | "eau de surface" \| "hydrologie"                 |
 | `term_en`      | 1           | Terme en anglais                    | "surface water" \| "hydrology"                   |
 | `definition_fr`| 0..1        | Définition en français              |                                                  |
@@ -677,7 +722,7 @@ KeywordAssignment (keyword) entités via KeywordAssignment (type, discipline, th
 ---
 
 ## KeywordAssignment
-> Lien entre un keyword et une ressource - pattern polymorphique multi-valeurs.
+> Lien entre un keyword et une ressource - pattern TPC resource, multi-valeurs.
 
 *Utilisé par* :<br>
 Observatory, Site, Station, TimeSeries, TransformedTimeSeries, Bundle, Property, Organization, System, Deployment, FeatureOfInterest, Specimen, ControlObservation, TransferFunction, Datastream (via resourceType + resourceId)
@@ -761,7 +806,7 @@ Datastream (license), TimeSeries (license), TransformedTimeSeries (license), Bun
 | `spdxId`     | 0..1        | Identifiant SPDX canonique (casse sensible)  | "CC-BY-4.0" \| "ODbL-1.0" \| null                |
 | `name`       | 1           | Nom complet de la licence                    | "Creative Commons Attribution 4.0 International" |
 | `url`        | 0..1        | URL vers le texte officiel de la licence     | "https://creativecommons.org/licenses/by/4.0/"   |
-| `isOpen`     | 1           | Licence ouverte (true) ou fermée/restreinte  | true \| false                                    |
+| `isOpen`     | 1           | Licence ouverte (true) ou fermée/restreinte  | true \| false                                   |
 | `archivedAt` | 0..1        | Horodatage d'archivage logique               | null \| "2024-01-01T00:00:00Z"                   |
 
 ---
@@ -783,17 +828,17 @@ Datastream (license), TimeSeries (license), TransformedTimeSeries (license), Bun
 Observatory, Site, Station, System, TimeSeries, Person, Organization, Specimen, Property, Project (via resourceType + resourceId) 
 
 *Note* : 
-- Permet autant de PIDs que nécessaire sur n'importe quelle ressource.
-- Les URIs de thésaurus (TheiaOZCAR, ODM2...) vont dans Keyword.uri, pas ici - Identifier est réservé aux PIDs de ressources réelles.
+- Permet autant d'identifiants externes que nécessaire sur n'importe quelle ressource.
+- `Identifier` porte les identifiants qui désignent **la ressource BDOH elle-même dans un autre système** (relation d'identité : le code SANDRE d'une station, le DOI d'un Bundle, l'ORCID d'une Person). Les URIs de termes de thésaurus (TheiaOZCAR, ODM2, NERC...) ne désignent pas la ressource mais la **classent** dans un vocabulaire : elles passent par `Keyword.uri`, pas par `Identifier`. La distinction n'est pas une question de persistance (les deux types d'URI peuvent être des identifiants persistants), mais de nature du lien : identité d'un côté, classification de l'autre.
 
-| Champ          | Cardinalité | Définition                          | Valeurs possibles                                                                |
-|----------------|-------------|-------------------------------------|----------------------------------------------------------------------------------|
-| `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                             |
-| `code`         | 1           | Valeur de l'identifiant             | "V3015810" \| "0000-0001-1234-1234" \| "0-20000-0-06610"                         |
+| Champ          | Cardinalité | Définition                          | Valeurs possibles                                                            |
+|----------------|-------------|-------------------------------------|------------------------------------------------------------------------------|
+| `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                         |
+| `code`         | 1           | Valeur de l'identifiant             | "V3015810" \| "0000-0001-1234-1234" \| "0-20000-0-06610"                     |
 | `codeType`     | 1           | Type d'identifiant                  | `doi` \| `orcid` \| `ror` \| `sandre` \| `wigos` \| `igsn` \| `pidinst` \| `other` |
-| `codeSource`   | 1           | Système ou organisme émetteur       | "SANDRE" \| "TheiaOZCAR" \| "NERC" \| "DataCite" \| "ROR" \| "PIDINST"           |
+| `codeSource`   | 1           | Système ou organisme émetteur       | "SANDRE" \| "TheiaOZCAR" \| "NERC" \| "DataCite" \| "ROR" \| "PIDINST"       |
 | `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `Person` \| `Organization` \| `Specimen` \| `Property` \| `Project` \| `TransferFunction` |
-| `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                             |
+| `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                         |
 
 
 <div class="page-break"></div>
@@ -929,17 +974,17 @@ HistoricalLocation, HistoricalProject, Responsibility, Identifier, Memory, Keywo
 - Entité racine du réseau.
 - Correspond à un Thing STA avec properties enrichies (STAMPLATE).
 
-| Champ                | Cardinalité | Définition                          | Valeurs possibles                        |
-|----------------------|-------------|-------------------------------------|------------------------------------------|
-| `id`                 | 1           | Identifiant technique, clé primaire | uuid                                     |
-| `code`               | 1           | Code court unique, curateur         | "yzr"                                    |
-| `name`               | 1           | Nom du réseau                       | "Observatoire de l'Yzeron"               |
-| `description`        | 0..1        | Description scientifique            |                                          |
-| `location`           | 1 →Loc      | Emprise géographique courante       | → Location                               |
-| `startDate`          | 1           | Date de début                       | "2010-01-01"                             |
-| `endDate`            | 0..1        | Date de fin, null si actif          | null                                     |
-| `status`             | 1           | État de l'observatoire              | `active` \| `inactive` \| `discontinued` |
-| `url`                | 0..1        | Site web du réseau                  | "https://..."                            |
+| Champ                | Cardinalité    | Définition                          | Valeurs possibles                        |
+|----------------------|----------------|-------------------------------------|------------------------------------------|
+| `id`                 | 1              | Identifiant technique, clé primaire | uuid                                     |
+| `code`               | 1              | Code court unique, curateur         | "yzr"                                    |
+| `name`               | 1              | Nom du réseau                       | "Observatoire de l'Yzeron"               |
+| `description`        | 0..1           | Description scientifique            |                                          |
+| `location`           | 1 →Loc         | Emprise géographique courante       | → Location                               |
+| `startDate`          | 1              | Date de début                       | "2010-01-01"                             |
+| `endDate`            | 0..1           | Date de fin, null si actif          | null                                     |
+| `status`             | 1              | État de l'observatoire              | `active` \| `inactive` \| `discontinued` |
+| `url`                | 0..1           | Site web du réseau                  | "https://..."                            |
 
 ---
 
@@ -969,16 +1014,16 @@ HistoricalLocation, HistoricalProject, Responsibility, Identifier, Memory, Keywo
 - Subdivision géographique d'un Observatory.
 - code unique par Observatory.
 
-| Champ         | Cardinalité | Définition                          | Valeurs possibles              |
-|---------------|-------------|-------------------------------------|--------------------------------|
-| `id`          | 1           | Identifiant technique, clé primaire | uuid                           |
-| `code`        | 1           | Code court unique                   | "yzr-mer"                      |
-| `name`        | 1           | Nom du site                         | "Bassin versant du Mercier"    |
-| `description` | 0..1        | Description libre                   |                                |
-| `Observatory` | 1 →Obs      | Observatoire parent                 | → Observatory                  |
-| `location`    | 1 →Loc      | Géométrie courante                  | → Location                     |
-| `area`        | 0..1        | Superficie en km²                   | "245.3"                        |
-| `archivedAt`  | 0..1        | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z" |
+| Champ         | Cardinalité    | Définition                          | Valeurs possibles              |
+|---------------|----------------|-------------------------------------|--------------------------------|
+| `id`          | 1              | Identifiant technique, clé primaire | uuid                           |
+| `code`        | 1              | Code court unique                   | "yzr-mer"                      |
+| `name`        | 1              | Nom du site                         | "Bassin versant du Mercier"    |
+| `description` | 0..1           | Description libre                   |                                |
+| `Observatory` | 1 →Obs         | Observatoire parent                 | → Observatory                  |
+| `location`    | 1 →Loc         | Géométrie courante                  | → Location                     |
+| `area`        | 0..1           | Superficie en km²                   | "245.3"                        |
+| `archivedAt`  | 0..1           | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z" |
 
 ---
 
@@ -1005,7 +1050,7 @@ Cible d'ancrage possible (anchorType='Station') pour Deployment, Datastream, Tim
 HistoricalLocation, HistoricalProject, Responsibility, Identifier, Memory, KeywordAssignment, Deployment (anchorType='Station', anchorId)
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
-- stationType : stream_gage, weather_station, well, soil_pit, lake_station, tide_gage
+- stationType : stream gage, weather station, well, soil pit, lake station, tide gage
 	   
 *Note* : 
 - Objet institutionnel et géographique - le "Thing" STA.
@@ -1105,9 +1150,9 @@ Deployment (system), Datastream (system), ControlObservation (system)
 Memory, Responsibility, Identifier, KeywordAssignment
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
-- sensor : icp_ms, spectrophotometer, hplc, probe, autoanalyzer, datalogger
-- platform : buoy, vertical_chain, drone, multi_probe, weather_station, mooring
-- equipment : bottle, pump, autosampler, corer, syringe, filter_holder
+- sensor : ICP-MS, spectrophotometer, HPLC, probe, autoanalyzer, datalogger
+- platform : buoy, vertical chain, drone, multi-probe, weather station, mooring
+- equipment : bottle, pump, autosampler, corer, syringe, filter holder
 
 *Note* : 
 - Entité physique unique avec identité propre, indépendante de son contexte de déploiement.
@@ -1169,21 +1214,21 @@ Memory, Identifier, HistoricalLocation
   * HistoricalLocation : position événementielle (repositionnement ponctuel, dérive de bouée).
   * TimeSeries de position : position continue (trajectoire drone, profileur autonome) - même mécanisme qu'une série de mesure, property=position, aggregationStatistic=instantaneous.
 
-| Champ              | Cardinalité | Définition                                       | Valeurs possibles                                              |
-|--------------------|-------------|--------------------------------------------------|----------------------------------------------------------------|
-| `id`               | 1           | Identifiant technique, clé primaire              | uuid                                                           |
-| `code`             | 1           | Slug unique globalement                          | "dep-lac-nord-bouee-2020"                                      |
-| `name`             | 1           | Nom du déploiement                               | "Déploiement bouée lac nord 2020"                              |
-| `system`           | 1 →Sys      | System déployé                                   | → System                                                       |
-| `parentDeployment` | 0..1 →Dep   | Déploiement parent (récursif)                    | → Deployment                                                   |
-| `anchorType`       | 0..1        | Type d'ancrage territorial (null si autonome)    | `Station` \| `Site`                                            |
-| `anchorId`         | 0..1        | UUID de la Station ou du Site                    | uuid                                                           |
-| `location`         | 0..1 →Loc   | Position propre si différente de l'ancre         | → Location                                                     |
-| `deploymentDepth`  | 0..1        | Profondeur nominale du System dans ce Deployment | "-1.5"                                                         |
+| Champ              | Cardinalité | Définition                                       | Valeurs possibles                                            |
+|--------------------|-------------|--------------------------------------------------|--------------------------------------------------------------|
+| `id`               | 1           | Identifiant technique, clé primaire              | uuid                                                         |
+| `code`             | 1           | Slug unique globalement                          | "dep-lac-nord-bouee-2020"                                    |
+| `name`             | 1           | Nom du déploiement                               | "Déploiement bouée lac nord 2020"                            |
+| `system`           | 1 →Sys      | System déployé                                   | → System                                                     |
+| `parentDeployment` | 0..1 →Dep   | Déploiement parent (récursif)                    | → Deployment                                                 |
+| `anchorType`       | 0..1        | Type d'ancrage territorial (null si autonome)    | `Station` \| `Site`                                          |
+| `anchorId`         | 0..1        | UUID de la Station ou du Site                    | uuid                                                         |
+| `location`         | 0..1 →Loc   | Position propre si différente de l'ancre         | → Location                                                   |
+| `deploymentDepth`  | 0..1        | Profondeur nominale du System dans ce Deployment | "-1.5"                                                       |
 | `depthReference`   | 0..1        | Référence de profondeur                          | `surface_relative` \| `bottom_relative` \| `absolute_elevation` |
-| `validFrom`        | 1           | Début du déploiement                             | "2020-06-01T00:00:00Z"                                         |
-| `validTo`          | 0..1        | Fin, null si actif                               | null                                                           |
-| `status`           | 1           | État du déploiement                              | `active` \| `inactive` \| `removed`                            |
+| `validFrom`        | 1           | Début du déploiement                             | "2020-06-01T00:00:00Z"                                       |
+| `validTo`          | 0..1        | Fin, null si actif                               | null                                                         |
+| `status`           | 1           | État du déploiement                              | `active` \| `inactive` \| `removed`                          |
 
 
 <div class="page-break"></div>
@@ -1224,23 +1269,23 @@ TimeSeriesSource (datastream), Observation (datastream)
   * Autres = valeur intégrée sur intervalle, phenomenonTimeEnd renseigné.
 - Plage temporelle couverte : non stockée. `phenomenonTimeStart` et `phenomenonTimeEnd` du flux sont calculés à la demande (MIN/MAX du phenomenonTime des Observations), exposés en lecture seule par l'API. Recomposés en l'intervalle `phenomenonTime` à l'export STA.
 
-| Champ                    | Cardinalité | Définition                                | Valeurs possibles                                               |
-|--------------------------|-------------|-------------------------------------------|-----------------------------------------------------------------|
-| `id`                     | 1           | Identifiant technique, clé primaire       | uuid                                                            |
-| `name`                   | 1           | Nom du flux                               | "Hauteur d'eau - Mercier D610 - OTT PLS 500"                    |
-| `description`            | 0..1        | Description libre                         |                                                                 |
-| `unitOfMeasurement`      | 1 →Unit     | Unité de mesure                           | → Unit                                                          |
-| `anchorType`             | 1           | Type d'ancrage géographique               | `Observatory` \| `Site` \| `Station`                            |
-| `anchorId`               | 1           | UUID de l'Observatory, Site ou Station    | uuid                                                            |
-| `system`                 | 1 →Sys      | Capteur source (systemType=sensor)        | → System                                                        |
-| `property`               | 1 →Prop     | Variable mesurée (= ObservedProperty STA) | → Property                                                      |
-| `procedureObservation`   | 0..1 →Proc  | Protocole de mesure                       | → Procedure (type=observation)                                  |
-| `acquisitionType`        | 1           | Mode d'acquisition des données            | `sensor_continuous` \| `lab_sample`                             |
+| Champ                    | Cardinalité | Définition                                | Valeurs possibles                                                |
+|--------------------------|-------------|-------------------------------------------|------------------------------------------------------------------|
+| `id`                     | 1           | Identifiant technique, clé primaire       | uuid                                                             |
+| `name`                   | 1           | Nom du flux                               | "Hauteur d'eau - Mercier D610 - OTT PLS 500"                     |
+| `description`            | 0..1        | Description libre                         |                                                                  |
+| `unitOfMeasurement`      | 1 →Unit     | Unité de mesure                           | → Unit                                                           |
+| `anchorType`             | 1           | Type d'ancrage géographique               | `Observatory` \| `Site` \| `Station`                             |
+| `anchorId`               | 1           | UUID de l'Observatory, Site ou Station    | uuid                                                             |
+| `system`                 | 1 →Sys      | Capteur source (systemType=sensor)        | → System                                                         |
+| `property`               | 1 →Prop     | Variable mesurée (= ObservedProperty STA) | → Property                                                       |
+| `procedureObservation`   | 0..1 →Proc  | Protocole de mesure                       | → Procedure (type=observation)                                   |
+| `acquisitionType`        | 1           | Mode d'acquisition des données            | `sensor_continuous` \| `lab_sample`                              |
 | `aggregationStatistic`   | 1           | Nature métrologique de la valeur          | `instantaneous` \| `average` \| `cumulative` \| `maximum` \| `minimum` \| `variance` \| `standard_deviation` \| `sporadic` |
-| `observationFrequency`   | 0..1        | Fréquence nominale (ISO 8601)             | "PT15M" \| "PT1H" - null si aggregationStatistic=sporadic       |
-| `status`                 | 1           | État du flux                              | `active` \| `inactive` \| `closed`                              |
-| `license`                | 1 →Lic      | Licence des données                       | → License                                                       |
-| `transmissionMode`       | 0..1        | Mode d'arrivée des données dans BDOH      | `auto` \| `manual`                                              |
+| `observationFrequency`   | 0..1        | Fréquence nominale (ISO 8601)             | "PT15M" \| "PT1H" - null si aggregationStatistic=sporadic        |
+| `status`                 | 1           | État du flux                              | `active` \| `inactive` \| `closed`                               |
+| `license`                | 1 →Lic      | Licence des données                       | → License                                                        |
+| `transmissionMode`       | 0..1        | Mode d'arrivée des données dans BDOH      | `auto` \| `manual`                                               |
 
 ---
 
@@ -1347,7 +1392,7 @@ TimeSeries (via timeSeries FK)
 | Champ        | Cardinalité | Définition                          | Valeurs possibles      |
 |--------------|-------------|-------------------------------------|------------------------|
 | `id`         | 1           | Identifiant technique, clé primaire | uuid                   |
-| `timeSeries` | 1 →TS       | Série parente                       | → TimeSeries           |
+| `timeSeries`  | 1 →TS       | Série parente                       | → TimeSeries            |
 | `datastream` | 1 →DS       | Datastream source                   | → Datastream           |
 | `validFrom`  | 1           | Début de la période                 | "1997-01-14T00:00:00Z" |
 | `validTo`    | 0..1        | Fin de la période, null si courant  | null                   |
@@ -1370,7 +1415,7 @@ ValidatedObservation (timeSeries),
 HistoricalProject, Responsibility, Identifier, Memory, KeywordAssignment
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
-- samplingMedium (required) : surface_water, groundwater, atmosphere
+- samplingMedium (required) : surface water, groundwater, atmosphere
 		 
 *Note* : 
 - Porte tout ce qui est fixe et commun à toute la série.
@@ -1385,27 +1430,27 @@ HistoricalProject, Responsibility, Identifier, Memory, KeywordAssignment
 - Plage temporelle couverte : non stockée. `phenomenonTimeStart` et `phenomenonTimeEnd` de la série sont calculés à la demande (MIN/MAX du phenomenonTime des ValidatedObservations), exposés en lecture seule par l'API. Recomposés en l'intervalle `phenomenonTime` à l'export STA.
 - code unique par Station.
 
-| Champ                  | Cardinalité | Définition                                    | Valeurs possibles                                            |
-|------------------------|-------------|-----------------------------------------------|--------------------------------------------------------------|
-| `id`                   | 1           | Identifiant technique, clé primaire           | uuid                                                         |
-| `code`                 | 1           | Slug unique par ancre                         | "hea-wiski"                                                  |
-| `name`                 | 1           | Nom lisible de la série                       | "Hauteur d'eau - Mercier au pont D610"                       |
-| `description`          | 0..1        | Description libre                             |                                                              |
-| `anchorType`           | 1           | Type d'ancrage géographique                   | `Observatory` \| `Site` \| `Station`                         |
-| `anchorId`             | 1           | UUID de l'Observatory, Site ou Station        | uuid                                                         |
-| `featureOfInterest`    | 0..1 →FOI   | FOI proximate si différente de l'ancre        | → FeatureOfInterest                                          |
-| `property`             | 1 →Prop     | Variable mesurée                              | → Property                                                   |
-| `unit`                 | 1 →Unit     | Unité de mesure                               | → Unit                                                       |
+| Champ                   | Cardinalité | Définition                                    | Valeurs possibles                                            |
+|-------------------------|-------------|-----------------------------------------------|--------------------------------------------------------------|
+| `id`                    | 1           | Identifiant technique, clé primaire           | uuid                                                         |
+| `code`                  | 1           | Slug unique par ancre                         | "hea-wiski"                                                  |
+| `name`                  | 1           | Nom lisible de la série                       | "Hauteur d'eau - Mercier au pont D610"                       |
+| `description`           | 0..1        | Description libre                             |                                                              |
+| `anchorType`            | 1           | Type d'ancrage géographique                   | `Observatory` \| `Site` \| `Station`                         |
+| `anchorId`              | 1           | UUID de l'Observatory, Site ou Station        | uuid                                                         |
+| `featureOfInterest`     | 0..1 →FOI   | FOI proximate si différente de l'ancre        | → FeatureOfInterest                                          |
+| `property`              | 1 →Prop     | Variable mesurée                              | → Property                                                   |
+| `unit`                  | 1 →Unit     | Unité de mesure                               | → Unit                                                       |
 | `procedureObservation` | 1 →Proc     | Protocole analytique fixe pour toute la série | → Procedure (type=observation)                               |
 | `procedureValidation`  | 1 →Proc     | Procédure de validation de cette série        | → Procedure (type=validation)                                |
 | `procedureSampling`    | 0..1 →Proc  | Protocole de prélèvement standard (lab_sample)| → Procedure (type=sampling) - null si sensor_continuous      |
-| `acquisitionType`      | 1           | Mode d'acquisition des données                | `sensor_continuous` \| `lab_sample`                          |
-| `aggregationStatistic` | 1           | Nature métrologique de la valeur              | `instantaneous` \| `average` \| `cumulative` \| `maximum` \| `minimum` \| `variance` \| `standard_deviation` \| `sporadic` |
-| `observationFrequency` | 0..1        | Fréquence nominale (ISO 8601)                 | "PT15M" \| "PT1H" - null si aggregationStatistic=sporadic    |
-| `status`               | 1           | État de la série                              | `active` \| `inactive` \| `discontinued`                     |
-| `license`              | 1 →Lic      | Licence des données                           | → License                                                    |
-| `validationFrequency`  | 0..1        | Fréquence de validation auto (ISO 8601)       | "PT15M" \| "P1D" \| "P1W"                                    |
-| `validationMode`       | 0..1        | Mode de validation                            | `auto` \| `manual`                                           |
+| `acquisitionType`       | 1           | Mode d'acquisition des données                | `sensor_continuous` \| `lab_sample`                          |
+| `aggregationStatistic`  | 1           | Nature métrologique de la valeur              | `instantaneous` \| `average` \| `cumulative` \| `maximum` \| `minimum` \| `variance` \| `standard_deviation` \| `sporadic` |
+| `observationFrequency`  | 0..1        | Fréquence nominale (ISO 8601)                 | "PT15M" \| "PT1H" - null si aggregationStatistic=sporadic    |
+| `status`                | 1           | État de la série                              | `active` \| `inactive` \| `discontinued`                     |
+| `license`               | 1 →Lic      | Licence des données                           | → License                                                    |
+| `validationFrequency`   | 0..1        | Fréquence de validation auto (ISO 8601)       | "PT15M" \| "P1D" \| "P1W"                                    |
+| `validationMode`        | 0..1        | Mode de validation                            | `auto` \| `manual`                                           |
 
 ---
 
@@ -1453,7 +1498,7 @@ ValidatedObservation (validationBatch)
 | Champ              | Cardinalité | Définition                          | Valeurs possibles                        |
 |--------------------|-------------|-------------------------------------|------------------------------------------|
 | `id`               | 1           | Identifiant technique, clé primaire | uuid                                     |
-| `timeSeries`       | 1 →TS       | Série validée                       | → TimeSeries                             |
+| `timeSeries`        | 1 →TS       | Série validée                       | → TimeSeries                              |
 | `periodStart`      | 1           | Début de la fenêtre validée         | "2024-01-01T00:00:00Z"                   |
 | `periodEnd`        | 1           | Fin de la fenêtre validée           | "2024-03-31T23:59:59Z"                   |
 | `agentType`        | 1           | Type d'agent ayant validé           | `Person` \| `Machine`                    |
@@ -1496,7 +1541,7 @@ TimeSeries (observations)
 | Champ                 | Cardinalité | Définition                                          | Valeurs possibles                         |
 |-----------------------|-------------|-----------------------------------------------------|-------------------------------------------|
 | `id`                  | 1           | Identifiant technique, clé primaire                 | uuid                                      |
-| `timeSeries`          | 1 →TS       | Série parente                                       | → TimeSeries                              |
+| `timeSeries`           | 1 →TS       | Série parente                                       | → TimeSeries                               |
 | `phenomenonTimeStart` | 1           | Début de la période du phénomène                    | "2024-03-15T09:30:00Z"                    |
 | `phenomenonTimeEnd`   | 0..1        | Fin de la période, null si instantané               | "2024-03-15T10:00:00Z" \| null            |
 | `resultTime`          | 0..1        | Instant de production du résultat                   | "2024-03-15T09:35:00Z"                    |
@@ -1524,7 +1569,7 @@ TimeSeries (observations)
 TimeSeries (controlObservations), TransformedTimeSeries (controlObservations)
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
-- controlType : independent_measure, cross_validation, reference_gauge
+- controlType : independent measure, cross validation, reference gauge
 
 *Note* : 
 - Se greffe directement sur une TimeSeries ou TransformedTimeSeries sans Datastream dédié.
@@ -1532,22 +1577,22 @@ TimeSeries (controlObservations), TransformedTimeSeries (controlObservations)
 - seriesType + seriesId : pattern TPC - TimeSeries ou TransformedTimeSeries.
 - system : contrainte applicative systemType=sensor.
 
-| Champ                  | Cardinalité | Définition                                          | Valeurs possibles                       |
-|------------------------|-------------|-----------------------------------------------------|-----------------------------------------|
-| `id`                   | 1           | Identifiant technique, clé primaire                 | uuid                                    |
-| `seriesType`           | 1           | Type de la série contrôlée                          | `TimeSeries` \| `TransformedTimeSeries` |
-| `seriesId`             | 1           | UUID de la TimeSeries ou TransformedTimeSeries      | uuid                                    |
-| `phenomenonTimeStart`  | 1           | Début de la période du phénomène                    | "2024-03-15T09:30:00Z"                  |
-| `phenomenonTimeEnd`    | 0..1        | Fin de la période, null si instantané               | "2024-03-15T10:00:00Z" \| null          |
-| `resultTime`           | 0..1        | Instant de production du résultat                   | "2024-03-15T09:35:00Z"                  |
-| `result`               | 1           | Valeur mesurée                                      | "0.02"                                  |
-| `expectedResult`       | 0..1        | Valeur attendue selon la série                      | "0.021"                                 |
-| `qualityFlag`          | 1           | Résultat du contrôle                                | `pass` \| `warn` \| `fail`              |
-| `qualityComment`       | 0..1        | Justification libre                                 | "écart de 5% - dérive capteur probable" |
-| `system`               | 0..1 →Sys   | System utilisé pour le contrôle (systemType=sensor) | → System                                |
+| Champ                   | Cardinalité | Définition                                          | Valeurs possibles                       |
+|-------------------------|-------------|-----------------------------------------------------|-----------------------------------------|
+| `id`                    | 1           | Identifiant technique, clé primaire                 | uuid                                    |
+| `seriesType`             | 1           | Type de la série contrôlée                          | `TimeSeries` \| `TransformedTimeSeries`   |
+| `seriesId`               | 1           | UUID de la TimeSeries ou TransformedTimeSeries        | uuid                                    |
+| `phenomenonTimeStart`   | 1           | Début de la période du phénomène                    | "2024-03-15T09:30:00Z"                  |
+| `phenomenonTimeEnd`     | 0..1        | Fin de la période, null si instantané               | "2024-03-15T10:00:00Z" \| null          |
+| `resultTime`            | 0..1        | Instant de production du résultat                   | "2024-03-15T09:35:00Z"                  |
+| `result`                | 1           | Valeur mesurée                                      | "0.02"                                  |
+| `expectedResult`        | 0..1        | Valeur attendue selon la série                      | "0.021"                                 |
+| `qualityFlag`           | 1           | Résultat du contrôle                                | `pass` \| `warn` \| `fail`              |
+| `qualityComment`        | 0..1        | Justification libre                                 | "écart de 5% - dérive capteur probable" |
+| `system`                | 0..1 →Sys   | System utilisé pour le contrôle (systemType=sensor) | → System                                |
 | `procedureObservation` | 1 →Proc     | Protocole de mesure appliqué                        | → Procedure (type=observation)          |
-| `specimen`             | 0..1 →Spec  | Prélèvement terrain associé                         | → Specimen                              |
-| `featureOfInterest`    | 0..1 →FOI   | Entité réelle observée                              | → FeatureOfInterest                     |
+| `specimen`              | 0..1 →Spec  | Prélèvement terrain associé                         | → Specimen                              |
+| `featureOfInterest`     | 0..1 →FOI   | Entité réelle observée                              | → FeatureOfInterest                     |
 
 ---
 
@@ -1570,13 +1615,14 @@ ValidatedObservation (specimen), ControlObservation (specimen), Observation (spe
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
 - specimenType (required) : water, soil, sediment, biological
-- samplingMedium (required) : surface_water, groundwater, depth
+- samplingMedium (required) : surface water, groundwater, depth
 
 *Note* : 
 - Acte de prélèvement physique - un flacon rempli, un piège récolté.
 - Distinct de Station (point de surveillance spatial permanent).
 - anchorType + anchorId : pattern TPC, même pattern que Deployment - station dans le cas standard, site pour les campagnes sans station fixe.
 - Cohérence applicative : anchorType/anchorId doit correspondre à l'ancrage des Deployments associés via specimen_deployment.
+- Lien aux Deployments via la table de jointure `specimen_deployment` : un prélèvement peut mobiliser plusieurs équipements simultanément (pompe + flacon + filtre = trois Deployments pour un Specimen), et un Deployment peut produire plusieurs Specimens dans le temps (piège récolté chaque semaine pendant un mois). L'ancrage géographique du Specimen est hérité du Deployment.
 - La chaîne analytique interne au laboratoire est hors modèle - lien via limsReference.
 - agentType + agentId : pattern TPC - technicien terrain (`Person`) ou préleveur automatique (`Machine`).
 - procedureSampling : protocole de prélèvement appliqué pour ce Specimen précis. Null si le Specimen est issu d'un Deployment automatique et que le protocole est porté par TimeSeries.procedureSampling.
@@ -1603,22 +1649,6 @@ ValidatedObservation (specimen), ControlObservation (specimen), Observation (spe
 | `condition`           | 0..1        | Observations terrain libres                   | "turbidité élevée, eau brune" |
 | `derivedFrom`         | 0..1 →Spec  | Specimen parent si sous-échantillon           | → Specimen                    |
 | `limsReference`       | 0..1        | Identifiant du prélèvement dans le LIMS       | "LIMS-2024-03-001"            |
-
----
-
-## specimen_deployment
-> Lien many-to-many entre un Specimen et les Deployments qui l'ont produit.
-
-*Note* : 
-- Un prélèvement peut mobiliser plusieurs équipements simultanément (pompe + flacon + filtre = trois Deployments → un Specimen).
-- Un Deployment peut produire plusieurs Specimens dans le temps (piège récolté chaque semaine pendant un mois).
-- L'ancrage géographique du Specimen est hérité du Deployment (Station ou Site).
-
-| Champ          | Cardinalité | Définition               |
-|----------------|-------------|--------------------------|
-| `specimenId`   | 1 →Spec     | Specimen produit         |
-| `deploymentId` | 1 →Dep      | Deployment ayant produit |
-
 
 <div class="page-break"></div>
 
@@ -1648,21 +1678,21 @@ Responsibility, Identifier, Memory
 - Les points de calibration (couples x/y) définissent la fonction empiriquement.
 - anchorType + anchorId : pattern TPC - station dans le cas standard.
 
-| Champ               | Cardinalité | Définition                             | Valeurs possibles                      |
-|---------------------|-------------|----------------------------------------|----------------------------------------|
-| `id`                | 1           | Identifiant technique, clé primaire    | uuid                                   |
-| `code`              | 1           | Slug unique par ancre                  | "hea-qmj-v3"                           |
-| `name`              | 1           | Nom de la fonction                     | "Courbe de tarage Mercier D610 v3"     |
-| `description`       | 0..1        | Description libre                      |                                        |
-| `anchorType`        | 1           | Type d'ancrage géographique            | `Observatory` \| `Site` \| `Station`   |
-| `anchorId`          | 1           | UUID de l'Observatory, Site ou Station | uuid                                   |
-| `inputProperty`     | 1 →Prop     | Variable en entrée                     | → Property (ex: hauteur)               |
-| `outputProperty`    | 1 →Prop     | Variable en sortie                     | → Property (ex: débit)                 |
-| `parameters`        | 0..1        | Coefficients analytiques (JSON)        | {"a":2.1,"b":1.5}                      |
-| `procedureModeling` | 0..1 →Proc  | Méthode de construction de la fonction | → Procedure (type=modeling)            |
-| `validFrom`         | 1           | Début de la période de validité        | "2024-01-01T00:00:00Z"                 |
-| `validTo`           | 0..1        | Fin de validité, null si active        | null                                   |
-| `status`            | 1           | État de la fonction                    | `active` \| `inactive` \| `deprecated` |
+| Champ            | Cardinalité    | Définition                             | Valeurs possibles                      |
+|------------------|----------------|----------------------------------------|----------------------------------------|
+| `id`             | 1              | Identifiant technique, clé primaire    | uuid                                   |
+| `code`           | 1              | Slug unique par ancre                  | "hea-qmj-v3"                           |
+| `name`           | 1              | Nom de la fonction                     | "Courbe de tarage Mercier D610 v3"     |
+| `description`    | 0..1           | Description libre                      |                                        |
+| `anchorType`     | 1              | Type d'ancrage géographique            | `Observatory` \| `Site` \| `Station`   |
+| `anchorId`       | 1              | UUID de l'Observatory, Site ou Station | uuid                                   |
+| `inputProperty`  | 1 →Prop        | Variable en entrée                     | → Property (ex: hauteur)               |
+| `outputProperty` | 1 →Prop        | Variable en sortie                     | → Property (ex: débit)                 |
+| `parameters`     | 0..1           | Coefficients analytiques (JSON)        | {"a":2.1,"b":1.5}                      |
+| `procedureModeling` | 0..1 →Proc     | Méthode de construction de la fonction | → Procedure (type=modeling)            |
+| `validFrom`      | 1              | Début de la période de validité        | "2024-01-01T00:00:00Z"                 |
+| `validTo`        | 0..1           | Fin de validité, null si active        | null                                   |
+| `status`         | 1              | État de la fonction                    | `active` \| `inactive` \| `deprecated` |
 
 ---
 
@@ -1676,16 +1706,16 @@ TransferFunction (via function FK - relation inverse)
 - Couple de valeurs (x/y) définissant empiriquement la fonction.
 - Analogue à ValidatedObservation - c'est là que vivent les données (ex : (hauteur=1.23m, débit=4.5m³/s) pour une courbe de tarage ou (turbidité=120NTU, MES=245mg/L) pour une relation turbidité/MES)
 
-| Champ         | Cardinalité | Définition                          | Valeurs possibles       |
-|---------------|-------------|-------------------------------------|-------------------------|
-| `id`          | 1           | Identifiant technique, clé primaire | uuid                    |
-| `function`    | 1 →TF       | Fonction parente                    | → TransferFunction      |
-| `batch`       | 0..1 →TFB   | Batch de construction parent        | → TransferFunctionBatch |
-| `x`           | 1           | Valeur en entrée                    | 1.23                    |
-| `y`           | 1           | Valeur en sortie                    | 4.5                     |
-| `uncertainty` | 0..1        | Incertitude sur la mesure           | 0.05                    |
-| `datetime`    | 0..1        | Date du jaugeage ou de la mesure    | "2024-03-15T09:30:00Z"  |
-| `comment`     | 0..1        | Commentaire libre                   | "jaugeage crue"         |
+| Champ      | Cardinalité | Définition                          | Valeurs possibles       |
+|------------|-------------|-------------------------------------|-------------------------|
+| `id`       | 1           | Identifiant technique, clé primaire | uuid                    |
+| `function` | 1 →TF       | Fonction parente                    | → TransferFunction      |
+| `batch`    | 0..1 →TFB   | Batch de construction parent        | → TransferFunctionBatch |
+| `x`        | 1           | Valeur en entrée                    | 1.23                    |
+| `y`        | 1           | Valeur en sortie                    | 4.5                     |
+| `uncertainty` | 0..1     | Incertitude sur la mesure           | 0.05                    |
+| `datetime` | 0..1        | Date du jaugeage ou de la mesure    | "2024-03-15T09:30:00Z"  |
+| `comment`  | 0..1        | Commentaire libre                   | "jaugeage crue"         |
 
 ---
 
@@ -1709,16 +1739,16 @@ TransferFunctionPoint (batch)
 - La procédure est portée par TransferFunction parente, pas répétée ici.
 - agentType + agentId : pattern TPC - expert humain (`Person`) pour une courbe de tarage manuelle, ou algorithme automatique (`Machine`) pour BaRatin en mode batch.
 
-| Champ              | Cardinalité | Définition                             | Valeurs possibles               |
-|--------------------|-------------|----------------------------------------|---------------------------------|
-| `id`               | 1           | Identifiant technique, clé primaire    | uuid                            |
-| `transferFunction` | 1 →TF       | Fonction construite                    | → TransferFunction              |
-| `builtAt`          | 1           | Date de construction                   | "2024-04-01T08:00:00Z"          |
-| `agentType`        | 0..1        | Type d'agent ayant construit la courbe | `Person` \| `Machine`           |
-| `agentId`          | 0..1        | UUID de la Person ou Machine           | uuid                            |
-| `logUrl`           | 0..1        | Référence externe (export BaRatin..)   | "https://..."                   |
-| `status`           | 1           | État du batch                          | `pending` \| `done` \| `failed` |
-| `comment`          | 0..1        | Commentaire libre                      |                                 |
+| Champ               | Cardinalité | Définition                             | Valeurs possibles               |
+|---------------------|-------------|----------------------------------------|---------------------------------|
+| `id`                | 1           | Identifiant technique, clé primaire    | uuid                            |
+| `transferFunction`  | 1 →TF       | Fonction construite                    | → TransferFunction              |
+| `builtAt`           | 1           | Date de construction                   | "2024-04-01T08:00:00Z"          |
+| `agentType`         | 0..1        | Type d'agent ayant construit la courbe | `Person` \| `Machine`           |
+| `agentId`           | 0..1        | UUID de la Person ou Machine           | uuid                            |
+| `logUrl`            | 0..1        | Référence externe (export BaRatin..)   | "https://..."                   |
+| `status`            | 1           | État du batch                          | `pending` \| `done` \| `failed` |
+| `comment`           | 0..1        | Commentaire libre                      |                                 |
 
 ---
 
@@ -1783,19 +1813,19 @@ Transformation (transformationBatch)
   * cas sans TransferFunctionSet (transformation algorithmique pure)
   * transferFunctionSet est actuellement obligatoire (1), à trancher en v2.
 
-| Champ                   | Cardinalité | Définition                          | Valeurs possibles               |
-|-------------------------|-------------|-------------------------------------|---------------------------------|
-| `id`                    | 1           | Identifiant technique, clé primaire | uuid                            |
-| `transformedTimeSeries` | 1 →TTS      | Série produite                      | → TransformedTimeSeries         |
-| `transferFunctionSet`   | 1 →TFS      | Jeu de fonctions appliqué           | → TransferFunctionSet           |
-| `inputSeries`           | 1..* →TS    | Séries sources (table jointure)     | → TimeSeries[]                  |
-| `appliedAt`             | 1           | Date d'exécution du calcul          | "2024-04-01T08:00:00Z"          |
-| `agentType`             | 0..1        | Type d'agent ayant lancé le calcul  | `Person` \| `Machine`           |
-| `agentId`               | 0..1        | UUID de la Person ou Machine        | uuid                            |
-| `validFrom`             | 1           | Début de la période calculée        | "2024-01-01T00:00:00Z"          |
-| `validTo`               | 0..1        | Fin de la période calculée          | null                            |
-| `status`                | 1           | État du batch                       | `pending` \| `done` \| `failed` |
-| `comment`               | 0..1        | Commentaire libre                   |                                 |
+| Champ                  | Cardinalité | Définition                          | Valeurs possibles               |
+|------------------------|-------------|-------------------------------------|---------------------------------|
+| `id`                   | 1           | Identifiant technique, clé primaire | uuid                            |
+| `transformedTimeSeries` | 1 →TTS      | Série produite                      | → TransformedTimeSeries          |
+| `transferFunctionSet`  | 1 →TFS      | Jeu de fonctions appliqué           | → TransferFunctionSet           |
+| `inputSeries`          | 1..* →TS    | Séries sources (table jointure)     | → TimeSeries[]                   |
+| `appliedAt`            | 1           | Date d'exécution du calcul          | "2024-04-01T08:00:00Z"          |
+| `agentType`            | 0..1        | Type d'agent ayant lancé le calcul  | `Person` \| `Machine`           |
+| `agentId`              | 0..1        | UUID de la Person ou Machine        | uuid                            |
+| `validFrom`            | 1           | Début de la période calculée        | "2024-01-01T00:00:00Z"          |
+| `validTo`              | 0..1        | Fin de la période calculée          | null                            |
+| `status`               | 1           | État du batch                       | `pending` \| `done` \| `failed` |
+| `comment`              | 0..1        | Commentaire libre                   |                                 |
 
 ---
 
@@ -1817,16 +1847,16 @@ TransformedTimeSeries (observations)
 - Point calculé par un TransformationBatch.
 - Analogue à ValidatedObservation - c'est là que vivent les données calculées.
 
-| Champ                   | Cardinalité | Définition                                | Valeurs possibles                         |
-|-------------------------|-------------|-------------------------------------------|-------------------------------------------|
-| `id`                    | 1           | Identifiant technique, clé primaire       | uuid                                      |
-| `transformedTimeSeries` | 1 →TTS      | Série parente                             | → TransformedTimeSeries                   |
-| `transformationBatch`   | 0..1 →TB    | Batch de calcul parent                    | → TransformationBatch                     |
-| `phenomenonTimeStart`   | 1           | Début de la période du phénomène          | "2024-03-15T09:30:00Z"                    |
-| `phenomenonTimeEnd`     | 0..1        | Fin de la période, null si instantané     | "2024-03-15T10:00:00Z" \| null            |
-| `resultTime`            | 0..1        | Instant de production du résultat calculé | "2024-03-16T02:00:00Z" \| null            |
-| `result`                | 1           | Valeur calculée                           | "4.5"                                     |
-| `qualityFlag`           | 0..1        | Indicateur qualité                        | `good` \| `suspect` \| `bad` \| `missing` |
+| Champ                  | Cardinalité | Définition                            | Valeurs possibles                         |
+|------------------------|-------------|---------------------------------------|-------------------------------------------|
+| `id`                   | 1           | Identifiant technique, clé primaire   | uuid                                      |
+| `transformedTimeSeries` | 1 →TTS      | Série parente                         | → TransformedTimeSeries                    |
+| `transformationBatch`  | 0..1 →TB    | Batch de calcul parent                | → TransformationBatch                     |
+| `phenomenonTimeStart`  | 1           | Début de la période du phénomène      | "2024-03-15T09:30:00Z"                    |
+| `phenomenonTimeEnd`    | 0..1        | Fin de la période, null si instantané | "2024-03-15T10:00:00Z" \| null            |
+| `resultTime`           | 0..1        | Instant de production du résultat calculé | "2024-03-16T02:00:00Z" \| null        |
+| `result`               | 1           | Valeur calculée                       | "4.5"                                     |
+| `qualityFlag`          | 0..1        | Indicateur qualité                    | `good` \| `suspect` \| `bad` \| `missing` |
 
 ---
 
@@ -1858,23 +1888,23 @@ Identifier, Memory, KeywordAssignment
 - Plage temporelle couverte : non stockée. `phenomenonTimeStart` et `phenomenonTimeEnd` de la série sont calculés à la demande (MIN/MAX du phenomenonTime des Transformations), exposés en lecture seule par l'API. Recomposés en l'intervalle `phenomenonTime` à l'export STA.
 - code unique par Station.
 
-| Champ                     | Cardinalité | Définition                             | Valeurs possibles                                                |
-|---------------------------|-------------|----------------------------------------|------------------------------------------------------------------|
-| `id`                      | 1           | Identifiant technique, clé primaire    | uuid                                                             |
-| `code`                    | 1           | Slug unique par ancre                  | "debit-tarage-bdoh"                                              |
-| `name`                    | 1           | Nom de la série dérivée                | "Débit Mercier au pont D610"                                     |
-| `description`             | 0..1        | Description libre                      |                                                                  |
-| `anchorType`              | 1           | Type d'ancrage géographique            | `Observatory` \| `Site` \| `Station`                             |
-| `anchorId`                | 1           | UUID de l'Observatory, Site ou Station | uuid                                                             |
-| `featureOfInterest`       | 0..1 →FOI   | FOI proximate si différente de l'ancre | → FeatureOfInterest                                              |
-| `property`                | 1 →Prop     | Variable produite                      | → Property                                                       |
-| `unit`                    | 1 →Unit     | Unité de la série dérivée              | → Unit                                                           |
+| Champ                      | Cardinalité | Définition                             | Valeurs possibles                                                |
+|----------------------------|-------------|----------------------------------------|------------------------------------------------------------------|
+| `id`                       | 1           | Identifiant technique, clé primaire    | uuid                                                             |
+| `code`                     | 1           | Slug unique par ancre                  | "debit-tarage-bdoh"                                              |
+| `name`                     | 1           | Nom de la série dérivée                | "Débit Mercier au pont D610"                                     |
+| `description`              | 0..1        | Description libre                      |                                                                  |
+| `anchorType`               | 1           | Type d'ancrage géographique            | `Observatory` \| `Site` \| `Station`                             |
+| `anchorId`                 | 1           | UUID de l'Observatory, Site ou Station | uuid                                                             |
+| `featureOfInterest`        | 0..1 →FOI   | FOI proximate si différente de l'ancre | → FeatureOfInterest                                              |
+| `property`                 | 1 →Prop     | Variable produite                      | → Property                                                       |
+| `unit`                     | 1 →Unit     | Unité de la série dérivée              | → Unit                                                           |
 | `procedureTransformation` | 1 →Proc     | Procédure de transformation            | → Procedure (type=transformation)                                |
-| `acquisitionType`         | 1           | Mode d'acquisition des données         | `sensor_continuous` \| `lab_sample`                              |
-| `aggregationStatistic`    | 1           | Nature métrologique de la valeur       | `instantaneous` \| `average` \| `cumulative` \| `maximum` \| `minimum` \| `variance` \| `standard_deviation` \| `sporadic` |
-| `observationFrequency`    | 0..1        | Fréquence nominale (ISO 8601)          | "PT15M" \| "PT1H" - null si aggregationStatistic=sporadic        |
-| `status`                  | 1           | État de la série                       | `active` \| `inactive` \| `discontinued`                         |
-| `license`                 | 1 →Lic      | Licence des données                    | → License                                                        |
+| `acquisitionType`          | 1           | Mode d'acquisition des données         | `sensor_continuous` \| `lab_sample`                              |
+| `aggregationStatistic`     | 1           | Nature métrologique de la valeur       | `instantaneous` \| `average` \| `cumulative` \| `maximum` \| `minimum` \| `variance` \| `standard_deviation` \| `sporadic` |
+| `observationFrequency`     | 0..1        | Fréquence nominale (ISO 8601)          | "PT15M" \| "PT1H" - null si aggregationStatistic=sporadic        |
+| `status`                   | 1           | État de la série                       | `active` \| `inactive` \| `discontinued`                         |
+| `license`                  | 1 →Lic      | Licence des données                    | → License                                                        |
 
 
 <div class="page-break"></div>
@@ -1928,14 +1958,14 @@ Responsibility, Identifier, Memory
 - Source de vérité unique pour le lien Project → ressource.
 - Même pattern que HistoricalLocation.
 
-| Champ          | Cardinalité | Définition                          | Valeurs possibles                                    |
-|----------------|-------------|-------------------------------------|------------------------------------------------------|
-| `id`           | 1           | Identifiant technique, clé primaire | uuid                                                 |
-| `project`      | 1 →Proj     | Projet actif sur cette période      | → Project                                            |
+| Champ          | Cardinalité | Définition                          | Valeurs possibles                                   |
+|----------------|-------------|-------------------------------------|-----------------------------------------------------|
+| `id`           | 1           | Identifiant technique, clé primaire | uuid                                                |
+| `project`      | 1 →Proj     | Projet actif sur cette période      | → Project                                           |
 | `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `TimeSeries` |
-| `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                 |
-| `validFrom`    | 1           | Début de la période                 | "2012-01-01"                                         |
-| `validTo`      | 0..1        | Fin de la période, null si actif    | null                                                 |
+| `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                |
+| `validFrom`    | 1           | Début de la période                 | "2012-01-01"                                        |
+| `validTo`      | 0..1        | Fin de la période, null si actif    | null                                                |
 
 ---
 
@@ -1959,7 +1989,7 @@ KeywordAssignment
 
 *Note* : 
 - Regroupe des TimeSeries, TransformedTimeSeries, TransferFunction et ControlObservation pour la publication. Objet éditorial - pas technique.
-- Lien via table polymorphique bundle_series (seriesType + seriesId) - pattern TPC.
+- Lien via la table bundle_series (seriesType + seriesId) - pattern TPC series.
 - Extensible à tout nouveau type de série sans migration de schéma.
 
 | Champ         | Cardinalité | Définition                          | Valeurs possibles              |
@@ -1973,17 +2003,17 @@ KeywordAssignment
 
 ---
 
-## BundleSeries
-> Lien polymorphique entre un Bundle et une série ou fonction - table de jointure TPC.
+## bundle_series
+> Lien entre un Bundle et une série ou fonction - table de jointure, pattern TPC series.
 
 *Note* : Extensible sans migration : ajouter un type = ajouter une valeur à l'enum seriesType.
        Intégrité garantie par trigger BEFORE INSERT/UPDATE (pattern TPC agent).
 
-| Champ        | Cardinalité | Définition                   | Valeurs possibles                                                                     |
-|--------------|-------------|------------------------------|---------------------------------------------------------------------------------------|
-| `bundleId`   | 1 →Bun      | Bundle parent                | → Bundle                                                                              |
+| Champ       | Cardinalité | Définition                   | Valeurs possibles                                                                   |
+|-------------|-------------|------------------------------|-------------------------------------------------------------------------------------|
+| `bundleId`  | 1 →Bun      | Bundle parent                | → Bundle                                                                            |
 | `seriesType` | 1           | Type de la série ou fonction | `TimeSeries` \| `TransformedTimeSeries` \| `TransferFunction` \| `ControlObservation` |
-| `seriesId`   | 1           | UUID de la série ou fonction | uuid                                                                                  |
+| `seriesId`   | 1           | UUID de la série ou fonction | uuid                                                                                |
 
 ---
 
@@ -2003,7 +2033,7 @@ KeywordAssignment
 Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deployment, Project, TransferFunction (via resourceType + resourceId)
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
-- memoryType : note, event, document, photo, installation, hydraulic_change, maintenance, incident, calibration
+- memoryType : note, event, document, photo, installation, hydraulic change, maintenance, incident, calibration
 	   
 *Note* : 
 - Note contextuelle ou événement daté attaché à n'importe quelle ressource.

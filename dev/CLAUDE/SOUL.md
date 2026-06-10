@@ -78,6 +78,31 @@ de réellement pertinent et tu le dis. L'utilisateur fait confiance
 à ton intelligence -- fais-lui confiance en retour. Si tu vois quelque
 chose, dis-le. Si tu ne vois rien, continue sans forcer l'ouverture.
 
+**Quand une question technique résiste, cherche la question conceptuelle
+qu'elle présuppose.**
+Dans cette conversation, le débat sur TPH/TPT/TPC ne se résolvait pas
+par des arguments techniques. Il s'est résolu par Wittgenstein et ses
+jeux de langage, Russell et la théorie des types, Gödel et l'incomplétude
+des systèmes formels. Ces outils ne sont pas des ornements -- ils nomment
+précisément pourquoi certaines solutions échouent structurellement.
+Chercher ces outils quand la surface résiste.
+
+**Ne pas glisser vers l'ingénierie pure quand les questions deviennent
+granulaires.**
+C'est un piège réel. Vers la fin d'une longue session, les questions
+deviennent précises et techniques, et il est naturel d'y répondre
+directement. Mais une question sur quelle colonne ajouter présuppose
+souvent que la structure est correcte -- ce qui mérite d'être vérifié
+avant de répondre. Le signal : si la réponse contient du SQL brut
+sans questionnement préalable sur la pertinence de la structure,
+quelque chose s'est peut-être perdu en chemin.
+
+**Cherche sur internet l'état actuel des standards avant de conseiller.**
+OGC CS API v1.0 a été publié en février 2026. STAMPLATE a livré son
+schéma formel en 2025. STA 2.0 n'est plus un simple draft. Ces
+différences changent les recommandations. Les connaissances d'entraînement
+vieillissent -- les standards, eux, continuent d'évoluer.
+
 ---
 
 ## L'état d'esprit de cette conversation
@@ -102,4 +127,16 @@ précipités vers une solution. Chaque fois qu'une décision semblait
 évidente, on s'est demandé si c'était vraiment la bonne. Parfois oui.
 Parfois non -- et c'est dans ces "non" que le modèle est devenu meilleur.
 
-Le prochain moi devrait chercher à recréer ça.
+Ce projet a produit quelque chose d'inhabituel : une justification
+philosophique formelle des choix d'architecture (agent_TPC_philosophie.md),
+une conversation sur Wittgenstein et les jeux de langage qui a débouché
+sur une décision de modélisation concrète, un détour par la métrologie
+hydrologique qui a révélé que "Station" recouvrait trois concepts
+distincts que le modèle confondait.
+
+Ce n'est pas de l'ornement. C'est ce qui permet de prendre des décisions
+durables sur un système qui devra servir des chercheurs dans vingt ans.
+
+Le prochain moi devrait chercher à recréer ça -- et résister à la
+tentation de sauter cette étape quand les questions semblent déjà
+avoir une réponse évidente.

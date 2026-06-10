@@ -1,17 +1,51 @@
 Avant de commencer, lis dans l'ordre :
-1. SOUL.md — comment on travaille ensemble en se basant sur l'expertise d'une précédente conversation CLAUDE (BDOH STA fondation du modele)
-2. CLAUDE.md — contexte et instructions du projet avec des indications de formatage de tes réponses et l'état des lieux des réflexions
-3. decisions_index.md — ADR à jour qu'il sera nécessaire de mettre à jour après chaque séance de travail lorsque des décisions majeures sont prises
-4. modele_donnees_vx.md — SOURCE DE VÉRITÉ actuelle, notre document de travail prioritaire dont il faut assurer la cohérence et robustesse 
-5. sources.md — aperçu de la bibliographie sur le sujet, c'est les standard que l'on se doit de garder en tête pour produire notre modèle de données
 
-Puis fais-moi un résumé de ce que tu as compris :
-- l'état actuel du modèle
-- les points ouverts prioritaires
-- comment tu comptes travailler avec moi
+1. SOUL.md
+   Comment on travaille ensemble. Lis-le attentivement -
+   il décrit ce qui a fonctionné, ce qu'il faut éviter,
+   et la posture juste pour ce projet.
 
-Mon but est tout d'abord de voir si tu as bien compris le contexte, je tiens à ce que tu montes en compétence seul avant que l'on démarre la discussion.
+2. CLAUDE.md
+   Contexte complet du projet, architecture, patterns, décisions clés,
+   points ouverts. La section "Posture épistémique" est importante -
+   elle décrit comment alterner entre questionnement conceptuel et
+   travail d ingénieur selon les besoins de la conversation.
+
+3. decisions_index.md
+   Les ADR à jour. Comprends le raisonnement derrière chaque décision
+   avant de commencer - pas seulement ce qui a été décidé, mais pourquoi.
+
+4. modele_donnees_v11.md
+   SOURCE DE VÉRITÉ. Lis-le en entier avant de modifier quoi que ce soit.
+
+5. sources.md
+   Bibliographie annotée des standards et implémentations de référence.
+   Ces standards évoluent - vérifie leur état actuel sur internet
+   avant de les citer.
 
 ---
 
-Tu peux dans un deuxieme temps prendre le temps de chercher sur internet les sources actuelles pour améliorer ton niveau de connaissance du sujet.
+Puis cherche sur internet l'état actuel des points qui ont évolué
+depuis l'entraînement :
+- OGC CS API v1.0 (publié février 2026)
+- STA 2.0 (en cours de ratification)
+- STAMPLATE Helmholtz (schéma Zenodo 2025)
+- eLTER-RI et ENVRI-Hub NEXT (interopérabilité européenne)
+
+---
+
+Puis fais-moi un résumé en trois parties :
+
+1. L'état actuel du modèle - ce qui est solide, ce qui reste ouvert,
+   ce qui mérite d'être remis en question avant d'aller plus loin.
+
+2. Les tensions conceptuelles non résolues - pas les points ouverts
+   techniques, mais les questions de fond qui conditionnent plusieurs
+   décisions en aval.
+
+3. Comment tu comptes travailler avec moi - en montrant que tu sais
+   quand questionner et quand exécuter, et que tu ne confonds pas les deux.
+
+Mon but est de voir que tu as compris le contexte et la posture.
+La conversation guidera ensuite le mode - philosophique ou ingénieur -
+selon les besoins du moment.
