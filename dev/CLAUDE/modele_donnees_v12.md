@@ -261,8 +261,12 @@ Ces tables encodent des relations many-to-many portées par l'entité
 | Table                              | Entre                              |
 |------------------------------------|------------------------------------|
 | `person_organization`              | Person ↔ Organization              |
-| `transformationbatch_inputseries`  | TransformationBatch ↔ TimeSeries    |
+| `transformationbatch_inputseries`  | TransformationBatch ↔ TimeSeries ou TransformedTimeSeries (seriesType + seriesId, pattern TPC series) |
 | `specimen_deployment`              | Specimen ↔ Deployment              |
+| `transferfunctionset_function`     | TransferFunctionSet ↔ TransferFunction |
+| `dataset_resource`                 | Dataset ↔ TimeSeries, TransformedTimeSeries, TransferFunction ou ControlObservation (TPC series) |
+
+TransferFunctionParameter et TransferFunctionPoint ne sont pas dans cette table car ce sont des relations 1..* directes (FK sur la table fille), non des jointures many-to-many.
 
 ## Associations datées
 
@@ -328,7 +332,7 @@ Property (qui a déjà `status=accepted|deprecated|proposed`).
   `Person.orcid`.
 
 *Utilisé par* :<br>
-pattern TPC agent (agentType=`Person`) sur ValidationBatch, TransformationBatch, ObservationBatch, TransferFunctionBatch, Memory, Specimen. Responsibility (Person). person_organization (affiliation).
+pattern TPC agent (agentType=`Person`) sur ValidationBatch, ObservationBatch, TransferFunctionBatch, Memory, Specimen. Responsibility (Person). person_organization (affiliation).
 
 *Relations inverses* :<br>
 aucune (Person est référencée via agentId ou FK directe)
@@ -351,43 +355,31 @@ aucune (Person est référencée via agentId ou FK directe)
 ---
 
 ## Machine
-> Agent automatisé impliqué dans la production ou le traitement des données.
+> Système ou service qui exécute des traitements automatisés - runner, pipeline, VM, HPC, agent IA.
 
 *Aligné avec* :
-- [CodeMeta](https://codemeta.github.io/) - vocabulaire pour les métadonnées
-  logicielles, basé sur [schema.org/SoftwareApplication](https://schema.org/SoftwareApplication).
-  Inspire les champs `codeRepository`, `version`, `doi`.
-- [SWHID - ISO/IEC 18670:2025](https://www.swhid.org/swhid-specification/) -
-  identifiant intrinsèque permanent du code source, porté par `Machine.swhid`.
-  Garantit la reproductibilité scientifique : un même SWHID identifie toujours
-  le même état exact du code, indépendamment de sa localisation.
-- [Software Heritage](https://www.softwareheritage.org/) - archive universelle
-  du code source publié, infrastructure de référence pour résoudre les SWHID.
 - [W3C PROV-O Agent](https://www.w3.org/TR/prov-o/#Agent) - Machine est un agent
   PROV au sens de la traçabilité de production (`wasAssociatedWith`).
 
 *Utilisé par* :<br>
-pattern TPC agent (agentType=`Machine`) sur ValidationBatch, TransformationBatch, ObservationBatch, TransferFunctionBatch, Memory, Specimen.
+pattern TPC agent (agentType=`Machine`) sur ValidationBatch, ObservationBatch, TransferFunctionBatch, Memory, Specimen.
 
 *Relations inverses* :<br>
 aucune (Machine est référencée via agentId)
 
-*Note* : 
-- Représente un pipeline de calcul, un service d'import automatique, un agent IA.
-- swhid identifie le code source exact utilisé dans Software Heritage, immuable (ISO/IEC 18670), garantit la reproductibilité scientifique.
-- doi identifie la publication HAL du logiciel.
-- `codeRepository` pointe vers le dépôt vivant (GitHub, GitLab...).
-- Les trois sont complémentaires et alignés avec le standard CodeMeta.
+*Note* :
+- Représente le système qui a exécuté un traitement : serveur BDOH, HPC distant, pipeline local, agent IA.
+- Ne porte pas les métadonnées du code exécuté : celles-ci vivent sur Algorithm.
+- La reproductibilité scientifique est garantie par Algorithm (swhid), pas par Machine.
+- serviceUrl est utile pour les runners distants (HPC, service cloud) afin de pointer vers le système.
 
-| Champ            | Cardinalité | Définition                                    | Valeurs possibles                                     |
-|------------------|-------------|-----------------------------------------------|-------------------------------------------------------|
-| `id`             | 1           | Identifiant technique, clé primaire           | uuid                                                  |
-| `name`           | 1           | Nom du service ou pipeline                    | "pipeline-validation-bdoh"                            |
-| `version`        | 0..1        | Version sémantique du logiciel                | "2.1.0"                                               |
-| `codeRepository` | 0..1        | URL du dépôt source (CodeMeta codeRepository) | "https://github.com/inrae/bdoh-pipeline"              |
-| `swhid`          | 0..1        | Identifiant Software Heritage (ISO/IEC 18670) | "swh:1:rel:22ece559cc7cc2364edc5e5593d63ae8bd229f9f"  |
-| `doi`            | 0..1        | DOI du logiciel si publié                     | "10.5281/zenodo.1234567"                              |
-| `archivedAt`     | 0..1        | Horodatage d'archivage logique                | null \| "2024-01-01T00:00:00Z"                        |
+| Champ         | Cardinalité | Définition                          | Valeurs possibles               |
+|---------------|-------------|-------------------------------------|---------------------------------|
+| `id`          | 1           | Identifiant technique, clé primaire | uuid                            |
+| `name`        | 1           | Nom du système ou service           | "runner-bdoh-prod", "hpc-cines" |
+| `description` | 0..1        | Description libre                   |                                 |
+| `serviceUrl`  | 0..1        | URL du service si runner distant    | "https://..."                   |
+| `archivedAt`  | 0..1        | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z"  |
 
 ---
 
@@ -560,7 +552,7 @@ Property (defaultUnit), TimeSeries (unit), TransformedTimeSeries (unit), Datastr
 ---
 
 ## Procedure
-> Protocole appliqué - de prélèvement, mesure, modélisation, agrégation, transformation ou validation.
+> Protocole appliqué - de prélèvement, mesure, analyse, modélisation, agrégation, transformation ou validation.
 
 *Aligné avec* :
 - [OGC STA 1.1 Sensor](https://docs.ogc.org/is/18-088/18-088.html) - dans STA,
@@ -578,29 +570,73 @@ Property (defaultUnit), TimeSeries (unit), TransformedTimeSeries (unit), Datastr
   protocoles publiés (DOI, normes ISO).
 
 *Utilisé par* :<br>
-TimeSeries (procedureObservation, procedureValidation, procedureSampling), ControlObservation (procedureObservation), TransferFunction (procedureModeling), TransformedTimeSeries (procedureTransformation), Datastream (procedureObservation), Specimen (procedureSampling)
+TimeSeries (procedureObservation, procedureValidation, procedureSampling), ControlObservation (procedureObservation), TransferFunction (procedureModeling), TransformedTimeSeries (procedureTransformation), Datastream (procedureObservation), Specimen (procedureSampling), AnalysisBatch (procedure)
 
 *Note* :
-- Entité réutilisable - une même Procedure peut être référencée par plusieurs objets. Le type discrimine le rôle et filtre les choix dans l'interface. 
+- Entité réutilisable - une même Procedure peut être référencée par plusieurs objets. Le type discrimine le rôle et filtre les choix dans l'interface.
 - Types et exemples :
   * **sampling** - prélever un échantillon terrain (ex : "Prélèvement eau de surface au seau", "Prélèvement automatique ISCO 3700")
-  * **observation** - mesurer une valeur (capteur continu, labo, jaugeage, contrôle) (ex : "NF EN ISO 10304-1 chromatographie ionique", "Jaugeage au micro-moulinet OTT C2", "Mesure sonde multiparamètre YSI EXO2")
-  * **modeling** - construire un modèle depuis des mesures ("BaRatin v3 - courbe de tarage bayésienne", "Régression polynomiale turbidité/MES", "Courbe d'étalonnage spectrophotométrie")
-  * **aggregation** - agréger temporellement ou spatialement des valeurs (ex : "Moyenne journalière sur plage horaire", "Agrégation annuelle QJXA depuis débits journaliers", "Cumul pluviométrique mensuel")
+  * **observation** - mesurer une valeur par capteur continu ou instrument de terrain (ex : "Mesure sonde multiparamètre YSI EXO2", "Jaugeage au micro-moulinet OTT C2")
+  * **analysis** - analyser un Specimen en laboratoire (ex : "NF EN ISO 10304-1 chromatographie ionique nitrates", "ICP-MS métaux traces eau", "DOC par combustion catalytique Shimadzu")
+  * **modeling** - construire un modèle depuis des mesures ("BaRatin v3 - courbe de tarage bayésienne", "Régression polynomiale turbidité/MES")
+  * **aggregation** - agréger temporellement ou spatialement des valeurs (ex : "Moyenne journalière sur plage horaire", "Cumul pluviométrique mensuel")
   * **transformation** - appliquer un calcul pour produire de nouvelles valeurs (ex : "Application courbe de tarage par interpolation linéaire", "Correction offset dérive capteur")
   * **validation** - qualifier des données existantes (ex : "Validation visuelle Wiski par opérateur", "Pipeline automatique contrôle bornes SANDRE")
 
-| Champ          | Cardinalité | Définition                          | Valeurs possibles                                                               |
-|----------------|-------------|-------------------------------------|---------------------------------------------------------------------------------|
-| `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                            |
-| `code`         | 1           | Slug unique globalement             | "iso-10304-1"                                                                   |
-| `name`         | 1           | Nom du protocole                    | "NF EN ISO 10304-1"                                                             |
-| `type`         | 1           | Rôle du protocole                   | `sampling` \| `observation` \| `modeling` \| `aggregation` \| `transformation` \| `validation` |
-| `description`  | 0..1        | Description libre                   |                                                                                 |
-| `version`      | 0..1        | Version du protocole                | "2021"                                                                          |
-| `reference`    | 0..1        | URI ou DOI du document normatif     | "https://www.iso.org/standard/..."                                              |
-| `encodingType` | 1           | Type d'encodage (conformité STA)    | "application/pdf" \| URI                                                        |
-| `archivedAt`   | 0..1        | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z"                                                  |
+| Champ          | Cardinalité | Définition                          | Valeurs possibles                                                                              |
+|----------------|-------------|-------------------------------------|------------------------------------------------------------------------------------------------|
+| `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                                           |
+| `code`         | 1           | Slug unique globalement             | "iso-10304-1"                                                                                  |
+| `name`         | 1           | Nom du protocole                    | "NF EN ISO 10304-1"                                                                            |
+| `type`         | 1           | Rôle du protocole                   | `sampling` \| `observation` \| `analysis` \| `modeling` \| `aggregation` \| `transformation` \| `validation` |
+| `description`  | 0..1        | Description libre                   |                                                                                                |
+| `version`      | 0..1        | Version du protocole                | "2021"                                                                                         |
+| `reference`    | 0..1        | URI ou DOI du document normatif     | "https://www.iso.org/standard/..."                                                             |
+| `encodingType` | 1           | Type d'encodage (conformité STA)    | "application/pdf" \| URI                                                                       |
+| `archivedAt`   | 0..1        | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z"                                                                 |
+
+---
+
+## Choix enum SQL ou vocabulaire Keyword
+
+Deux mécanismes coexistent pour les valeurs contrôlées : les **enums SQL**,
+figés dans le schéma, et le **quadriptyque Keyword** (KeywordType, Keyword,
+KeywordAssignment, KeywordRequirement), évolutif sans migration. La règle de
+choix, à appliquer champ par champ :
+
+Un champ reste **enum SQL** si les trois conditions sont vraies. Sinon, c'est un
+**Keyword**.
+
+1. **Branchement de forme** : le code branche sur la valeur. La logique de calcul,
+   une contrainte d'intégrité ou une résolution de FK polymorphe changent selon
+   la valeur, pas seulement l'affichage.
+2. **Ensemble fermé** : l'ensemble est petit et énumérable aujourd'hui, et ne
+   grandit pas par l'usage métier.
+3. **Évolution par le développement** : ajouter une valeur implique du code
+   nouveau, c'est donc un acte de développement (migration légitime), pas un acte
+   de curation.
+
+Le critère discriminant est : *garde-fou de forme* (reste SQL) contre *étiquette
+descriptive* (peut devenir Keyword). Une classification purement descriptive,
+sans branchement et à liste ouverte par le métier, est un Keyword.
+
+Application au modèle actuel (tous en SQL) :
+- Discriminants TPC : `agentType`, `anchorType`, `resourceType`, `seriesType`,
+  `systemType`, `codeType`. Une valeur de plus = une cible de FK polymorphe de
+  plus = du code de résolution. Restent SQL.
+- États et qualité : `status` (toutes entités), `qualityFlag`. Machines à états
+  sur lesquelles reposent filtres et transitions. Restent SQL.
+- Comportementaux fermés : `depthReference`, `origin`, `acquisitionType`,
+  `transmissionMode`, `validationMode`. Petits, fermés, branchés. Restent SQL.
+- Classifications portant un garde-fou : `aggregationStatistic` (le calcul et
+  l'interprétation dépendent du type, ex. `sporadic` conditionne
+  `observationFrequency`) et `Procedure.type` (garde-fou structurel : la bonne
+  procédure au bon emplacement, ex. `procedureObservation` doit être de type
+  observation sur TimeSeries). Restent SQL malgré leur apparence d'étiquette,
+  parce qu'ils portent un branchement de forme.
+
+Les vocabulaires métier sans branchement (disciplines, thèmes, types de station,
+milieux...) passent par Keyword.
 
 ---
 
@@ -825,7 +861,7 @@ Datastream (license), TimeSeries (license), TransformedTimeSeries (license), Bun
   pertinent pour l'interopérabilité avec les portails géographiques européens.
 
 *Utilisé par* :<br>
-Observatory, Site, Station, System, TimeSeries, Person, Organization, Specimen, Property, Project (via resourceType + resourceId) 
+Observatory, Site, Station, System, TimeSeries, Person, Organization, Specimen, Property, Project, Bundle, Dataset (via resourceType + resourceId) 
 
 *Note* : 
 - Permet autant d'identifiants externes que nécessaire sur n'importe quelle ressource.
@@ -837,7 +873,7 @@ Observatory, Site, Station, System, TimeSeries, Person, Organization, Specimen, 
 | `code`         | 1           | Valeur de l'identifiant             | "V3015810" \| "0000-0001-1234-1234" \| "0-20000-0-06610"                     |
 | `codeType`     | 1           | Type d'identifiant                  | `doi` \| `orcid` \| `ror` \| `sandre` \| `wigos` \| `igsn` \| `pidinst` \| `other` |
 | `codeSource`   | 1           | Système ou organisme émetteur       | "SANDRE" \| "TheiaOZCAR" \| "NERC" \| "DataCite" \| "ROR" \| "PIDINST"       |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `Person` \| `Organization` \| `Specimen` \| `Property` \| `Project` \| `TransferFunction` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `Person` \| `Organization` \| `Specimen` \| `Property` \| `Project` \| `TransferFunction` \| `Bundle` \| `Dataset` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                         |
 
 
@@ -1263,6 +1299,7 @@ TimeSeriesSource (datastream), Observation (datastream)
 - Cas station fixe : anchorType='Station'. Cas drone : anchorType='Site'.
 - Doit être cohérent avec l'ancrage du Deployment du System associé.
 - acquisitionType : mode d'acquisition - sensor_continuous ou lab_sample.
+- procedure optionnelle (0..1) ici, alors qu'elle est obligatoire (1) sur TimeSeries : volontaire. Un flux brut doit pouvoir être déposé dès l'installation du capteur, avant que le protocole de mesure ne soit formalisé ; il sera enrichi plus tard. La série métier validée, elle, exige un protocole défini.
 - aggregationStatistic : nature métrologique de la valeur, aligné ODM2.
   * sporadic = pas de temps irrégulier (crue), observationFrequency null.
   * instantaneous = valeur ponctuelle, phenomenonTimeEnd null.
@@ -1383,8 +1420,12 @@ Datastream (observations), ObservationBatch (datastream)
 TimeSeries (via timeSeries FK)
 
 *Note* : 
-- Lie une TimeSeries à ses Datastreams sources successifs dans le temps.
-- Un changement de capteur = nouveau Datastream = nouvelle ligne ici.
+- Lie une TimeSeries à ses Datastreams sources dans le temps.
+- Cas séquentiel (le plus courant) : un changement de capteur crée un nouveau Datastream et une nouvelle ligne ici, les périodes ne se chevauchent pas.
+- Cas parallèle (plusieurs Datastreams simultanés) : explicitement autorisé. Deux capteurs mesurent la même variable en même temps (redondance physique, master/save). Plusieurs lignes coexistent sur la même période, sans contrainte d'unicité par (timeSeries, validFrom). Les métrologues documentent le contexte via `comment` ou `Memory`.
+- Consolidation de plusieurs Datastreams vers une TimeSeries : deux voies valides et non exclusives.
+  * Voie transformation : `TransformationBatch` multi-entrées, tracé, automatisable.
+  * Voie validation manuelle : le validateur consolide à la main dans `ValidatedObservation`, jugement expert, moins tracé mais légitime.
 - Couture entre le monde physique (System → Deployment → Datastream) et le monde analytique (TimeSeries → ValidatedObservation).
 - La profondeur nominale du capteur est portée par le Deployment correspondant.
 - Nommé d'après son rôle (la source d'une TimeSeries), et non avec le préfixe `Historical*` : cette table relie deux entités dans le temps, elle n'historise pas un attribut courant d'une ressource (voir Convention de lecture, pattern des associations datées). Anciens noms : TimeSeriesDatastream, puis HistoricalDatastream.
@@ -1421,7 +1462,7 @@ HistoricalProject, Responsibility, Identifier, Memory, KeywordAssignment
 - Porte tout ce qui est fixe et commun à toute la série.
 - Contrat analytique garantissant la comparabilité de tous les points.
 - anchorType + anchorId : pattern TPC - station dans le cas standard, site pour les séries de chimie sans station fixe ou campagnes mobiles.
-- Le capteur courant se retrouve via TimeSeriesSource WHERE validTo IS NULL.
+- Le ou les capteurs courants se retrouvent via TimeSeriesSource WHERE validTo IS NULL (plusieurs résultats possibles en cas de Datastreams parallèles).
 - FOI : featureOfInterest porte la FOI proximate si elle diffère de l'ancre.
 - Règle de résolution API STA : TimeSeries.featureOfInterest si renseignée, sinon anchor.featureOfInterest.
 - Une procédure de validation unique par série - plusieurs validations parallèles sur la même variable impliquent des TimeSeries distinctes.
@@ -1548,6 +1589,8 @@ TimeSeries (observations)
 | `result`              | 1           | Valeur numérique mesurée                            | "2.4"                                     |
 | `qualityFlag`         | 1           | Indicateur qualité (mapping ODM2/SANDRE en annexe)  | `good` \| `suspect` \| `bad` \| `missing` |
 | `qualityComment`      | 0..1        | Justification libre du flag qualité                 | "pic de crue suspect"                     |
+| `uncertaintyLow`      | 0..1        | Borne basse de l'incertitude (asymétrique)          | -0.15                                     |
+| `uncertaintyHigh`     | 0..1        | Borne haute de l'incertitude (asymétrique)          | 0.22                                      |
 | `validationBatch`     | 0..1 →VB    | Batch de validation parent                          | → ValidationBatch                         |
 | `specimen`            | 0..1 →Spec  | Prélèvement terrain associé (lab_sample uniquement) | → Specimen                                |
 | `featureOfInterest`   | 0..1 →FOI   | Entité réelle observée                              | → FeatureOfInterest                       |
@@ -1574,8 +1617,9 @@ TimeSeries (controlObservations), TransformedTimeSeries (controlObservations)
 *Note* : 
 - Se greffe directement sur une TimeSeries ou TransformedTimeSeries sans Datastream dédié.
 - Le System et la procédure diffèrent intentionnellement de ceux de la série parente - c'est une mesure indépendante pour vérifier la cohérence (ex : jaugeage de vérification sur une série de débit calculé, mesure avec un System étalonné de référence, comparaison avec une station voisine).
-- seriesType + seriesId : pattern TPC - TimeSeries ou TransformedTimeSeries.
-- system : contrainte applicative systemType=sensor.
+- seriesType + seriesId : pattern TPC - TimeSeries ou TransformedTimeSeries. C'est le lien obligatoire et porteur de sens.
+- system : contrainte applicative systemType=sensor. Optionnel. Rattache la mesure à son instrument, exactement comme Datastream pointe vers System. La chaîne instrumentale complète se lit ControlObservation -> System -> Deployment -> Station/Site : l'instrument (règle à jauger, System étalon...) est déployé via un Deployment comme tout matériel, et ce déploiement lui donne son ancrage physique. Pas de lien direct vers Deployment. Si l'utilisateur ne renseigne pas l'instrument, le rattachement à la série (seriesType/seriesId) suffit.
+- qualityFlag : optionnel. Qualifie la fiabilité de la mesure de contrôle elle-même (un jaugeage de vérification peut être douteux), avec le même vocabulaire que ValidatedObservation. Laissé vide si non évalué.
 
 | Champ                   | Cardinalité | Définition                                          | Valeurs possibles                       |
 |-------------------------|-------------|-----------------------------------------------------|-----------------------------------------|
@@ -1587,12 +1631,104 @@ TimeSeries (controlObservations), TransformedTimeSeries (controlObservations)
 | `resultTime`            | 0..1        | Instant de production du résultat                   | "2024-03-15T09:35:00Z"                  |
 | `result`                | 1           | Valeur mesurée                                      | "0.02"                                  |
 | `expectedResult`        | 0..1        | Valeur attendue selon la série                      | "0.021"                                 |
-| `qualityFlag`           | 1           | Résultat du contrôle                                | `pass` \| `warn` \| `fail`              |
+| `qualityFlag`           | 0..1        | Qualité de la mesure de contrôle elle-même          | `good` \| `suspect` \| `bad` \| `missing` |
 | `qualityComment`        | 0..1        | Justification libre                                 | "écart de 5% - dérive capteur probable" |
 | `system`                | 0..1 →Sys   | System utilisé pour le contrôle (systemType=sensor) | → System                                |
 | `procedureObservation` | 1 →Proc     | Protocole de mesure appliqué                        | → Procedure (type=observation)          |
 | `specimen`              | 0..1 →Spec  | Prélèvement terrain associé                         | → Specimen                              |
 | `featureOfInterest`     | 0..1 →FOI   | Entité réelle observée                              | → FeatureOfInterest                     |
+
+---
+
+## AnalysisBatch
+> Acte analytique en laboratoire sur un Specimen - qui a analysé quoi, avec quel appareil et quelle méthode.
+
+*Aligné avec* :
+- [ODM2 LabAnalyses](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/ext_labanalyses.md)
+  - extension ODM2 dédiée aux analyses ex situ sur échantillons ; AnalysisBatch
+  correspond à l'Action d'analyse ODM2 (type=laboratoryAnalysis) portant la
+  méthode, l'équipement et l'opérateur.
+- [CUAHSI ODM2 Specimen Actions](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/core_actions.md)
+  - la chaîne CUAHSI (prélèvement, préparation, analyse) se modélise par
+  filiation de Specimens (derivedFrom) et un AnalysisBatch par étape d'analyse.
+
+*Utilisé par* :<br>
+AnalysisObservation (analysisBatch)
+
+*Note* :
+- Frère des autres Batch (ValidationBatch, TransformationBatch...) : un acte daté,
+  attribué à un agent, produisant des observations. Même famille, même pattern.
+- Porte les métadonnées de la session analytique, communes à toutes les mesures
+  de cette session. Les métadonnées propres à chaque mesure individuelle (LD, LQ,
+  qualityFlag) vivent sur AnalysisObservation.
+- system optionnel : l'appareil analytique (ICP-MS, spectromètre...) est un System
+  de type sensor ou equipment. Même pattern que partout dans le modèle.
+- Coexistence LIMS/interne : si la chimie est traitée dans un LIMS externe,
+  Specimen.limsReference suffit et AnalysisBatch n'est pas créé. Si la chaîne
+  analytique est interne, AnalysisBatch + AnalysisObservation la documentent
+  complètement. Les deux voies sont non exclusives (ADR-007 amendé).
+- Filiation des Specimens : prélèvement brut → Specimen enfant filtré (derivedFrom)
+  → Specimen aliquote → AnalysisBatch. La chaîne CUAHSI (collecte, préparation,
+  analyse) passe par la filiation des Specimens, pas par une hiérarchie de batchs.
+
+| Champ             | Cardinalité | Définition                                    | Valeurs possibles               |
+|-------------------|-------------|-----------------------------------------------|---------------------------------|
+| `id`              | 1           | Identifiant technique, clé primaire           | uuid                            |
+| `specimen`        | 1 →Spec     | Specimen analysé (brut ou aliquote préparé)   | → Specimen                      |
+| `procedure`       | 1 →Proc     | Méthode analytique appliquée                  | → Procedure (type=analysis)     |
+| `agentType`       | 1           | Type d'agent ayant réalisé l'analyse          | `Person` \| `Machine`           |
+| `agentId`         | 1           | UUID de la Person ou Machine                  | uuid                            |
+| `system`          | 0..1 →Sys   | Appareil analytique utilisé                   | → System                        |
+| `analysisDateTime`| 1           | Date et heure de l'analyse                    | "2024-03-14T14:00:00Z"          |
+| `comment`         | 0..1        | Commentaire libre sur la session              |                                 |
+| `status`          | 1           | État du batch                                 | `active` \| `archived`          |
+
+---
+
+## AnalysisObservation
+> Valeur mesurée sur un Specimen par un acte analytique - symétrique de ValidatedObservation pour la chimie.
+
+*Aligné avec* :
+- [ODM2 Measurement Result](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/results_measurement.md)
+  - un Measurement Result ODM2 est une valeur unique pour une variable, mesurée
+  sur un Specimen via une méthode analytique. AnalysisObservation en est la
+  traduction directe dans BDOH.
+- [OGC OMS (ISO 19156:2023)](https://docs.ogc.org/as/20-082r4/20-082r4.html)
+  - observation au sens OMS : acte de mesure produisant un résultat, ici sur un
+  Specimen (SamplingFeature de type SF_Specimen).
+
+*Utilisé par* :<br>
+TimeSeries (observations, acquisitionType=lab_sample)
+
+*Note* :
+- Symétrique de ValidatedObservation pour les séries issues de prélèvements. Même
+  structure de base (phenomenonTime, result, qualityFlag, uncertainty), mêmes
+  règles d'appartenance à une TimeSeries.
+- La TimeSeries est le flux unifiant : elle porte la property, l'unité, la
+  procédure nominale, la license. AnalysisObservation porte la valeur et ses
+  métadonnées analytiques propres à la mesure individuelle.
+- detectionLimit / quantificationLimit : valeurs de la session analytique de ce
+  batch précis (pas de la méthode en général, qui peut varier selon la matrice
+  et l'étalonnage du jour).
+- phenomenonTimeStart : instant du prélèvement (porté par le Specimen parent),
+  pas l'instant de l'analyse (qui est sur l'AnalysisBatch).
+- uncertaintyLow/High : cohérent avec ADR-057 ; l'incertitude analytique est
+  souvent asymétrique et dépend de la zone de la courbe d'étalonnage.
+
+| Champ                 | Cardinalité | Définition                                              | Valeurs possibles                         |
+|-----------------------|-------------|---------------------------------------------------------|-------------------------------------------|
+| `id`                  | 1           | Identifiant technique, clé primaire                     | uuid                                      |
+| `timeSeries`          | 1 →TS       | Série parente (acquisitionType=lab_sample)              | → TimeSeries                              |
+| `analysisBatch`       | 1 →AB       | Batch analytique ayant produit cette valeur             | → AnalysisBatch                           |
+| `phenomenonTimeStart` | 1           | Instant du prélèvement (date d'échantillonnage)         | "2024-03-12T09:00:00Z"                    |
+| `phenomenonTimeEnd`   | 0..1        | Fin de la période, null si ponctuel                     | null                                      |
+| `result`              | 1           | Valeur numérique mesurée                                | "2.3"                                     |
+| `detectionLimit`      | 0..1        | Limite de détection de la session analytique            | 0.01                                      |
+| `quantificationLimit` | 0..1        | Limite de quantification de la session analytique       | 0.05                                      |
+| `qualityFlag`         | 0..1        | Indicateur qualité                                      | `good` \| `suspect` \| `bad` \| `missing` |
+| `qualityComment`      | 0..1        | Justification libre du flag qualité                     | "valeur sous LD, résultat non quantifié"  |
+| `uncertaintyLow`      | 0..1        | Borne basse de l'incertitude analytique                 | -0.1                                      |
+| `uncertaintyHigh`     | 0..1        | Borne haute de l'incertitude analytique                 | 0.1                                       |
 
 ---
 
@@ -1665,34 +1801,45 @@ ValidatedObservation (specimen), ControlObservation (specimen), Observation (spe
 - [WMO - Manual on Stream Gauging, Vol. II](https://library.wmo.int/records/item/35841-manual-on-stream-gauging-vol-ii-computation-of-discharge)
   - référence internationale pour les courbes de tarage hauteur-débit (discharge
   ratings) : le cas d'usage hydrométrique central des fonctions de transfert.
+- [GUM - Guide to the Expression of Uncertainty in Measurement (JCGM 100:2008)](https://www.bipm.org/documents/20126/2071204/JCGM_100_2008_E.pdf)
+  - cadre métrologique de référence pour l'expression et la propagation de
+  l'incertitude ; les lois marginales de TransferFunctionParameter s'inscrivent
+  dans ce cadre.
 
 *Utilisé par* :<br>
-TransferFunctionSet (transferFunction), TransferFunctionBatch (transferFunction),
-             TransferFunctionPoint (function)
+transferfunctionset_function (transferFunction), TransferFunctionBatch (transferFunction),
+TransferFunctionPoint (function), TransferFunctionParameter (function)
 
 *Relations inverses (requêter par resourceType='TransferFunction')* :<br>
 Responsibility, Identifier, Memory
 
-*Note* : 
+*Note* :
 - Fonction de conversion liée à une station - analogue à TimeSeries.
-- Les points de calibration (couples x/y) définissent la fonction empiriquement.
+- Objet de réservoir : une TF existe indépendamment de tout TFSet et peut être référencée par plusieurs TFSet (via transferfunctionset_function).
+- Dualité empirique / modèle : deux faces complémentaires d'une même réalité.
+  * `TransferFunctionPoint` : la face empirique (les jaugeages, les couples x/y mesurés terrain).
+  * `TransferFunctionParameter` : la face modèle (les coefficients de la courbe ajustée, avec leur distribution d'incertitude).
+  * `TransferFunctionBatch` : l'acte de calage (qui a construit la courbe, quand, avec quel outil).
+- inputProperty/outputProperty fixent la sémantique de la fonction (hauteur -> débit) : ils permettent de vérifier au moment du calcul qu'une série d'entrée et la TTS produite portent les bonnes variables.
+- Pas de validFrom/validTo propres : la période d'application d'une TF est portée par la jointure transferfunctionset_function. La période d'acquisition des données de calibration est portée par acquisitionStart/acquisitionEnd, la date de construction par TransferFunctionBatch.builtAt.
+- covariance : matrice de covariance entre coefficients (JSON), optionnelle. Nécessaire pour la propagation d'incertitude correcte (tirage multivarié) quand les coefficients ne sont pas indépendants. C'est le seul JSON résiduel justifié ici : une matrice dense ne se décompose pas naturellement en lignes sans artifice.
 - anchorType + anchorId : pattern TPC - station dans le cas standard.
 
-| Champ            | Cardinalité    | Définition                             | Valeurs possibles                      |
-|------------------|----------------|----------------------------------------|----------------------------------------|
-| `id`             | 1              | Identifiant technique, clé primaire    | uuid                                   |
-| `code`           | 1              | Slug unique par ancre                  | "hea-qmj-v3"                           |
-| `name`           | 1              | Nom de la fonction                     | "Courbe de tarage Mercier D610 v3"     |
-| `description`    | 0..1           | Description libre                      |                                        |
-| `anchorType`     | 1              | Type d'ancrage géographique            | `Observatory` \| `Site` \| `Station`   |
-| `anchorId`       | 1              | UUID de l'Observatory, Site ou Station | uuid                                   |
-| `inputProperty`  | 1 →Prop        | Variable en entrée                     | → Property (ex: hauteur)               |
-| `outputProperty` | 1 →Prop        | Variable en sortie                     | → Property (ex: débit)                 |
-| `parameters`     | 0..1           | Coefficients analytiques (JSON)        | {"a":2.1,"b":1.5}                      |
-| `procedureModeling` | 0..1 →Proc     | Méthode de construction de la fonction | → Procedure (type=modeling)            |
-| `validFrom`      | 1              | Début de la période de validité        | "2024-01-01T00:00:00Z"                 |
-| `validTo`        | 0..1           | Fin de validité, null si active        | null                                   |
-| `status`         | 1              | État de la fonction                    | `active` \| `inactive` \| `deprecated` |
+| Champ               | Cardinalité | Définition                              | Valeurs possibles                      |
+|---------------------|-------------|-----------------------------------------|----------------------------------------|
+| `id`                | 1           | Identifiant technique, clé primaire     | uuid                                   |
+| `code`              | 1           | Slug unique par ancre                   | "hea-qmj-v3"                           |
+| `name`              | 1           | Nom de la fonction                      | "Courbe de tarage Mercier D610 v3"     |
+| `description`       | 0..1        | Description libre                       |                                        |
+| `anchorType`        | 1           | Type d'ancrage géographique             | `Observatory` \| `Site` \| `Station`   |
+| `anchorId`          | 1           | UUID de l'Observatory, Site ou Station  | uuid                                   |
+| `inputProperty`     | 1 →Prop     | Variable en entrée                      | → Property (ex: hauteur)               |
+| `outputProperty`    | 1 →Prop     | Variable en sortie                      | → Property (ex: débit)                 |
+| `covariance`        | 0..1        | Matrice de covariance entre coefficients (JSON) | {"a_b": -0.3, "a_c": 0.1}      |
+| `procedureModeling` | 0..1 →Proc  | Méthode de construction de la fonction  | → Procedure (type=modeling)            |
+| `acquisitionStart`  | 0..1        | Début de la période d'acquisition       | "2023-06-01"                           |
+| `acquisitionEnd`    | 0..1        | Fin de la période d'acquisition         | "2023-11-30"                           |
+| `status`            | 1           | État de la fonction                     | `active` \| `inactive` \| `deprecated` |
 
 ---
 
@@ -1702,20 +1849,59 @@ Responsibility, Identifier, Memory
 *Utilisé par* :<br>
 TransferFunction (via function FK - relation inverse)
 
-*Note* : 
-- Couple de valeurs (x/y) définissant empiriquement la fonction.
-- Analogue à ValidatedObservation - c'est là que vivent les données (ex : (hauteur=1.23m, débit=4.5m³/s) pour une courbe de tarage ou (turbidité=120NTU, MES=245mg/L) pour une relation turbidité/MES)
+*Note* :
+- Face empirique de la TransferFunction : les données de terrain brutes (jaugeages, mesures de référence).
+- Analogue à ValidatedObservation : c'est là que vivent les données (ex : hauteur=1.23m, débit=4.5m³/s pour une courbe de tarage).
+- uncertaintyX/uncertaintyY : incertitude sur la mesure du jaugeage elle-même. L'incertitude sur la hauteur lue et sur le débit mesuré sont deux composantes distinctes, toutes deux nécessaires pour la propagation BaRatin (l'incertitude en basses eaux sur x peut dominer celle sur la courbe). Optionnelles mais recommandées pour les utilisateurs de BaRatin.
 
-| Champ      | Cardinalité | Définition                          | Valeurs possibles       |
-|------------|-------------|-------------------------------------|-------------------------|
-| `id`       | 1           | Identifiant technique, clé primaire | uuid                    |
-| `function` | 1 →TF       | Fonction parente                    | → TransferFunction      |
-| `batch`    | 0..1 →TFB   | Batch de construction parent        | → TransferFunctionBatch |
-| `x`        | 1           | Valeur en entrée                    | 1.23                    |
-| `y`        | 1           | Valeur en sortie                    | 4.5                     |
-| `uncertainty` | 0..1     | Incertitude sur la mesure           | 0.05                    |
-| `datetime` | 0..1        | Date du jaugeage ou de la mesure    | "2024-03-15T09:30:00Z"  |
-| `comment`  | 0..1        | Commentaire libre                   | "jaugeage crue"         |
+| Champ          | Cardinalité | Définition                               | Valeurs possibles       |
+|----------------|-------------|------------------------------------------|-------------------------|
+| `id`           | 1           | Identifiant technique, clé primaire      | uuid                    |
+| `function`     | 1 →TF       | Fonction parente                         | → TransferFunction      |
+| `batch`        | 0..1 →TFB   | Batch de construction parent             | → TransferFunctionBatch |
+| `x`            | 1           | Valeur en entrée (ex: hauteur)           | 1.23                    |
+| `y`            | 1           | Valeur en sortie (ex: débit)             | 4.5                     |
+| `uncertaintyX` | 0..1        | Incertitude sur x (ex: erreur de hauteur) | 0.02                   |
+| `uncertaintyY` | 0..1        | Incertitude sur y (ex: erreur de débit)  | 0.15                    |
+| `datetime`     | 0..1        | Date du jaugeage ou de la mesure         | "2024-03-15T09:30:00Z"  |
+| `comment`      | 0..1        | Commentaire libre                        | "jaugeage crue"         |
+
+---
+
+## TransferFunctionParameter
+> Coefficient du modèle ajusté sur une TransferFunction, avec sa loi d'incertitude marginale.
+
+*Aligné avec* :
+- [GUM - Guide to the Expression of Uncertainty in Measurement (JCGM 100:2008)](https://www.bipm.org/documents/20126/2071204/JCGM_100_2008_E.pdf)
+  - chaque paramètre est caractérisé par une loi de distribution (type, paramètres)
+  conforme au cadre GUM pour l'expression de l'incertitude.
+- [BaRatin / Le Coz et al. 2014](https://doi.org/10.1016/j.jhydrol.2013.11.016)
+  - les coefficients hydrauliques d'une courbe de tarage BaRatin sont distribués
+  (loi postérieure bayésienne) ; TransferFunctionParameter en est le réceptacle.
+
+*Utilisé par* :<br>
+TransferFunction (via function FK - relation inverse)
+
+*Note* :
+- Face modèle de la TransferFunction, frère de TransferFunctionPoint.
+- Chaque ligne est un coefficient de la courbe ajustée (a, b, c pour une loi puissance Q = a(H-b)^c) avec sa distribution marginale.
+- La valeur centrale (`value`) est la courbe maximale a posteriori (MAP), celle appliquée pour le calcul nominal.
+- distributionType + distributionParam1/2 décrivent la loi marginale de ce coefficient : loi normale, log-normale, uniforme, etc. Ce résumé paramétrique permet de régénérer l'ensemble de courbes (spaghetti) pour la propagation d'incertitude sans stocker les milliers de tirages.
+- Les corrélations entre coefficients (nécessaires pour un tirage multivarié correct) vivent dans TransferFunction.covariance. La combinaison lignes TransferFunctionParameter + matrice covariance est le générateur complet de l'ensemble spaghetti.
+- La temporalité : une TF par période (via transferfunctionset_function), donc des paramètres par période, donc les "vecteurs de paramètres qui évoluent dans le temps" sont la succession des TF dans un TFSet. Pas de table temporelle supplémentaire.
+- Objet voué à évoluer : si la méthode de caractérisation de la loi postérieure évolue (approche ensembliste plus riche, hyperparamètres supplémentaires), on enrichit les champs sans casser la structure. Le réceptacle est stable, son contenu peut grandir.
+
+| Champ                | Cardinalité | Définition                                         | Valeurs possibles                                      |
+|----------------------|-------------|----------------------------------------------------|--------------------------------------------------------|
+| `id`                 | 1           | Identifiant technique, clé primaire                | uuid                                                   |
+| `function`           | 1 →TF       | Fonction parente                                   | → TransferFunction                                     |
+| `name`               | 1           | Nom du coefficient                                 | "a", "b", "c", "K", "alpha"                            |
+| `value`              | 1           | Valeur centrale (max a posteriori)                 | 2.1                                                    |
+| `distributionType`   | 0..1        | Forme de la loi marginale                          | `normal` \| `lognormal` \| `uniform` \| `gamma`        |
+| `distributionParam1` | 0..1        | Premier paramètre de la loi                        | écart-type si normal, sigma si lognormal, min si uniform |
+| `distributionParam2` | 0..1        | Second paramètre de la loi si nécessaire           | max si uniform, alpha si gamma                         |
+| `unit`               | 0..1 →Unit  | Unité du coefficient                               | → Unit                                                 |
+| `comment`            | 0..1        | Description du rôle du coefficient                 | "coefficient de débit section pleine"                  |
 
 ---
 
@@ -1753,7 +1939,7 @@ TransferFunctionPoint (batch)
 ---
 
 ## TransferFunctionSet
-> Jeu de transformation applicable sur une période - référence une TransferFunction et son type.
+> Jeu ordonné de TransferFunction qui se succèdent dans le temps - le barème appliqué à une série pour produire une TTS.
 
 *Aligné avec* :
 - [WMO - Manual on Stream Gauging, Vol. II](https://library.wmo.int/records/item/35841-manual-on-stream-gauging-vol-ii-computation-of-discharge)
@@ -1765,11 +1951,15 @@ TransferFunctionPoint (batch)
 *Utilisé par* :<br>
 TransformationBatch (transferFunctionSet)
 
+*Relations inverses* :<br>
+transferfunctionset_function (les TF composant le jeu, avec leur période d'application)
+
 *Note* : 
-- Conteneur obligatoire pour une ou plusieurs TransferFunction sur une station.
-- Même avec une seule TF on passe toujours par un TFSet.
-- Plusieurs TFSet peuvent coexister sur une station sans hiérarchie imposée.
-- type=identity ou manual -> transferFunction null, pas de calcul via TF.
+- Compose une ou plusieurs TransferFunction qui se succèdent dans le temps (via transferfunctionset_function, qui porte la période d'application de chaque TF dans ce jeu).
+- Les TF sont piochées dans le réservoir de TransferFunction : une même TF peut servir dans plusieurs TFSet.
+- Un seul TFSet est utilisé par TransformationBatch pour produire une TTS. La période sur laquelle ce TFSet s'applique à la TTS est portée par le batch.
+- Plusieurs TFSet peuvent coexister sur une station sans hiérarchie imposée : c'est le contexte scientifique qui désigne lequel utiliser (même principe que TimeSeries/TransformedTimeSeries).
+- Pas de validFrom/validTo propres : la composition temporelle interne est dans la jointure, la période d'application à une TTS est sur le batch.
 
 | Champ              | Cardinalité | Définition                             | Valeurs possibles                    |
 |--------------------|-------------|----------------------------------------|--------------------------------------|
@@ -1778,19 +1968,84 @@ TransformationBatch (transferFunctionSet)
 | `description`      | 0..1        | Description libre                      |                                      |
 | `anchorType`       | 1           | Type d'ancrage géographique            | `Observatory` \| `Site` \| `Station` |
 | `anchorId`         | 1           | UUID de l'Observatory, Site ou Station | uuid                                 |
-| `transferFunction` | 0..1 →TF    | Fonction appliquée si type=function    | → TransferFunction                   |
-| `type`             | 1           | Type de transformation                 | `function` \| `identity` \| `manual` |
-| `validFrom`        | 1           | Début de validité                      | "2024-01-01T00:00:00Z"               |
-| `validTo`          | 0..1        | Fin de validité, null si courant       | null                                 |
 | `comment`          | 0..1        | Justification du choix                 | "nouveau jaugeage après crue"        |
 
-Contrainte : si type=function -> transferFunction obligatoire.
-            si type=identity ou manual -> transferFunction null.
+---
+
+## transferfunctionset_function
+> Composition d'un TransferFunctionSet : quelles TransferFunction le composent, et sur quelle période chacune s'applique dans ce jeu - table de jointure.
+
+*Note* :
+- Relie un TFSet aux TransferFunction qu'il compose (many-to-many : une TF peut appartenir à plusieurs TFSet, un TFSet contient une ou plusieurs TF).
+- validFrom/validTo donnent la plage temporelle d'application de cette TF dans ce TFSet précis : c'est ici que vit la succession des courbes (courbe A jusqu'en 2015, courbe B ensuite...).
+- La même TF peut avoir des périodes d'application différentes dans deux TFSet distincts.
+
+| Champ                | Cardinalité | Définition                                     | Valeurs possibles      |
+|----------------------|-------------|------------------------------------------------|------------------------|
+| `transferFunctionSet` | 1 →TFS      | Jeu parent                                     | → TransferFunctionSet  |
+| `transferFunction`   | 1 →TF       | Fonction incluse dans le jeu                    | → TransferFunction     |
+| `validFrom`          | 1           | Début d'application de cette TF dans ce jeu     | "2015-01-01T00:00:00Z" |
+| `validTo`            | 0..1        | Fin d'application, null si courante             | null                   |
+
+---
+
+## Algorithm
+> Code référencé et versionné sur une forge - script ou fonction utilisé par un TransformationBatch.
+
+*Aligné avec* :
+- [CodeMeta](https://codemeta.github.io/) - vocabulaire pour les métadonnées
+  logicielles, basé sur [schema.org/SoftwareApplication](https://schema.org/SoftwareApplication).
+  Inspire les champs `codeRepository`, `path`, `version`, `doi`.
+- [SWHID - ISO/IEC 18670:2025](https://www.swhid.org/swhid-specification/) -
+  identifiant intrinsèque permanent du code source. Un même swhid identifie
+  toujours le même état exact du code, indépendamment de sa localisation.
+- [Software Heritage](https://www.softwareheritage.org/) - archive universelle
+  du code source publié, infrastructure de référence pour résoudre les SWHID.
+
+*Utilisé par* :<br>
+TransformationBatch (algorithm)
+
+*Relations inverses (requêter par resourceType='Algorithm')* :<br>
+aucune pour l'instant
+
+*Note* :
+- Objet global, non ancré géographiquement : un algorithme est réutilisable sur toutes les stations.
+- codeRepository pointe vers le dépôt vivant (GitHub, GitLab, forge INRAE...).
+- path précise le script ou la fonction dans ce dépôt.
+- swhid épingle la version exacte du code exécuté. Immuable par ligne : deux états de code différents = deux lignes Algorithm distinctes. Contrainte d'unicité sur swhid quand non-null.
+- version = tag de release git par convention ("v2.1.0"). Texte libre, non contraint par le modèle. "Latest" pour un name donné = la ligne avec status=active.
+- Épinglage applicatif : au moment d'un batch manuel, le runner résout le swhid courant du script et crée (ou réutilise) la ligne Algorithm correspondante. Un batch auto réutilise la ligne déjà épinglée sans en créer une nouvelle. La notif "le dépôt git a changé" (via Software Heritage ou webhook) est hors modèle, à prévoir côté applicatif.
+- doi identifie la publication du logiciel si elle existe (HAL, Zenodo...).
+- La configuration d'exécution (paramètres propres au batch) vit sur TransformationBatch.parameters, pas ici.
+- Cas d'usage types (le dépôt et les conventions de nommage sont à spécifier, voir B2) :
+  * Agrégation (QJXA) : codeRepository="https://github.com/inrae/bdoh-scripts",
+    path="aggregation/qjxa.py", fichier de paramétrage externe sur le même dépôt
+    (format à définir), input=TTS "Débit horaire".
+  * Comblement de lacunes : path="gap-filling/stineman.py", deux séries en entrée
+    (série principale + référence), rôles passés en parameters.
+  * Ré-échantillonnage : path="resample/resample.py", fréquence cible et méthode
+    en parameters.
+  * Application de barème : path="rating/apply.py", transferFunctionSet renseigné,
+    loi d'extrapolation et coefficient en parameters.
+  * Combinaison master/save : path="merge/master-save.py", deux séries en entrée,
+    rôles master/save passés en parameters.
+
+| Champ            | Cardinalité | Définition                                    | Valeurs possibles                                    |
+|------------------|-------------|-----------------------------------------------|------------------------------------------------------|
+| `id`             | 1           | Identifiant technique, clé primaire           | uuid                                                 |
+| `name`           | 1           | Nom stable de l'algorithme (toutes versions)  | "agregation-qjxa"                                    |
+| `description`    | 0..1        | Description libre                             |                                                      |
+| `codeRepository` | 1           | URL du dépôt source                           | "https://github.com/inrae/bdoh-scripts"              |
+| `path`           | 0..1        | Chemin du script dans le dépôt                | "aggregation/qjxa.py"                                |
+| `version`        | 0..1        | Tag de release git (texte libre par convention) | "v2.1.0"                                           |
+| `swhid`          | 0..1        | Identifiant Software Heritage (ISO/IEC 18670) | "swh:1:rel:22ece559cc7cc2364edc5e5593d63ae8bd229f9f" |
+| `doi`            | 0..1        | DOI du logiciel si publié                     | "10.5281/zenodo.1234567"                             |
+| `status`         | 1           | État de la version                            | `active` \| `superseded` \| `deprecated`             |
 
 ---
 
 ## TransformationBatch
-> Acte de calcul d'une série dérivée - qui a lancé le calcul, quand, depuis quelles séries sources.
+> Acte de calcul d'une série dérivée - quel algorithme sur quel runner, depuis quelles séries sources.
 
 *Aligné avec* :
 - [ODM2 Actions](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/core_actions.md)
@@ -1803,29 +2058,29 @@ Contrainte : si type=function -> transferFunction obligatoire.
 *Utilisé par* :<br>
 Transformation (transformationBatch)
 
-*Note* : 
-- Acte de calcul sur une ou plusieurs TimeSeries sources.
-- Analogue à ValidationBatch - factorisation des métadonnées de calcul.
+*Note* :
+- Acte de calcul sur une ou plusieurs séries sources (TimeSeries ou TransformedTimeSeries).
+- Analogue à ValidationBatch : factorisation des métadonnées de calcul.
 - Les points calculés sont dans Transformation.
-- inputSeries est une table de jointure explicite `transformationbatch_inputseries` (batch_id, timeseries_id) - un batch peut prendre plusieurs séries en entrée.
-- agentType + agentId : pattern TPC - opérateur humain (`Person`) pour un calcul manuel, pipeline automatique (`Machine`) pour un recalcul planifié.
-- Point ouvert :
-  * cas sans TransferFunctionSet (transformation algorithmique pure)
-  * transferFunctionSet est actuellement obligatoire (1), à trancher en v2.
+- runner : la Machine qui a exécuté (serveur BDOH, HPC, pipeline local).
+- algorithm : le code qui a tourné (script versionné, swhid épinglé sur Algorithm).
+- transferFunctionSet : optionnel, présent uniquement si le calcul applique un barème stocké (courbe de tarage...). Le runner applique la TF désignée par le TFSet pour chaque instant via les validFrom/validTo de la jointure transferfunctionset_function.
+- parameters : JSON de configuration d'exécution propre à ce batch (loi d'extrapolation, pas d'agrégation, rôles des séries d'entrée si le script en a besoin...).
+- inputSeries : table de jointure explicite `transformationbatch_inputseries` (seriesType, seriesId) - accepte TimeSeries et TransformedTimeSeries, un batch peut prendre plusieurs séries en entrée.
 
-| Champ                  | Cardinalité | Définition                          | Valeurs possibles               |
-|------------------------|-------------|-------------------------------------|---------------------------------|
-| `id`                   | 1           | Identifiant technique, clé primaire | uuid                            |
-| `transformedTimeSeries` | 1 →TTS      | Série produite                      | → TransformedTimeSeries          |
-| `transferFunctionSet`  | 1 →TFS      | Jeu de fonctions appliqué           | → TransferFunctionSet           |
-| `inputSeries`          | 1..* →TS    | Séries sources (table jointure)     | → TimeSeries[]                   |
-| `appliedAt`            | 1           | Date d'exécution du calcul          | "2024-04-01T08:00:00Z"          |
-| `agentType`            | 0..1        | Type d'agent ayant lancé le calcul  | `Person` \| `Machine`           |
-| `agentId`              | 0..1        | UUID de la Person ou Machine        | uuid                            |
-| `validFrom`            | 1           | Début de la période calculée        | "2024-01-01T00:00:00Z"          |
-| `validTo`              | 0..1        | Fin de la période calculée          | null                            |
-| `status`               | 1           | État du batch                       | `pending` \| `done` \| `failed` |
-| `comment`              | 0..1        | Commentaire libre                   |                                 |
+| Champ                   | Cardinalité  | Définition                              | Valeurs possibles               |
+|-------------------------|--------------|-----------------------------------------|---------------------------------|
+| `id`                    | 1            | Identifiant technique, clé primaire     | uuid                            |
+| `transformedTimeSeries` | 1 →TTS       | Série produite                          | → TransformedTimeSeries         |
+| `runner`                | 1 →Machine   | Système ayant exécuté le calcul         | → Machine                       |
+| `algorithm`             | 1 →Algo      | Code exécuté                            | → Algorithm                     |
+| `transferFunctionSet`   | 0..1 →TFS    | Jeu de fonctions appliqué si barème     | → TransferFunctionSet           |
+| `parameters`            | 0..1         | Configuration d'exécution (JSON)        | {"method":"linear","gap_h":6}   |
+| `appliedAt`             | 1            | Date d'exécution du calcul              | "2024-04-01T08:00:00Z"          |
+| `validFrom`             | 1            | Début de la période calculée            | "2024-01-01T00:00:00Z"          |
+| `validTo`               | 0..1         | Fin de la période calculée              | null                            |
+| `status`                | 1            | État du batch                           | `pending` \| `done` \| `failed` |
+| `comment`               | 0..1         | Commentaire libre                       |                                 |
 
 ---
 
@@ -1843,20 +2098,23 @@ Transformation (transformationBatch)
 *Utilisé par* :<br>
 TransformedTimeSeries (observations)
 
-*Note* : 
+*Note* :
 - Point calculé par un TransformationBatch.
-- Analogue à ValidatedObservation - c'est là que vivent les données calculées.
+- Analogue à ValidatedObservation : c'est là que vivent les données calculées.
+- uncertaintyLow/High : bornes asymétriques de l'incertitude propagée sur la valeur calculée. Optionnelles. Produites par un TransformationBatch de propagation : un Algorithm de propagation (ex. BaRatin) prend en entrée la série de hauteur avec ses incertitudes (ValidatedObservation.uncertaintyLow/High) et la TransferFunction avec ses TransferFunctionParameter (lois marginales + covariance), et produit cette TTS avec les bornes sur chaque Transformation. C'est le niveau 3 de propagation d'incertitude : aucun objet nouveau, le mécanisme de transformation existant suffit.
 
-| Champ                  | Cardinalité | Définition                            | Valeurs possibles                         |
-|------------------------|-------------|---------------------------------------|-------------------------------------------|
-| `id`                   | 1           | Identifiant technique, clé primaire   | uuid                                      |
-| `transformedTimeSeries` | 1 →TTS      | Série parente                         | → TransformedTimeSeries                    |
-| `transformationBatch`  | 0..1 →TB    | Batch de calcul parent                | → TransformationBatch                     |
-| `phenomenonTimeStart`  | 1           | Début de la période du phénomène      | "2024-03-15T09:30:00Z"                    |
-| `phenomenonTimeEnd`    | 0..1        | Fin de la période, null si instantané | "2024-03-15T10:00:00Z" \| null            |
-| `resultTime`           | 0..1        | Instant de production du résultat calculé | "2024-03-16T02:00:00Z" \| null        |
-| `result`               | 1           | Valeur calculée                       | "4.5"                                     |
-| `qualityFlag`          | 0..1        | Indicateur qualité                    | `good` \| `suspect` \| `bad` \| `missing` |
+| Champ                   | Cardinalité | Définition                                | Valeurs possibles                         |
+|-------------------------|-------------|-------------------------------------------|-------------------------------------------|
+| `id`                    | 1           | Identifiant technique, clé primaire       | uuid                                      |
+| `transformedTimeSeries` | 1 →TTS      | Série parente                             | → TransformedTimeSeries                   |
+| `transformationBatch`   | 0..1 →TB    | Batch de calcul parent                    | → TransformationBatch                     |
+| `phenomenonTimeStart`   | 1           | Début de la période du phénomène          | "2024-03-15T09:30:00Z"                    |
+| `phenomenonTimeEnd`     | 0..1        | Fin de la période, null si instantané     | "2024-03-15T10:00:00Z" \| null            |
+| `resultTime`            | 0..1        | Instant de production du résultat calculé | "2024-03-16T02:00:00Z" \| null            |
+| `result`                | 1           | Valeur calculée                           | "4.5"                                     |
+| `qualityFlag`           | 0..1        | Indicateur qualité                        | `good` \| `suspect` \| `bad` \| `missing` |
+| `uncertaintyLow`        | 0..1        | Borne basse de l'incertitude propagée     | -0.8                                      |
+| `uncertaintyHigh`       | 0..1        | Borne haute de l'incertitude propagée     | 1.2                                       |
 
 ---
 
@@ -1886,6 +2144,9 @@ Identifier, Memory, KeywordAssignment
 - Analogue à TimeSeries - même structure de métadonnées.
 - Plusieurs TransformedTimeSeries peuvent coexister sur la même station et la même variable sans hiérarchie - c'est le contexte scientifique qui désigne laquelle utiliser (même principe que TimeSeries).
 - Plage temporelle couverte : non stockée. `phenomenonTimeStart` et `phenomenonTimeEnd` de la série sont calculés à la demande (MIN/MAX du phenomenonTime des Transformations), exposés en lecture seule par l'API. Recomposés en l'intervalle `phenomenonTime` à l'export STA.
+- recalculationMode : contrôle le déclenchement du recalcul quand une série source change. `auto` déclenche un nouveau TransformationBatch automatiquement (via trigger). `manual` laisse le curateur relancer le calcul explicitement. Dans les deux cas le recalcul écrase les valeurs précédentes dans `Transformation`.
+- Fork curé : quand un état de calcul a une valeur scientifique durable (ancien barème à comparer, version ayant servi à une analyse publiée), il ne faut pas l'écraser silencieusement. Le geste est de créer une TTS coexistante ("Débit barème 2020") avant de recalculer la TTS courante avec le nouveau barème. Les deux coexistent sans hiérarchie, le contexte scientifique discrimine. C'est un acte de curation explicite, analogue au fork git : une lignée diverge volontairement et vit à côté. Aucun objet nouveau requis, ADR-026 l'autorise déjà.
+- Pour les états publiés devant persister avec un DOI, utiliser Dataset (A7) plutôt que le fork.
 - code unique par Station.
 
 | Champ                      | Cardinalité | Définition                             | Valeurs possibles                                                |
@@ -1899,10 +2160,11 @@ Identifier, Memory, KeywordAssignment
 | `featureOfInterest`        | 0..1 →FOI   | FOI proximate si différente de l'ancre | → FeatureOfInterest                                              |
 | `property`                 | 1 →Prop     | Variable produite                      | → Property                                                       |
 | `unit`                     | 1 →Unit     | Unité de la série dérivée              | → Unit                                                           |
-| `procedureTransformation` | 1 →Proc     | Procédure de transformation            | → Procedure (type=transformation)                                |
+| `procedureTransformation`  | 1 →Proc     | Procédure de transformation            | → Procedure (type=transformation)                                |
 | `acquisitionType`          | 1           | Mode d'acquisition des données         | `sensor_continuous` \| `lab_sample`                              |
 | `aggregationStatistic`     | 1           | Nature métrologique de la valeur       | `instantaneous` \| `average` \| `cumulative` \| `maximum` \| `minimum` \| `variance` \| `standard_deviation` \| `sporadic` |
-| `observationFrequency`     | 0..1        | Fréquence nominale (ISO 8601)          | "PT15M" \| "PT1H" - null si aggregationStatistic=sporadic        |
+| `observationFrequency`     | 0..1        | Fréquence nominale (ISO 8601)          | "PT15M" \| "PT1H" - null si sporadic                             |
+| `recalculationMode`        | 1           | Déclenchement du recalcul              | `auto` \| `manual`                                               |
 | `status`                   | 1           | État de la série                       | `active` \| `inactive` \| `discontinued`                         |
 | `license`                  | 1 →Lic      | Licence des données                    | → License                                                        |
 
@@ -1910,6 +2172,35 @@ Identifier, Memory, KeywordAssignment
 <div class="page-break"></div>
 
 # 9. ORGANISATION
+
+## Mapping DataCite
+
+Correspondance entre les propriétés DataCite 4.6 et les entités BDOH, commune à
+`Bundle` (export éditorial vivant) et `Dataset` (export figé citable). Ce mapping
+décrit le comportement d'export : un seul champ obligatoire DataCite est purement
+éditorial (le Title) ; tout le reste se dérive de ce que le modèle porte déjà
+(`Responsibility`, `Observatory`, `KeywordAssignment`, enveloppe spatio-temporelle
+des séries). Aucune métadonnée n'est donc ressaisie : le mapping est une vue
+dérivée, pas un stockage.
+
+| Propriété DataCite     | Obligation  | Source dans BDOH                                       | Stocké / dérivé     |
+|------------------------|-------------|--------------------------------------------------------|---------------------|
+| Identifier (DOI)       | Mandatory   | `Identifier` (codeType=doi)                            | dérivé (dépôt)      |
+| Creator                | Mandatory   | `Responsibility` (role=author / principalInvestigator) | dérivé              |
+| Title                  | Mandatory   | `Bundle.name` ou `Dataset.title`                       | stocké              |
+| Publisher              | Mandatory   | `Observatory` rattaché                                 | dérivé              |
+| PublicationYear        | Mandatory   | année du dépôt (Bundle) ou `Dataset.exportedAt`        | calculé / stocké    |
+| Subject                | Mandatory   | `KeywordAssignment` (type=theme / discipline)          | dérivé              |
+| ResourceType           | Mandatory   | constante "Dataset"                                    | constante           |
+| Description (Abstract) | Recommended | `Bundle.abstract`                                      | stocké              |
+| Date (couverture)      | Recommended | min/max phenomenonTime des séries, ou fenêtre Dataset  | dérivé / stocké     |
+| GeoLocation            | Recommended | enveloppe spatiale des stations incluses               | dérivé              |
+| Contributor            | Recommended | `Responsibility` (autres rôles)                        | dérivé              |
+| Language               | Recommended | constante "fr" ou "en" selon contexte                  | constante           |
+| FundingReference       | Optional    | `Project` lié via Responsibility / KeywordAssignment   | dérivé              |
+| RelatedIdentifier      | Optional    | `Identifier` (autres types) ; IsDerivedFrom à l'export | dérivé              |
+
+---
 
 ## Project
 > Projet ou campagne ayant financé ou porté une ressource.
@@ -1970,36 +2261,43 @@ Responsibility, Identifier, Memory
 ---
 
 ## Bundle
-> Regroupement éditorial de séries et fonctions pour la diffusion et le catalogage - objet de publication.
+> Regroupement éditorial de séries et fonctions pour la diffusion et le catalogage - objet de publication vivant.
 
 *Aligné avec* :
-- [ODM2 Datasets](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/core_datasets.md)
-  - mécanisme ODM2 de regroupement logique de résultats en jeu de données
-  cohérent ; Bundle reprend ce principe pour la publication.
-- [DataCite Metadata Schema](https://schema.datacite.org/) - schéma de référence
-  pour la publication citable d'un jeu de données (DOI, publisher, version,
-  relatedIdentifier). Cible d'export d'un Bundle vers un entrepôt à DOI.
+- [DataCite Metadata Schema 4.6](https://datacite-metadata-schema.readthedocs.io/en/4.6/properties/)
+  - schéma de référence pour la publication citable d'un jeu de données (DOI,
+  Creator, Title, Publisher, Subject...). Bundle est exportable vers tout entrepôt
+  compatible DataCite (Dataverse, Zenodo, RDG...). Voir le mapping ci-dessous dans
+  la note.
 - [DCAT Distribution](https://www.w3.org/TR/vocab-dcat-3/#Class:Distribution)
   - classe du vocabulaire de catalogue W3C ; un Bundle correspond à une
   distribution accessible d'un dataset, exportable vers les catalogues
   (Theia/OZCAR, ENVRI-Hub).
+- [ODM2 Datasets](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/core_datasets.md)
+  - mécanisme ODM2 de regroupement logique de résultats en jeu de données
+  cohérent ; Bundle reprend ce principe pour la publication.
 
 *Relations inverses* :<br>
 KeywordAssignment
 
-*Note* : 
-- Regroupe des TimeSeries, TransformedTimeSeries, TransferFunction et ControlObservation pour la publication. Objet éditorial - pas technique.
+*Note* :
+- Regroupe des TimeSeries, TransformedTimeSeries, TransferFunction et ControlObservation pour la publication. Objet éditorial, pas technique.
 - Lien via la table bundle_series (seriesType + seriesId) - pattern TPC series.
 - Extensible à tout nouveau type de série sans migration de schéma.
+- Objet **vivant** : les séries incluses continuent d'évoluer après publication. Pour un snapshot figé citable avec DOI sur les valeurs, utiliser Dataset (A7).
+- Le DOI est porté par `Identifier` (codeType=doi), pas par un champ en dur (ADR-009/027).
+- `Subject` DataCite est fourni par `KeywordAssignment` : au moins un mot-clé thématique est attendu sur tout Bundle publié (type=theme ou type=discipline).
+- Mapping DataCite complet : voir la section *Mapping DataCite* en tête de section 9, commune à Bundle et Dataset.
 
-| Champ         | Cardinalité | Définition                          | Valeurs possibles              |
-|---------------|-------------|-------------------------------------|--------------------------------|
-| `id`          | 1           | Identifiant technique, clé primaire | uuid                           |
-| `name`        | 1           | Nom du bundle                       | "Qualité eau Saône 2024"       |
-| `description` | 0..1        | Description libre                   |                                |
-| `Observatory` | 1 →Obs      | Observatoire parent                 | → Observatory                  |
-| `license`     | 1 →Lic      | Licence des données du bundle       | → License                      |
-| `archivedAt`  | 0..1        | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z" |
+| Champ         | Cardinalité | Définition                                       | Valeurs possibles                      |
+|---------------|-------------|--------------------------------------------------|----------------------------------------|
+| `id`          | 1           | Identifiant technique, clé primaire              | uuid                                   |
+| `name`        | 1           | Titre éditorial (= DataCite Title)               | "Qualité eau Saône 2024"               |
+| `abstract`    | 0..1        | Description longue (= DataCite Abstract)         | texte libre                            |
+| `coverImage`  | 0..1        | URL d'une illustration pour les portails         | "https://..."                          |
+| `Observatory` | 1 →Obs      | Observatoire parent (= DataCite Publisher)       | → Observatory                          |
+| `license`     | 1 →Lic      | Licence des données du bundle                    | → License                              |
+| `status`      | 1           | État éditorial                                   | `draft` \| `published` \| `archived`   |
 
 ---
 
@@ -2014,6 +2312,59 @@ KeywordAssignment
 | `bundleId`  | 1 →Bun      | Bundle parent                | → Bundle                                                                            |
 | `seriesType` | 1           | Type de la série ou fonction | `TimeSeries` \| `TransformedTimeSeries` \| `TransferFunction` \| `ControlObservation` |
 | `seriesId`   | 1           | UUID de la série ou fonction | uuid                                                                                |
+
+---
+
+## Dataset
+> Reçu d'un export figé vers un entrepôt externe (Dataverse...) - objet de citation immuable.
+
+*Aligné avec* :
+- [DataCite Metadata Schema 4.6](https://datacite-metadata-schema.readthedocs.io/en/4.6/properties/)
+  - le paquet de métadonnées envoyé à l'entrepôt est construit selon ce schéma
+  (mapping commun à Bundle et Dataset, voir la section *Mapping DataCite* en tête
+  de section 9). Le DOI obtenu identifie le dépôt externe.
+- [DataCite RelatedIdentifier](https://datacite-metadata-schema.readthedocs.io/en/4.6/properties/relatedidentifier/)
+  - le paquet exporté porte un relatedIdentifier (relationType=IsDerivedFrom)
+  pointant vers les ressources BDOH d'origine, fermant la boucle entrepôt -> source.
+
+*Utilisé par* :<br>
+Identifier (resourceType='Dataset', codeType=doi)
+
+*Relations inverses* :<br>
+dataset_resource (les ressources BDOH incluses dans l'export)
+
+*Note* :
+- Reçu d'export, pas un conteneur de données. BDOH ne stocke jamais les valeurs figées : le snapshot est calculé au vol au moment de l'export, envoyé à l'entrepôt, et non conservé. L'archive et la garantie de reproductibilité vivent sur l'entrepôt (Dataverse), pas dans BDOH.
+- Objet immuable une fois créé : il documente un acte d'export daté.
+- Distinction avec Bundle : Bundle est un suivi éditorial vivant (pointe vers des ressources qui évoluent) ; Dataset est une citation figée (référence un dépôt externe à un instant T). Un Bundle peut engendrer un Dataset (sourceBundle), mais un export peut aussi se faire sans Bundle.
+- Le DOI est celui attribué par l'entrepôt externe, porté par `Identifier` (codeType=doi), pas un champ en dur.
+- Sert de compteur de réutilisation : compter les Dataset incluant une ressource donnée (via dataset_resource) donne le nombre d'exports/citations de cette ressource. Comptage partiel par construction (ne couvre que les exports passés par la passerelle BDOH), à documenter comme tel.
+- temporalCoverageStart/End : fenêtre globale du panier exporté (= DataCite Date). Obligatoires sur l'objet stocké. Si l'utilisateur ne précise pas de fenêtre, BDOH calcule l'enveloppe réelle (min/max phenomenonTime des ressources) au moment de l'export et la fige ici.
+
+| Champ                   | Cardinalité | Définition                                      | Valeurs possibles            |
+|-------------------------|-------------|-------------------------------------------------|------------------------------|
+| `id`                    | 1           | Identifiant technique, clé primaire             | uuid                         |
+| `title`                 | 1           | Titre du dépôt exporté (= DataCite Title)       | "Débits Saône 2010-2015"     |
+| `exportedAt`            | 1           | Date de l'export (= DataCite PublicationYear)   | "2024-06-01T00:00:00Z"       |
+| `temporalCoverageStart` | 1           | Début de la fenêtre exportée                    | "2010-01-01T00:00:00Z"       |
+| `temporalCoverageEnd`   | 1           | Fin de la fenêtre exportée                      | "2015-12-31T23:59:59Z"       |
+| `repositoryUrl`         | 0..1        | URL du dépôt sur l'entrepôt externe             | "https://entrepot.../dataset/123" |
+| `sourceBundle`          | 0..1 →Bun   | Bundle d'origine si l'export en provient         | → Bundle                     |
+
+---
+
+## dataset_resource
+> Ressources BDOH incluses dans un export Dataset - table de jointure.
+
+*Note* :
+- Relie un Dataset aux ressources BDOH effectivement exportées (pattern TPC series).
+- Pas de bornes temporelles par ressource : la fenêtre est globale au Dataset. Un panier sur des périodes hétérogènes se fait en plusieurs exports (plusieurs Dataset, plusieurs DOI).
+
+| Champ        | Cardinalité | Définition                   | Valeurs possibles                                                                   |
+|--------------|-------------|------------------------------|-------------------------------------------------------------------------------------|
+| `dataset`    | 1 →Dat      | Dataset parent               | → Dataset                                                                           |
+| `seriesType` | 1           | Type de la ressource exportée | `TimeSeries` \| `TransformedTimeSeries` \| `TransferFunction` \| `ControlObservation` |
+| `seriesId`   | 1           | UUID de la ressource         | uuid                                                                                |
 
 ---
 

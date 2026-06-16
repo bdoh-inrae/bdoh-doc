@@ -5,6 +5,19 @@ a été retenue, quelles alternatives ont été écartées et pour quelle raison
 L'objectif est de rendre le modèle maintenable dans le temps sans avoir à
 reconstruire le raisonnement depuis zéro.
 
+Comment lire ce fichier. Chaque décision vivante porte son raisonnement : la
+décision, le contexte, le choix retenu, et pourquoi il ne faut pas le rouvrir à
+la légère. Les décisions remplacées par une décision ultérieure sont regroupées
+en fin de fichier (section « Décisions remplacées »), pour ne pas couper le fil
+de lecture sept fois. Les invariants structurels les plus porteurs sont rappelés
+dans `CLAUDE.md`, chacun avec un renvoi vers son ADR.
+
+Un ADR est un **instantané daté** de la décision. Quand il énumère des tables ou
+des valeurs (par exemple les tables portant un pattern, ou les tables à `status`
+contre `archivedAt`), cette liste reflète l'état au moment de la décision. La
+liste courante, elle, fait foi dans `modele_donnees_v12.md` ; on ne resynchronise
+pas un ADR a posteriori pour suivre une évolution du modèle.
+
 ---
 
 ## ADR-001 -- STA comme base, étendu par ODM2
@@ -18,9 +31,8 @@ technologiquement (XML, WaterOneFlow).
 
 **Choix retenu** : STA pour la structure et l'interface, ODM2 pour la sémantique
 des métadonnées environnementales. C'est l'approche de Horsburgh et al. (2024)
-avec HydroServer. STA 1.1 reste la référence de production -- STA 2.0 (appel
-à commentaires jan. 2026) et OGC CS API v1.0 (publié fév. 2026) sont surveillés
-pour la v2.
+avec HydroServer. STA 1.1 reste la référence de production ; STA 2.0 et OGC CS
+API sont surveillés pour la v2 (état daté de ces standards : voir sources.md).
 
 **Références** : Horsburgh et al. (2024), *Environmental Modelling and Software*
 doi:10.1016/j.envsoft.2024.106241
@@ -105,24 +117,11 @@ plusieurs observations peuvent découler du même prélèvement.
 
 ---
 
-## ADR-008 -- SUPERSEDE par ADR-030
-
-**Statut** : obsolète. `discipline` et `theme` sur `Property` passent en
-`KeywordAssignment` conformément à ADR-030.
-
----
-
 ## ADR-009 -- Identifiants : UUID + code lisible
 
 **Décision** : `id` UUID immuable + `code` kebab-case lisible sur toutes les entités.
 
 **Convention** : suggestion automatique depuis `name` (ou `serialNumber` pour System).
-
----
-
-## ADR-010 -- SUPERSEDE par ADR-037
-
-**Statut** : obsolète. `Deployment` a été profondément refactorisé (ADR-037).
 
 ---
 
@@ -165,13 +164,6 @@ La FOI est absente de la couche IoT -- portée par Station et TimeSeries (ADR-03
 
 ---
 
-## ADR-015 -- SUPERSEDE par ADR-036
-
-**Statut** : obsolète. `TimeSerieDatastream` renommé `HistoricalDatastream`
-et simplifié (ADR-036). Renommé ensuite `TimeSeriesSource` (voir ADR-048).
-
----
-
 ## ADR-016 -- processingLevel absent du modèle
 
 **Décision** : `processingLevel` supprimé. La structure encode le niveau :
@@ -185,13 +177,6 @@ et simplifié (ADR-036). Renommé ensuite `TimeSeriesSource` (voir ADR-048).
 
 **Décision** : BDOH garde `unitOfMeasurement` comme FK vers `Unit` sur `Datastream`,
 plutôt que le `resultType` SWE-Common de STA 2.0.
-
----
-
-## ADR-018 -- SUPERSEDE par ADR-031
-
-**Statut** : obsolète. `license` et `access` remplacés par `License` table
-obligatoire (ADR-031).
 
 ---
 
@@ -277,13 +262,6 @@ les tableaux. Accessibles via requête sur la table qui porte la FK.
 
 ---
 
-## ADR-029 -- SUPERSEDE par ADR-037
-
-**Statut** : obsolète. `InstrumentUsage` supprimé, remplacé par `System` +
-`Deployment` récursif (ADR-037).
-
----
-
 ## ADR-030 -- Système de vocabulaires contrôlés via quadriptyque Keyword
 
 **Décision** : tous les vocabulaires contrôlés évolutifs passent par
@@ -298,28 +276,16 @@ TransformedTimeSeries et Bundle (renommé depuis TimeSeriesBundle, ADR-042).
 
 ---
 
-## ADR-032 -- SUPERSEDE par ADR-036
-
-**Statut** : obsolète. `TimeSerieDatastream` renommé `HistoricalDatastream`
-et sa structure a évolué (ADR-036). Renommé ensuite `TimeSeriesSource` (voir ADR-048).
-
----
-
-## ADR-033 -- Procedure.type : ajout de aggregation
+## ADR-033 -- Procedure.type : ajout de aggregation puis analysis
 
 **Décision** : `Procedure.type` inclut `aggregation` pour les agrégations
-temporelles (QJXA, cumuls...).
+temporelles (QJXA, cumuls...) et `analysis` pour les analyses laboratoire sur
+Specimen (dosages chimiques, mesures ex situ).
 
 **Valeurs complètes** :
 ```
-sampling | observation | modeling | aggregation | transformation | validation
+sampling | observation | analysis | modeling | aggregation | transformation | validation
 ```
-
----
-
-## ADR-034 -- SUPERSEDE par ADR-037
-
-**Statut** : obsolète. Sensor et Equipment fusionnés en `System` (ADR-037).
 
 ---
 
@@ -377,7 +343,7 @@ d'objet physique traçable. La vue API STA /Sensors est une vue filtrée
 - `TimeSeries` de position : position continue (trajectoire drone, profileur
   autonome) -- property=position, aggregationStatistic=Instantaneous
 
-**Références** : OGC CS API v1.0 (fév. 2026), SOSA/SSN, SensorML
+**Références** : OGC CS API v1.0, SOSA/SSN, SensorML
 
 ---
 
@@ -512,8 +478,8 @@ different de Instantaneous ou Sporadic.
 
 ## ADR-045 -- ControlObservation : TPC seriesType + seriesId
 
-**Décision** : `ControlObservation.timeSerie` remplacé par `seriesType + seriesId`
-(pattern TPC), cohérent avec `bundle_seriess`.
+**Décision** : `ControlObservation.timeSeries` remplacé par `seriesType + seriesId`
+(pattern TPC), cohérent avec `bundle_series`.
 
 **Valeurs** : `TimeSeries | TransformedTimeSeries`
 
@@ -542,7 +508,8 @@ et multiples (plusieurs contacts selon le rôle). `Responsibility` avec
 propriétaire et de responsable de calibration sur les instruments.
 
 **Conséquence** : `System` ajouté à la liste `resourceType` de `Responsibility`
-dans le modèle (déjà présent en v11 ligne 39). Aucune migration de schéma requise.
+dans le modèle (déjà présent dans la liste `resourceType` de `Responsibility`).
+Aucune migration de schéma requise.
 
 ---
 
@@ -703,31 +670,245 @@ de nommage temporel).
 
 ---
 
-## Points ouverts
+## ADR-051 -- TransformationBatch : moteur d'exécution unifié
 
-L'inventaire complet et structuré des chantiers et questions en suspens est
-maintenant tenu dans `points_ouverts.md` (document de travail pour discussions
-collectives). À consulter pour l'état actuel des décisions non tranchées,
-notamment :
+**Décision** : `TransformationBatch` devient le mécanisme universel pour toute
+transformation, qu'elle applique un barème stocké ou un algorithme externe.
+`transferFunctionSet` passe à `0..1`. Deux champs obligatoires ajoutés :
+`runner 1 →Machine` (le système qui exécute) et `algorithm 1 →Algorithm`
+(le code qui tourne). `parameters 0..1` (JSON ou référence vers un fichier
+de paramétrage externe) porte la configuration d'exécution propre au batch.
 
-- Partie A (chantiers structurels) : A1 Transformation comme moteur d'exécution,
-  A2 Incertitude de mesure, A3 Bundle éditorial, A4 Historisation TFSet et
-  versionnement TTS, A5 Datastreams multiples simultanés, A6 Instrumentation
-  labo, A7 Entité Dataset distincte de Bundle.
-- Partie B (décisions en attente) : B1 Frontière enum SQL / Keyword.
-- Partie C (ambiguïtés locales) : C1 à C4.
-- Partie D (veille standards).
+**Contexte** : `transferFunctionSet` était obligatoire (1), forçant toute
+transformation à passer par un jeu de fonctions de transfert. Or l'agrégation,
+le comblement de lacunes, le ré-échantillonnage et la correction n'ont pas de
+fonction de transfert stockée.
 
-### Chantiers techniques en cours (hors modèle de données)
+**Familles de transformation couvertes** : agrégation, ré-échantillonnage,
+comblement de lacunes, correction, application de barème (via `transferFunctionSet`),
+combinaison multi-séries (plusieurs entrées + rôles dans `parameters`).
 
-**Intégrité applicative** -- à implémenter (voir integrity_checks.md)
+**`transformationbatch_inputseries`** : étendu en TPC series (`seriesType` +
+`seriesId`) pour accepter `TimeSeries` et `TransformedTimeSeries` en entrée.
 
-- Triggers `prevent_physical_delete` sur toutes les entités (ADR-043)
-- Triggers BEFORE INSERT/UPDATE pour les relations TPC (ADR-004, ADR-040, ADR-041, ADR-047)
-- Requêtes de vérification périodique
+**`TransformedTimeSeries.recalculationMode`** (`auto`|`manual`) : contrôle le
+déclenchement du recalcul quand une série source change.
 
-**Documentation**
+---
 
-- Régénérer bdoh-doc depuis modele_donnees_v12.md
-- Mettre à jour standards/index.md (OGC CS API v1.0, STAMPLATE schema 2025)
-- Sections à créer/revoir : instrumentation.md (System+Deployment), rawdata.md
+## ADR-052 -- Algorithm : objet dédié pour le code versionné
+
+**Décision** : nouvel objet `Algorithm` (section 8. TRANSFORMATION) pour
+référencer le code exécuté par un `TransformationBatch`. Séparation claire entre
+`Machine` (le système qui tourne) et `Algorithm` (le code qui tourne dessus).
+
+**Champs clés** : `codeRepository` (URL de la forge), `path` (script dans le
+dépôt), `version` (tag git par convention), `swhid` (Software Heritage, épingle
+la version exacte), `doi` (publication si elle existe).
+
+**Règle de versionnement** : une version de code = une ligne `Algorithm`. Le
+`swhid` est immuable par ligne. `status` (`active`|`superseded`|`deprecated`)
+désigne la version courante pour un `name` donné. Contrainte d'unicité sur
+`swhid` quand non-null.
+
+**`Machine`** allégé en conséquence : ne porte plus les métadonnées du code
+(migrées sur `Algorithm`), uniquement l'identité du système qui tourne
+(`name`, `description`, `serviceUrl`).
+
+**Justification** : un runner peut exécuter plusieurs algorithmes différents ;
+le même algorithme peut tourner sur plusieurs runners. Les deux sont des objets
+distincts avec des cycles de vie distincts.
+
+---
+
+## ADR-053 -- TransferFunctionSet refondation : réservoir de TF + jointure datée
+
+**Décision** : refonte du cluster TF. `TransferFunctionSet` ne porte plus de
+FK directe vers `TransferFunction`. La composition est portée par une nouvelle
+table de jointure `transferfunctionset_function` (`tfSet`, `tf`, `validFrom`,
+`validTo`). Les champs `type` (identity|manual|function) et `validFrom`/`validTo`
+sont supprimés de `TransferFunctionSet`.
+
+**Conséquence** : une même `TransferFunction` peut appartenir à plusieurs TFSet
+(réservoir). La succession temporelle des courbes dans un barème est portée par
+la jointure, pas par les objets eux-mêmes. La temporalité "vecteurs de paramètres
+qui évoluent dans le temps" est ainsi gratuite : une TF par période via la
+jointure, des paramètres par période.
+
+**Sur `TransferFunction`** : `validFrom`/`validTo` retirés (la période d'application
+est dans la jointure) ; remplacés par `acquisitionStart`/`acquisitionEnd` (période
+d'acquisition des données de calibration). Le JSON `parameters` retiré et
+remplacé par `TransferFunctionParameter` (voir ADR-056).
+
+---
+
+## ADR-054 -- TTS vivante, fork curé, Dataset pour la citation
+
+**Décision** : `Transformation` est l'état courant, sans versionnement
+automatique. Un recalcul écrase les valeurs. Les batches archivés constituent
+le journal de méthode. La reproductibilité totale (figer aussi les entrées)
+n'est pas une promesse de BDOH.
+
+**Fork curé** : quand un état de calcul a une valeur scientifique durable
+(comparaison de barèmes, version ayant servi à une publication), le curateur
+crée une TTS coexistante avant de recalculer. Analogie git : une lignée diverge
+volontairement. Pas d'objet nouveau, ADR-026 l'autorise déjà.
+
+**Dataset** (voir ADR-055) : pour les états publiés avec un DOI, c'est `Dataset`
+qui porte le snapshot figé, pas une TTS fork.
+
+---
+
+## ADR-055 -- Dataset : reçu d'export vers entrepôt externe
+
+**Décision** : nouvel objet `Dataset`. Ce n'est pas un conteneur de données
+mais un **reçu d'export** : BDOH calcule le snapshot au vol, l'envoie à
+l'entrepôt (Dataverse, RDG, Zenodo), et ne le conserve pas. La reproductibilité
+repose sur l'entrepôt, pas sur BDOH.
+
+**BDOH n'archive pas.** Il met à disposition et crée des données. Les snapshots
+figés citables vivent sur l'entrepôt externe.
+
+**Structure** : `title`, `exportedAt`, `temporalCoverageStart`/`End` (fenêtre
+globale, calculée si non saisie), `sourceBundle 0..1`, `repositoryUrl 0..1`.
+Ressources via `dataset_resource` (TPC series). DOI via `Identifier`.
+
+**Mapping DataCite** : commun à `Bundle` et `Dataset`, documenté dans la section
+*Mapping DataCite* en tête de section 9. La quasi-totalité des propriétés
+obligatoires est dérivable du modèle ; seul `abstract` est à stocker.
+
+**Compteur de réutilisation** : compter les `Dataset` incluant une ressource
+donne le nombre d'exports la citant. Partiel par construction (ne couvre que
+les exports passés par la passerelle BDOH), assumé comme tel.
+
+**Distinction Bundle/Dataset** : Bundle = suivi éditorial vivant, interne.
+Dataset = citation figée, sortante, référence un dépôt externe immuable.
+
+---
+
+## ADR-056 -- TransferFunctionParameter : dualité empirique/modèle sur TransferFunction
+
+**Décision** : nouvel objet `TransferFunctionParameter`, frère de
+`TransferFunctionPoint`. Chaque ligne est un coefficient du modèle ajusté
+avec sa loi marginale d'incertitude (`distributionType`, `distributionParam1`,
+`distributionParam2`). Le JSON `parameters` est retiré de `TransferFunction`.
+
+**Dualité** : `TransferFunctionPoint` = face empirique (jaugeages, couples x/y
+terrain) ; `TransferFunctionParameter` = face modèle (coefficients avec
+distribution). `TransferFunctionBatch` = acte de calage.
+
+**Covariance** : `TransferFunction.covariance` (JSON) porte la matrice de
+covariance entre coefficients. Seul blob JSON résiduel justifié : une matrice
+dense ne se décompose pas naturellement en lignes.
+
+**Générateur d'ensemble** : lignes `TransferFunctionParameter` + matrice
+`covariance` constituent le générateur complet pour la propagation ensembliste
+d'incertitude (spaghetti BaRatin) sans stocker les tirages.
+
+**Alignement** : GUM (JCGM 100:2008) pour l'expression de l'incertitude ;
+BaRatin / Le Coz et al. 2014 pour le cadre bayésien. Objet voué à évoluer
+avec l'état de l'art sans casser la structure.
+
+---
+
+## ADR-057 -- Incertitude sur les valeurs : bornes asymétriques optionnelles
+
+**Décision** : ajout de `uncertaintyLow 0..1` / `uncertaintyHigh 0..1` sur
+`ValidatedObservation` et `Transformation` (bornes asymétriques de l'incertitude
+propagée). Ajout de `uncertaintyX 0..1` / `uncertaintyY 0..1` sur
+`TransferFunctionPoint` (incertitude sur le jaugeage lui-même, deux composantes
+distinctes nécessaires pour BaRatin).
+
+**Trois niveaux** :
+- Niveau 1 (bornes sur les valeurs) : les champs ci-dessus, optionnels.
+- Niveau 2 (générateur) : `TransferFunctionParameter` + `covariance` (ADR-056).
+- Niveau 3 (propagation) : un `TransformationBatch` ordinaire dont l'algorithme
+  propage l'incertitude. Aucun objet nouveau.
+
+**Justification** : l'incertitude sur un débit calculé est asymétrique et
+variable dans le temps (dépend du point de fonctionnement sur la courbe et de
+l'incertitude de la hauteur en entrée, voir Le Coz et al. 2014). Un `± x`
+constant ne suffit pas.
+
+---
+
+## ADR-058 -- Frontière enum SQL / Keyword : grille de décision formalisée
+
+**Décision** : formaliser le critère de choix entre enum SQL et Keyword dans
+une section dédiée du modèle (*Choix enum SQL ou vocabulaire Keyword*, section
+introductive avant KeywordType).
+
+**Grille** : reste enum SQL si les trois conditions sont vraies, sinon Keyword :
+(1) le code branche sur la valeur (logique de calcul, contrainte ou résolution
+de FK changent selon la valeur) ; (2) l'ensemble est petit et fermé ; (3) ajouter
+une valeur est un acte de développement, pas de curation.
+
+**Application** : tous les enums actuels restent en SQL. `aggregationStatistic`
+examiné comme candidat Keyword, gardé SQL : le calcul et l'interprétation
+dépendent du type (`sporadic` conditionne `observationFrequency`). `Procedure.type`
+gardé SQL : garde-fou structurel (la bonne procédure au bon emplacement).
+L'option hybride (épine SQL + queue Keyword) écartée comme inélégante.
+
+**Note** : l'invariant 5 de `CLAUDE.md` (vocabulaires évolutifs via Keyword)
+reste valide ; cette décision en précise le critère, elle ne le contredit pas.
+
+---
+
+## ADR-059 -- Chaîne analytique labo : AnalysisBatch + AnalysisObservation
+
+**Décision** : modéliser la chimie de laboratoire par deux nouveaux objets,
+frères des Batch et observations existants, sans étendre `Deployment` ni
+créer de table ad hoc.
+
+**AnalysisBatch** : l'acte analytique (quel Specimen, quelle méthode, quel
+appareil, qui, quand). Frère de `ValidationBatch`, `TransformationBatch`...
+même famille, même pattern TPC agent. Porte les métadonnées de session.
+
+**AnalysisObservation** : la valeur mesurée sur le Specimen, symétrique de
+`ValidatedObservation` pour la couche lab_sample. Pointe vers sa `TimeSeries`
+parente (flux unifiant portant property, unité, license) et son `AnalysisBatch`.
+Porte les métadonnées propres à la mesure individuelle (LD, LQ, qualityFlag,
+uncertainty). Pas d'unité propre : c'est sur la TimeSeries.
+
+**Chaîne CUAHSI** (collecte, préparation, analyse) : portée par la filiation
+des Specimens (`derivedFrom`) plus un `AnalysisBatch` par étape analytique.
+Pas de hiérarchie de Batch.
+
+**Coexistence LIMS/interne** : si la chimie est traitée dans un LIMS externe,
+`Specimen.limsReference` suffit et `AnalysisBatch` n'est pas créé. Si la
+chaîne analytique est interne, `AnalysisBatch` + `AnalysisObservation` la
+documentent complètement. Les deux voies sont non exclusives. ADR-007 amendé
+en conséquence : "LIMS externe possible **ou** chaîne interne, au choix".
+
+**`Procedure.type`** : valeur `analysis` ajoutée (voir ADR-033 amendé).
+
+**Alignement** : ODM2 LabAnalyses + CUAHSI Specimen Actions. L'`AnalysisObservation`
+correspond au Measurement Result ODM2, l'`AnalysisBatch` à l'Action d'analyse.
+
+---
+
+## Décisions remplacées
+
+Ces décisions ont été remplacées par une décision ultérieure. Leur numéro est
+conservé pour que les références anciennes restent résolvables ; le raisonnement
+à jour est dans la décision qui les remplace.
+
+| ADR | Objet | Remplacée par |
+|---------|------------------------------------------|-------------------------------------------|
+| ADR-008 | `discipline` / `theme` sur Property      | ADR-030 (quadriptyque Keyword)            |
+| ADR-010 | Deployment (version initiale)            | ADR-037 (System + Deployment récursif)    |
+| ADR-015 | TimeSerieDatastream                      | ADR-036 puis ADR-048 (TimeSeriesSource)   |
+| ADR-018 | `license` / `access` en colonnes         | ADR-031 (table License obligatoire)       |
+| ADR-029 | InstrumentUsage                          | ADR-037 (System + Deployment récursif)    |
+| ADR-032 | TimeSerieDatastream (structure)          | ADR-036 puis ADR-048 (TimeSeriesSource)   |
+| ADR-034 | Sensor / Equipment séparés               | ADR-037 (fusion dans System)              |
+
+---
+
+## Renvois
+
+Les décisions non tranchées (chantiers de conception A1 à A7, décisions en
+attente, ambiguïtés locales, veille standards) sont dans `points_ouverts.md`.
+Les tâches d'implémentation (intégrité applicative, régénération de la
+documentation, ingestion) sont dans `CLAUDE.md`, et le détail des triggers et
+requêtes d'intégrité dans `integrity_checks.md`. Ce fichier ne les duplique pas.

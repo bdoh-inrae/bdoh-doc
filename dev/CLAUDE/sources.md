@@ -6,6 +6,19 @@ date: mai 2026
 affiliation: INRAE, UR RiverLy, Villeurbanne, France
 ---
 
+# À quoi sert ce fichier
+
+Ce fichier est la bibliographie annotée des standards et implémentations de
+référence de BDOH, et le **propriétaire unique de leur état daté** (version,
+ratification, publication). Pour chaque source : ce qu'elle est, ce qu'elle
+apporte à BDOH, et où elle en est. Quand un autre fichier a besoin de l'état
+d'un standard, il pointe ici plutôt que de le recopier.
+
+Il ne décrit pas le modèle (`modele_donnees_v12.md`) ni les décisions
+(`decisions_index.md`). Les questions de veille propres à BDOH, c'est-à-dire ce
+qu'il faudra décider quand un standard bouge, sont dans `points_ouverts.md`
+(partie D), pas ici.
+
 # Standards OGC
 
 ## OGC SensorThings API Part 1: Sensing 1.1 (STA)
@@ -15,9 +28,10 @@ Standard de base du modèle BDOH pour la structure et l'interface.
 - Vue d'ensemble : https://ogcapi.ogc.org/sensorthings/overview.html
 - Version 1.0 (référence historique) : https://docs.ogc.org/is/15-078r6/15-078r6.html
 
-**Etat en 2025-2026** : STA 1.1 reste la référence de production stable. STA 2.0 est
-en appel à commentaires publics depuis janvier 2026. Ce n'est plus tout à fait
-un "draft", mais ce n'est pas encore ratifié. La principale évolution de STA 2.0 est le passage sur OMS (ISO
+**Etat en 2025-2026** : STA 1.1 reste la référence de production stable. STA 2.0
+a fait l'objet d'un appel à commentaires publics OGC clos le 18 janvier 2026 ;
+les commentaires sont en cours d'intégration et le standard n'est pas encore
+ratifié. La principale évolution de STA 2.0 est le passage sur OMS (ISO
 19156:2023), ce qui change la terminologie autour de FeatureOfInterest (introduction
 des concepts Proximate/Ultimate FOI) et remplace `unitOfMeasurement` par `resultType`
 (objet SWE-Common). BDOH a bien fait de ne pas adopter ces concepts instables :
@@ -39,7 +53,8 @@ Modélisé sur SOSA/SSN. A surveiller pour les évolutions futures de BDOH.
 - GitHub SWG : https://github.com/opengeospatial/ogcapi-connected-systems
 
 **Etat en 2025-2026** : les Parts 1 et 2 de CS API ont été approuvées comme
-standards OGC officiels (annonce OGC début 2026). C'est le successeur officiel
+standards OGC officiels le 2 juin 2025, la version 1.0 ayant été publiée le
+22 juillet 2025. C'est le successeur officiel
 de STA, SOS et SPS, construit sur OGC API Features, JSON-LD, SOSA/SSN,
 SensorML 3.0 (avec encodages JSON désormais standardisés). Il est conçu pour
 coexister avec STA plutôt que le remplacer immédiatement : un endpoint CS API
@@ -296,8 +311,9 @@ types capteur/équipement) et comme référence pour la table `License`.
   arXiv. https://doi.org/10.48550/arXiv.2512.17280
 
 ## SANDRE - Service d'Administration Nationale des Données et Référentiels sur l'Eau
-Référentiel français pour les codes de qualité des données hydrométriques.
-Mapping qualityFlag BDOH : good=1, suspect=3, bad=4, missing=lacune.
+Référentiel français pour les codes de qualité des données hydrométriques. Le
+mapping des quatre valeurs `qualityFlag` de BDOH vers les codes SANDRE est défini
+dans `decisions_index.md` (ADR-024), qui en est le propriétaire.
 - Site : https://www.sandre.eaufrance.fr
 
 ## QUDT - Quantities, Units, Dimensions and Types
