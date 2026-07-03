@@ -703,13 +703,12 @@ référencer le code exécuté par un `TransformationBatch`. Séparation claire 
 `Machine` (le système qui tourne) et `Algorithm` (le code qui tourne dessus).
 
 **Champs clés** : `codeRepository` (URL de la forge), `path` (script dans le
-dépôt), `version` (tag git par convention), `swhid` (Software Heritage, épingle
-la version exacte), `doi` (publication si elle existe).
+dépôt), `version` (tag git, informatif).
 
-**Règle de versionnement** : une version de code = une ligne `Algorithm`. Le
-`swhid` est immuable par ligne. `status` (`active`|`superseded`|`deprecated`)
-désigne la version courante pour un `name` donné. Contrainte d'unicité sur
-`swhid` quand non-null.
+**Règle de versionnement** : une version de code = une ligne `Algorithm`,
+identifiée par son swhid porté en `Identifier` (codeType=swhid). `status`
+(`active`|`superseded`|`deprecated`) désigne la version courante pour un
+`name` donné.
 
 **`Machine`** allégé en conséquence : ne porte plus les métadonnées du code
 (migrées sur `Algorithm`), uniquement l'identité du système qui tourne
@@ -718,6 +717,19 @@ désigne la version courante pour un `name` donné. Contrainte d'unicité sur
 **Justification** : un runner peut exécuter plusieurs algorithmes différents ;
 le même algorithme peut tourner sur plusieurs runners. Les deux sont des objets
 distincts avec des cycles de vie distincts.
+
+**Amendement (audit de complétude TPC resource)** : `doi` et `swhid` retirés
+des colonnes d'`Algorithm`. Les deux identifient la ressource dans un registre
+externe (DOI en base de citation logicielle, SWHID dans l'archive Software
+Heritage), c'est le rôle d'`Identifier` (codeType=doi ou swhid), pas d'une
+colonne en dur, exactement le traitement déjà appliqué à `Bundle` et `Dataset`
+(ADR-009/027). `Algorithm` rejoint donc le domaine TPC resource, porteur
+d'`Identifier`, `Responsibility` et `KeywordAssignment` comme les autres
+ressources nommées du modèle. L'unicité du swhid est garantie par un index
+unique partiel sur `Identifier.code` restreint à `codeType='swhid'` ; son
+caractère obligatoire (pas de ligne Algorithm sans swhid archivé) reste une
+garantie applicative, au même niveau que le reste du pattern TPC resource
+(ADR-060), pas une exception native.
 
 ---
 
@@ -884,6 +896,36 @@ en conséquence : "LIMS externe possible **ou** chaîne interne, au choix".
 
 **Alignement** : ODM2 LabAnalyses + CUAHSI Specimen Actions. L'`AnalysisObservation`
 correspond au Measurement Result ODM2, l'`AnalysisBatch` à l'Action d'analyse.
+
+---
+
+## ADR-060 -- Pas de supertable Resource : l'intégrité TPC resource reste applicative
+
+**Décision** : pas de table `Resource` ni de FK native pour la déclinaison TPC
+resource (Identifier, Memory, Responsibility, KeywordAssignment, Historical*).
+Le pattern reste identique aux trois autres déclinaisons (ADR-047) : discriminant
+`resourceType + resourceId`, intégrité vérifiée par trigger et requête
+périodique, pas par contrainte de base.
+
+**Alternative écartée** : une supertable `Resource(id, resourceType)`, minimale,
+sans `code` ni `statut` pour ne pas répéter l'erreur TPT signalée dans
+`agent_TPC_philosophie_synthese.md` (parent qui redevient épais). Même réduite
+à l'identité seule, elle a été écartée : le risque qu'elle couvre, un
+`resourceId` pointant vers une ligne qui n'existe plus, suppose qu'une ligne
+référencée soit supprimée physiquement. C'est déjà interdit par ADR-043 sur
+toute entité référencée. La supertable duplique une garantie que l'invariant
+de suppression logique porte déjà, pour un coût réel (écriture double à la
+création, discipline API à maintenir sur une table de plus).
+
+**Ce que ça n'était pas** : le vrai problème déclenchant (des listes de
+`resourceType` divergentes selon les tables, ex. `AnalysisObservation` absente
+partout) n'est pas un défaut de structure mais un défaut de complétude du
+modèle en cours de construction. Traité par audit des quatre grilles TPC
+(resource, anchor, agent, series), pas par une structure supplémentaire.
+
+**Portée** : referme S1 dans `points_ouverts.md`. Ne rouvre pas ADR-047 ni
+ADR-004/ADR-040 (choix de TPC contre TPT/TPH pour agent, même raisonnement
+valable ici).
 
 ---
 

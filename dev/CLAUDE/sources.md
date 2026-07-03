@@ -334,7 +334,7 @@ BDOH via `License.spdxId`.
 
 ## SWHID - Software Hash Identifier (ISO/IEC 18670:2025)
 Identifiant intrinsèque permanent du code source. Utilisé dans BDOH via
-`Machine.swhid` pour la reproductibilité scientifique des pipelines.
+`Algorithm.swhid` pour la reproductibilité scientifique des pipelines.
 - Spécification : https://www.swhid.org/swhid-specification/
 - Archive Software Heritage : https://www.softwareheritage.org/
 
@@ -371,8 +371,8 @@ pour vérifier la cohérence des alignements et pour les enrichir.
 | WMO | Station, TransferFunction, TransferFunctionSet | Stations hydrologiques et courbes de tarage |
 | QUDT / UCUM | Unit | URIs et syntaxe des unités |
 | SPDX | License | Identifiants de licences canoniques |
-| SWHID / Software Heritage | Machine | Identifiant permanent du code source |
-| CodeMeta | Machine | Métadonnées logicielles |
+| SWHID / Software Heritage | Algorithm | Identifiant permanent du code source |
+| CodeMeta | Algorithm | Métadonnées logicielles |
 | ORCID / ROR | Person / Organization | Identifiants persistants (via Identifier) |
 | GeoJSON (RFC 7946) | Location | Encodage de la géométrie |
 | INSPIRE | Site, Identifier | Interopérabilité géographique européenne |

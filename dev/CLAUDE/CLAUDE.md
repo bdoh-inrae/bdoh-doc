@@ -30,13 +30,19 @@ Le modèle repose sur une base TimescaleDB et deux couches : une couche IoT brut
 (STA 1.1) et une couche métier BDOH (données validées et dérivées), cousues par
 `TimeSeriesSource`. Le détail est dans `modele_donnees_v12.md`.
 
+**Statut du chantier : conception, rien d'implémenté.** Aucune base ne tourne, aucun
+schéma SQL n'est appliqué quelque part. Le travail avec Claude porte sur les fichiers
+Markdown eux-mêmes. Conséquence directe : une incohérence relevée maintenant se
+corrige en éditant le modèle, sans coût de migration. C'est le bon moment pour lever
+les divergences ; ce ne sera plus le cas une fois l'implémentation commencée.
+
 
 ## Carte des fichiers : qui possède quoi
 
 | Fichier | Possède (source de vérité de...) |
 |---------|-----------------------------------|
 | `modele_donnees_v12.md` | la **structure** : entités, colonnes, patterns TPC, conventions de nommage, scopes d'unicité, enums SQL, suppression logique, vocabulaires Keyword |
-| `decisions_index.md` | le **pourquoi** : ADR-001 à ADR-059, alternatives écartées |
+| `decisions_index.md` | le **pourquoi** : ADR-001 à ADR-060, alternatives écartées |
 | `points_ouverts.md` | ce qui **n'est pas tranché** : constats concrets (C), risques structurels (S), points de modélisation (M), veille standards (V), avec triage sévérité/effort |
 | `sources.md` | les **standards externes** et leur état daté, table source vers entités |
 | `SOUL.md` | la **manière de penser et de collaborer** |

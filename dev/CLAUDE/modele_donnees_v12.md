@@ -112,22 +112,44 @@ Permalink : /resources/{uuid}
 
 ## code
 
-Slug lisible, obligatoire (`1`) sur toutes les entités. Modifiable par
-l'utilisateur. Une suggestion automatique est proposée à la création
-depuis le `name` (ou le `serialNumber` pour System). Le code est unique
-dans son scope parent : deux entités de scopes différents peuvent avoir
-le même code.
+Slug lisible (kebab-case) présent sur les entités nommées navigables : celles
+qu'un humain identifie et requête de mémoire dans une URL ou un script, sans
+manipuler d'UUID. Là où il existe, il est obligatoire, jamais optionnel : un
+code présent une fois sur deux obligerait, pour chaque objet, à deviner si
+l'UUID ou le code est la bonne entrée. Modifiable par l'utilisateur, avec une
+suggestion automatique à la création depuis le `name` (ou le `serialNumber`
+pour System). Unique dans son scope parent (voir Scopes d'unicité) : deux
+entités de scopes différents peuvent porter le même code.
 
-Le `code` est un **confort de navigation** : il permet aux techniciens
-de lire et comprendre les ressources de l'API sans manipuler des UUID.
-Il n'a aucune valeur d'identifiant pérenne - parce qu'il est modifiable,
-il ne doit jamais servir de cible à un lien partagé, un export cité ou
-une référence externe. Ces usages passent exclusivement par l'UUID.
-La modification d'un `code` est donc sans conséquence sur l'intégrité :
-elle relève de l'organisation et de la lisibilité, pas de l'identification.
+Le `code` est un **confort de navigation**, pas un identifiant. Il permet de
+lire et requêter les ressources de l'API sans manipuler d'UUID. Parce qu'il est
+modifiable, il ne sert jamais de cible à un lien partagé, un export cité ou une
+référence externe : ces usages passent exclusivement par l'UUID (identité
+pérenne) ou par `Identifier` (identifiant externe cité). Le modifier est donc
+sans conséquence sur l'intégrité, cela relève de la lisibilité, pas de
+l'identification.
 
-Les codes externes (SANDRE, TheiaOZCAR, WIGOS...) sont portés par
-`Identifier`, pas par `code`. Le `code` est interne à BDOH.
+Portent un `code` : Observatory, Site, Station, System, Deployment, Datastream,
+TimeSeries, TransformedTimeSeries, TransferFunction, TransferFunctionSet,
+Algorithm, Project, Organization, Property, Unit, Procedure, FeatureOfInterest.
+Pour `Algorithm` et `TransferFunction`, dont plusieurs lignes coexistent au fil
+des versions, le slug inclut la version ("agregation-qjxa-v3", "hea-qmj-v3") et
+reste unique ligne à ligne comme partout ; la version exacte reste épinglée par
+le `swhid` pour `Algorithm`, le `code` ne fait que la nommer lisiblement.
+
+N'en portent pas, chacune pour une raison précise :
+- les lignes d'observation (`Observation`, `ValidatedObservation`,
+  `AnalysisObservation`, `ControlObservation`) : on n'atteint jamais une mesure
+  individuelle en la tapant, toujours via sa série ;
+- `Person` : pas de slug fiable (homonymes, changements de nom) ; on la
+  recherche par son nom et on la cite par un `Identifier` (ORCID) s'il existe ;
+- `Bundle` et `Dataset` : cités par leur DOI, qui existe forcément ;
+- `Specimen` : identifié par son code de laboratoire externe, porté par
+  `limsReference` (ou un `Identifier`), pas par un slug BDOH ajouté en plus ;
+- `Memory` : atteinte par navigation depuis la ressource qu'elle annote.
+
+Les codes externes (SANDRE, TheiaOZCAR, WIGOS...) sont portés par `Identifier`,
+pas par `code`. Le `code` est interne à BDOH.
 
 ## Scopes d'unicité du code
 
@@ -139,12 +161,15 @@ Project               unique globalement
 Procedure             unique globalement
 Property              unique globalement
 Unit                  unique globalement
+Algorithm             unique globalement (version dans le slug)
+FeatureOfInterest     unique globalement
 Site                  unique par Observatory
 Station               unique par Site
 Deployment            unique par Station
 TimeSeries            unique par ancre (Observatory, Site ou Station)
 Datastream            unique par ancre (Observatory, Site ou Station)
 TransferFunction      unique par ancre (Observatory, Site ou Station)
+TransferFunctionSet   unique par ancre (Observatory, Site ou Station)
 TransformedTimeSeries unique par ancre (Observatory, Site ou Station)
 ```
 
@@ -167,91 +192,135 @@ Ce pattern TPC est décliné en quatre usages, présentés ci-dessous :
 - **TPC agent** (`agentType + agentId`) : désigner l'acteur d'un acte
   (Person, Machine ou Organization).
 - **TPC series** (`seriesType + seriesId`) : pointer vers une série ou une
-  fonction, quel que soit son type (utilisé par `bundle_series`).
+  fonction, quel que soit son type (regroupements, exports, entrées de calcul,
+  contrôles).
 
 ## Pattern TPC resource (resourceType + resourceId)
 
-Ces tables portent la FK vers la ressource cible via `resourceType + resourceId`.
-Elles ne génèrent aucune colonne dans les tables cibles.
+Rattache une donnée transverse (identifiant, mot-clé, note, responsable,
+historique) à une ressource quelconque. `resourceType` discrimine le type de
+ressource, `resourceId` porte son uuid.
 
-| Table               | Ce qu'elle stocke                        | Ressources supportées |
-|---------------------|------------------------------------------|------------------------|
-| `Identifier`        | PIDs vers référentiels externes          | toutes les entités navigables |
-| `Memory`            | Notes, événements, photos                | Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deployment, Project, TransferFunction |
-| `Responsibility`    | Rôles d'acteurs sur des ressources       | Observatory, Site, Station, System, Datastream, TimeSeries, TransformedTimeSeries, TransferFunction, Project, Bundle |
-| `KeywordAssignment` | Mots-clés et classifications contrôlées  | toutes les entités (voir KeywordAssignment.resourceType) |
-| `KeywordRequirement`| Règles de complétion minimale            | défini par resourceType + keywordType |
-| `HistoricalLocation`| Positions géographiques successives      | Observatory, Site, Station, Deployment |
-| `HistoricalProject` | Projets porteurs successifs              | Observatory, Site, Station, TimeSeries |
-| `bundle_series`      | Séries et fonctions regroupées en bundle | TimeSeries, TransformedTimeSeries, TransferFunction, ControlObservation |
+Domaine de référence de `resourceType` : `Observatory`, `Site`, `Station`,
+`System`, `Deployment`, `Datastream`, `TimeSeries`, `TransformedTimeSeries`,
+`TransferFunction`, `TransferFunctionSet`, `Project`, `Bundle`, `Dataset`,
+`Person`, `Organization`, `Property`, `Unit`, `Procedure`, `FeatureOfInterest`,
+`Specimen`, `ControlObservation`, `Algorithm`, `Memory`.
+
+Ne sont pas des ressources, et n'apparaissent dans aucune table ci-dessous : les
+lignes de données (`Observation`, `ValidatedObservation`, `AnalysisObservation`),
+les batches (qui portent leur acteur en propre, ce sont des événements), les
+vocabulaires eux-mêmes (`Keyword`, `KeywordType`), les entités fermées et
+autodéfinies (`License`, `Location`), les lignes de couture ou de calcul
+(`TimeSeriesSource`, `Transformation`, `TransferFunctionPoint`,
+`TransferFunctionParameter`).
+
+Critère `Identifier` contre `Keyword` (tranche les cas limites). `Identifier`
+porte un identifiant de la ressource elle-même dans un registre (DOI, ORCID, ROR,
+SWHID, code SANDRE) : il dit ce que la ressource est. `Keyword` porteur d'`uri`
+aligne la ressource sur un terme de thésaurus (UCUM, QUDT, NERC P01, Theia/OZCAR) :
+il dit dans quel vocabulaire elle se classe, et il est multi-valué (une même
+ressource s'aligne sur plusieurs thésaurus). Un URI de vocabulaire n'est donc pas
+un `Identifier`. Frontière assumée : un code de référentiel comme SANDRE est
+traité en `Identifier`, ce choix relève du jugement, pas d'une propriété de l'URI.
+
+Chaque table n'accepte qu'un sous-ensemble de ce domaine ; la liste exacte est
+portée par le champ `resourceType` de son tableau, seule source de vérité. Le
+tableau ci-dessous n'est qu'un index des tables porteuses, et le domaine de
+référence est l'union maximale que ces sous-ensembles ne dépassent jamais.
+
+| Table                | Ce qu'elle porte                          | Cibles autorisées                      |
+|----------------------|-------------------------------------------|----------------------------------------|
+| `Identifier`         | PID vers un référentiel externe           | voir `Identifier.resourceType`         |
+| `Memory`             | Note, événement ou photo                  | voir `Memory.resourceType`             |
+| `Responsibility`     | Rôle d'un acteur sur la ressource         | voir `Responsibility.resourceType`     |
+| `KeywordAssignment`  | Mot-clé ou classification contrôlée       | voir `KeywordAssignment.resourceType`  |
+| `KeywordRequirement` | Règle de complétion minimale en mots-clés | voir `KeywordRequirement.resourceType` |
+| `HistoricalLocation` | Position géographique datée               | voir `HistoricalLocation.resourceType` |
+| `HistoricalProject`  | Projet porteur daté                       | voir `HistoricalProject.resourceType`  |
 
 ## Pattern TPC anchor (anchorType + anchorId)
 
-Plusieurs entités doivent se rattacher à un contexte géographique qui peut être
-Observatory, Site ou Station selon la granularité. Le pattern TPC est appliqué
-plutôt que trois FK optionnelles.
+Ancre une entité à un contexte géographique. `anchorType` discrimine le type de
+contexte, `anchorId` porte son uuid.
 
-| Champ        | Type | Valeurs                                  |
-|--------------|------|------------------------------------------|
-| `anchorType` | enum | `Observatory` \| `Site` \| `Station`     |
-| `anchorId`   | uuid | uuid de l'Observatory, Site ou Station   |
+Domaine de référence de `anchorType` : `Observatory`, `Site`, `Station`.
 
-Tables portant ce pattern : `Deployment`, `Datastream`, `TimeSeries`,
-`TransformedTimeSeries`, `Specimen`, `TransferFunction`, `TransferFunctionSet`.
+Chaque table n'accepte qu'un sous-ensemble de ce domaine ; la liste exacte est
+portée par le champ `anchorType` de son tableau, seule source de vérité. Le
+tableau ci-dessous n'est qu'un index des tables porteuses. `Deployment` et
+`Specimen` sont restreints à `Site` et `Station` (on déploie un instrument ou
+prélève un échantillon en un lieu précis, pas sur un observatoire entier) ; les
+autres acceptent les trois.
 
-Le domaine de `anchorType` est restreint pour certaines entités, lorsque
-l'ancrage sur un Observatory entier n'a pas de sens physique :
-- `Deployment` et `Specimen` : `Site` \| `Station` uniquement (on déploie un
-  instrument ou prélève un échantillon en un lieu précis, pas sur tout un
-  observatoire).
-- Toutes les autres : `Observatory` \| `Site` \| `Station`.
+| Table                   | Entité ancrée                 | Cibles autorisées                        |
+|-------------------------|-------------------------------|------------------------------------------|
+| `Deployment`            | Déploiement d'instrument      | voir `Deployment.anchorType`             |
+| `Datastream`            | Flux brut IoT                 | voir `Datastream.anchorType`             |
+| `TimeSeries`            | Série validée                 | voir `TimeSeries.anchorType`             |
+| `TransformedTimeSeries` | Série dérivée                 | voir `TransformedTimeSeries.anchorType`  |
+| `Specimen`              | Échantillon prélevé           | voir `Specimen.anchorType`               |
+| `TransferFunction`      | Barème (courbe de tarage...)  | voir `TransferFunction.anchorType`       |
+| `TransferFunctionSet`   | Jeu de barèmes                | voir `TransferFunctionSet.anchorType`    |
 
-La valeur exacte autorisée est indiquée dans le tableau de chaque entité.
-
-Règle de cohérence et source de vérité : chaque flux de données
-(`Datastream`, `TimeSeries`, `TransformedTimeSeries`) porte lui-même son
-ancrage géographique via `anchorType/anchorId`. Cet ancrage est complet et
-autoportant : il n'a pas à être déduit d'une autre entité. C'est une
-condition nécessaire pour que chaque flux soit exportable de façon autonome
-vers une API externe (STA notamment), où un Datastream doit exposer son
-rattachement sans dépendre de la chaîne d'instrumentation.
-
-L'ancrage d'un `Deployment` est une **documentation** de l'installation
-physique, ajoutée souvent dans un second temps. En cas de divergence entre
-l'ancrage d'un flux et celui du Deployment du System correspondant, c'est
-l'ancrage porté par le flux qui fait foi ; le Deployment doit être corrigé
-pour s'y conformer.
-
-Ce choix est délibéré : il évite de remonter la chaîne
-flux → System → Deployment (requête récursive coûteuse) pour répondre à une
-question aussi fréquente que « quels flux sont rattachés à cette station ? ».
-La cohérence entre l'ancrage d'un flux et celui de son Deployment est
-vérifiée périodiquement au niveau applicatif (voir integrity_checks.md),
-elle n'est pas garantie par une contrainte SQL.
+Source de vérité de l'ancrage d'un flux : chaque flux (`Datastream`,
+`TimeSeries`, `TransformedTimeSeries`) porte lui-même son ancrage, complet et
+autoportant, sans avoir à le déduire d'une autre entité. C'est nécessaire pour
+qu'il soit exportable de façon autonome vers une API externe (STA notamment). En
+cas de divergence entre l'ancrage d'un flux et celui du Deployment du System
+correspondant, l'ancrage du flux fait foi et le Deployment doit être corrigé :
+l'ancrage d'un Deployment est une documentation de l'installation, ajoutée
+souvent après coup. Ce choix évite de remonter la chaîne flux vers System vers
+Deployment pour la question fréquente "quels flux sont rattachés à cette
+station ?".
 
 ## Pattern TPC agent (agentType + agentId)
 
-Plusieurs tables tracent l'acteur d'un acte ou d'une responsabilité.
-Cet acteur peut être un humain (Person), un agent automatisé (Machine)
-ou une organisation (Organization). Le pattern TPC est appliqué :
-`agentType` discrimine le type, `agentId` porte l'UUID. Aucune FK native
-PostgreSQL - intégrité garantie par trigger BEFORE INSERT/UPDATE.
-Voir integrity_checks.md pour les requêtes de vérification périodique.
+Trace l'acteur d'un acte ou d'une responsabilité : un humain (`Person`), un agent
+automatisé (`Machine`) ou une organisation (`Organization`). `agentType`
+discrimine le type, `agentId` porte son uuid.
 
-| Champ       | Type   | Valeurs                                   |
-|-------------|--------|-------------------------------------------|
-| `agentType` | enum   | `Person` \| `Machine` \| `Organization`   |
-| `agentId`   | uuid   | uuid de Person, Machine ou Organization   |
+Domaine de référence de `agentType` : `Person`, `Machine`, `Organization`.
 
-Tables portant ce pattern :
+Chaque table n'accepte qu'un sous-ensemble de ce domaine ; la liste exacte est
+portée par le champ `agentType` de son tableau, seule source de vérité. Le
+tableau ci-dessous n'est qu'un index des tables porteuses. Seule
+`Responsibility` accepte les trois types ; les autres se limitent à `Person` et
+`Machine`.
 
-- `Responsibility` (agentType + agentId, obligatoires) : `Person | Organization | Machine`
-- `ValidationBatch` (validatedBy) : `Person | Machine`
-- `TransformationBatch` (appliedBy) : `Person | Machine`
-- `ObservationBatch` (importedBy) : `Person | Machine`
-- `TransferFunctionBatch` (builtBy) : `Person | Machine`
-- `Memory` (author) : `Person | Machine`
-- `Specimen` (operator) : `Person | Machine`
+| Table                   | Acte tracé                        | Cibles autorisées                        |
+|-------------------------|-----------------------------------|------------------------------------------|
+| `Responsibility`        | Responsabilité sur une ressource  | voir `Responsibility.agentType`          |
+| `ValidationBatch`       | Session de validation             | voir `ValidationBatch.agentType`         |
+| `ObservationBatch`      | Import de données                 | voir `ObservationBatch.agentType`        |
+| `AnalysisBatch`         | Campagne d'analyse labo           | voir `AnalysisBatch.agentType`           |
+| `TransferFunctionBatch` | Construction d'un barème          | voir `TransferFunctionBatch.agentType`   |
+| `Memory`                | Note (auteur)                     | voir `Memory.agentType`                  |
+| `Specimen`              | Prélèvement (opérateur)           | voir `Specimen.agentType`                |
+
+`TransformationBatch` n'est pas un porteur TPC agent : son exécutant est porté
+par `runner`, une FK directe vers `Machine` (un calcul est toujours exécuté par
+une machine, jamais par une personne).
+
+## Pattern TPC series (seriesType + seriesId)
+
+Pointe vers une série ou une fonction sans présumer de son type concret.
+`seriesType` discrimine le type, `seriesId` porte son uuid.
+
+Domaine de référence de `seriesType` : `TimeSeries`, `TransformedTimeSeries`,
+`TransferFunction`, `ControlObservation`.
+
+Chaque table n'accepte qu'un sous-ensemble de ce domaine ; la liste exacte est
+portée par le champ `seriesType` de son tableau, seule source de vérité. Le
+tableau ci-dessous n'est qu'un index des tables porteuses.
+
+| Table                             | Ce qu'elle relie                 | Cibles autorisées                               |
+|-----------------------------------|----------------------------------|-------------------------------------------------|
+| `bundle_series`                   | Regroupement en Bundle           | voir `bundle_series.seriesType`                 |
+| `dataset_resource`                | Référence d'export (Dataset)     | voir `dataset_resource.seriesType`              |
+| `transformationbatch_inputseries` | Entrées d'un TransformationBatch | voir jointure `transformationbatch_inputseries` |
+| `ControlObservation`              | Série contrôlée par une mesure   | voir `ControlObservation.seriesType`            |
+
 
 ## Tables de jointure explicites
 
@@ -294,25 +363,44 @@ induirait en erreur sur son usage.
 ## Suppression logique
 
 Aucune suppression physique sur les entités référencées directement ou
-via TPC. Un trigger `prevent_physical_delete` est posé sur toutes les entités.
-Deux mécanismes selon les tables :
+via TPC. Un trigger `prevent_physical_delete` est posé sur toutes les entités
+concernées. Trois mécanismes selon les tables, jamais deux à la fois sur la
+même table :
 
 - Tables avec `status` : utiliser `status` comme mécanisme de désactivation.
-- Tables sans `status` : `archivedAt TIMESTAMPTZ NULL` (null = actif).
+- Tables sans `status` ni cycle temporel propre : `archivedAt TIMESTAMPTZ NULL`
+  (null = actif).
+- Tables datées (`validFrom`/`validTo`, voir *Associations datées*) : `validTo`
+  non-null ferme la ligne. C'est déjà un mécanisme de désactivation à part
+  entière ; ces tables n'ont ni `status` ni `archivedAt` en plus, ce serait une
+  double vérité sur le même fait.
 
 Les tables de jointure (`person_organization`, `specimen_deployment`,
 `transformationbatch_inputseries`, `bundle_series`) sont exemptées :
 leurs lignes peuvent être supprimées physiquement car elles ne sont
 pas elles-mêmes référencées par d'autres relations.
 
+`ControlObservation` est exemptée, pour une raison différente de celle des
+tables de jointure : c'est un constat scientifique figé une fois enregistré
+(une mesure de contrôle a été faite), au même titre qu'une ligne `Observation`.
+Rien ne la rend jamais obsolète au sens où une station ou un jeu de barème
+peuvent l'être ; elle ne porte donc aucun des trois mécanismes ci-dessus.
+`Specimen`, à l'inverse, est un objet physique réel (un flacon, un prélèvement)
+qui peut être détruit ou épuisé : il porte `status`, malgré sa parenté avec les
+constats figés.
+
 Tables avec `status` (mécanisme natif) : Observatory, Site, Station, System,
-Deployment, Datastream, ObservationBatch, ValidationBatch, TransferFunction,
-TransferFunctionBatch, TransformationBatch, TransformedTimeSeries, TimeSeries,
-Project.
+Deployment, Datastream, ObservationBatch, ValidationBatch, AnalysisBatch,
+TransferFunction, TransferFunctionBatch, TransformationBatch,
+TransformedTimeSeries, TimeSeries, Project, Algorithm, TransferFunctionSet,
+Dataset, Memory, Identifier, Specimen.
 
 Tables avec `archivedAt` (ajout dédié) : Person, Machine, Organization, Unit,
 Procedure, KeywordType, Keyword, License, Location, FeatureOfInterest, Bundle,
 Property (qui a déjà `status=accepted|deprecated|proposed`).
+
+Tables datées, `validTo` fait foi (pas d'`archivedAt` en plus) :
+`HistoricalLocation`, `HistoricalProject`, `Responsibility`, `TimeSeriesSource`.
 
 
 <div class="page-break"></div>
@@ -370,7 +458,7 @@ aucune (Machine est référencée via agentId)
 *Note* :
 - Représente le système qui a exécuté un traitement : serveur BDOH, HPC distant, pipeline local, agent IA.
 - Ne porte pas les métadonnées du code exécuté : celles-ci vivent sur Algorithm.
-- La reproductibilité scientifique est garantie par Algorithm (swhid), pas par Machine.
+- La reproductibilité scientifique est garantie par Algorithm (via son Identifier swhid), pas par Machine.
 - serviceUrl est utile pour les runners distants (HPC, service cloud) afin de pointer vers le système.
 
 | Champ         | Cardinalité | Définition                          | Valeurs possibles               |
@@ -456,7 +544,7 @@ Observatory, Site, Station, System, Datastream, TimeSeries, TransformedTimeSerie
 | `agentType`    | 1           | Type d'acteur responsable                  | `Person` \| `Organization` \| `Machine`                                   |
 | `agentId`      | 1           | UUID de la Person, Organization ou Machine | uuid                                                                      |
 | `role`         | 1           | Rôle fonctionnel CI_RoleCode ISO 19115-1   | `resourceProvider` \| `custodian` \| `owner` \| `user` \| `distributor` \| `originator` \| `pointOfContact` \| `principalInvestigator` \| `processor` \| `publisher` \| `author` \| `sponsor` \| `coAuthor` \| `collaborator` \| `editor` \| `mediator` \| `rightsHolder` \| `contributor` \| `funder` \| `stakeholder` |
-| `resourceType` | 1           | Type de ressource ciblée                   | `Observatory` \| `Site` \| `Station` \| `System` \| `Datastream` \| `TimeSeries` \| `TransformedTimeSeries` \| `TransferFunction` \| `Project` \| `Bundle` |
+| `resourceType` | 1           | Type de ressource ciblée                   | `Observatory` \| `Site` \| `Station` \| `System` \| `Datastream` \| `TimeSeries` \| `TransformedTimeSeries` \| `TransferFunction` \| `TransferFunctionSet` \| `Project` \| `Bundle` \| `Algorithm` |
 | `resourceId`   | 1           | UUID de la ressource ciblée                | uuid                                                                      |
 | `validFrom`    | 0..1        | Début de responsabilité                    | "2022-01-01"                                                              |
 | `validTo`      | 0..1        | Fin, null si toujours actif                | "2024-12-31" \| null                                                      |
@@ -501,7 +589,7 @@ Identifier, KeywordAssignment
 
 *Note* : 
 - Géré par les curateurs, chaque variable est unique et non dupliquée.
-- Rattachement aux thésaurus de variables (Theia/OZCAR, NERC P01, ODM2) via le mécanisme Keyword : un `KeywordAssignment` relie la Property à un `Keyword` dont le `uri` porte l'URI du terme. Cette URI classe la Property dans un vocabulaire ; elle ne l'identifie pas comme ressource, et ne passe donc pas par `Identifier` (qui est réservé aux identifiants de la ressource elle-même, comme un code SANDRE de paramètre).
+- Rattachement aux thésaurus de variables (Theia/OZCAR, NERC P01, ODM2) via le mécanisme Keyword : un `KeywordAssignment` relie la Property à un `Keyword` dont le `uri` porte l'URI du terme, et un code de registre propre (SANDRE) passe lui par `Identifier`. Voir le critère `Identifier` contre `Keyword` dans la sous-section Pattern TPC resource.
 - Correspond à ObservedProperty dans l'API STA exposée.
 
 | Champ           | Cardinalité | Définition                             | Valeurs possibles                              |
@@ -529,16 +617,25 @@ Identifier, KeywordAssignment
   (FK depuis Datastream) plutôt que comme objet JSON inline (choix STA 1.1).
   Justification empirique de l'ADR-017.
 - [QUDT vocab/unit](https://qudt.org/vocab/unit/) - URIs persistantes vers les
-  définitions ontologiques des unités. Portées par `Unit.definition`.
+  définitions ontologiques des unités. Rattachement via le mécanisme Keyword
+  (`Keyword.uri`), pas via une colonne dédiée (symétrique de Property).
 - [UCUM (Unified Code for Units of Measure)](https://ucum.org/) - alternative
-  syntaxique compacte pour exprimer les unités (`mg/L`, `m3/s`). Utilisable
-  comme valeur de `Unit.definition` en complément de QUDT.
+  syntaxique compacte pour exprimer les unités (`mg/L`, `m3/s`). Rattachement
+  également via Keyword, en complément de QUDT.
 
 *Utilisé par* :<br>
 Property (defaultUnit), TimeSeries (unit), TransformedTimeSeries (unit), Datastream (unitOfMeasurement)
 
+*Relations inverses (requêter par resourceType='Unit')* :<br>
+KeywordAssignment
+
 *Note* : 
 - HydroServer ajoute Unit comme entité séparée car STA standard n'a qu'un objet JSON inline pour unitOfMeasurement dans Datastream.
+- Rattachement aux thésaurus d'unités (QUDT, UCUM) via le mécanisme Keyword,
+  symétrique de Property : un `KeywordAssignment` relie la Unit à un `Keyword`
+  dont le `uri` porte l'URI du terme. Une même Unit peut s'aligner sur plusieurs
+  thésaurus (QUDT et UCUM à la fois). Voir le critère `Identifier` contre
+  `Keyword` dans la sous-section Pattern TPC resource.
 
 | Champ        | Cardinalité | Définition                          | Valeurs possibles                          |
 |--------------|-------------|-------------------------------------|--------------------------------------------|
@@ -546,7 +643,7 @@ Property (defaultUnit), TimeSeries (unit), TransformedTimeSeries (unit), Datastr
 | `code`       | 1           | Code court pour URLs (kebab-case)   | "mg-l" \| "m3-s" \| "degc"                 |
 | `symbol`     | 1           | Symbole textuel affiché             | "mg/L" \| "m³/s" \| "°C"                   |
 | `name`       | 1           | Nom complet de l'unité              | "milligram per litre"                      |
-| `definition` | 1           | URI QUDT ou UCUM                    | "http://qudt.org/vocab/unit/MilliGM-PER-L" |
+| `definition` | 0..1        | Définition textuelle                | "Milligramme par litre d'eau"              |
 | `archivedAt` | 0..1        | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z"             |
 
 ---
@@ -772,7 +869,7 @@ Observatory, Site, Station, TimeSeries, TransformedTimeSeries, Bundle, Property,
 |----------------|-------------|-------------------------------------|----------------------------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                             |
 | `keyword`      | 1 →Keyw     | Keyword assigné                     | → Keyword                                                                        |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `TimeSeries` \| `TransformedTimeSeries` \| `Bundle` \| `Property` \| `Organization` \| `System` \| `Deployment` \| `FeatureOfInterest` \| `Specimen` \| `ControlObservation` \| `TransferFunction` \| `Datastream` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `TimeSeries` \| `TransformedTimeSeries` \| `Bundle` \| `Property` \| `Unit` \| `Organization` \| `System` \| `Deployment` \| `FeatureOfInterest` \| `Specimen` \| `ControlObservation` \| `TransferFunction` \| `TransferFunctionSet` \| `Datastream` \| `Project` \| `Memory` \| `Algorithm` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                             |
 
 ---
@@ -793,7 +890,7 @@ validation applicative à la sauvegarde
 | Champ          | Cardinalité | Définition                          | Valeurs possibles                                                  |
 |----------------|-------------|-------------------------------------|--------------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                               |
-| `resourceType` | 1           | Type de ressource concerné          | `Organization` \| `Property` \| `FeatureOfInterest` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `TransformedTimeSeries` \| `ControlObservation` \| `Specimen` \| `Memory` |
+| `resourceType` | 1           | Type de ressource concerné          | `Organization` \| `Property` \| `FeatureOfInterest` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `TransformedTimeSeries` \| `ControlObservation` \| `Specimen` \| `Memory` \| `Datastream` |
 | `keywordType`  | 1 →KWT      | Type de keyword requis              | → KeywordType                                                      |
 | `cardinality`  | 1           | Niveau d'obligation                 | `required` \| `recommended`                                        |
 
@@ -871,10 +968,11 @@ Observatory, Site, Station, System, TimeSeries, Person, Organization, Specimen, 
 |----------------|-------------|-------------------------------------|------------------------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                         |
 | `code`         | 1           | Valeur de l'identifiant             | "V3015810" \| "0000-0001-1234-1234" \| "0-20000-0-06610"                     |
-| `codeType`     | 1           | Type d'identifiant                  | `doi` \| `orcid` \| `ror` \| `sandre` \| `wigos` \| `igsn` \| `pidinst` \| `other` |
+| `codeType`     | 1           | Type d'identifiant                  | `doi` \| `orcid` \| `ror` \| `sandre` \| `wigos` \| `igsn` \| `pidinst` \| `swhid` \| `other` |
 | `codeSource`   | 1           | Système ou organisme émetteur       | "SANDRE" \| "TheiaOZCAR" \| "NERC" \| "DataCite" \| "ROR" \| "PIDINST"       |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `Person` \| `Organization` \| `Specimen` \| `Property` \| `Project` \| `TransferFunction` \| `Bundle` \| `Dataset` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `TransformedTimeSeries` \| `Person` \| `Organization` \| `Specimen` \| `Property` \| `Procedure` \| `FeatureOfInterest` \| `Project` \| `TransferFunction` \| `TransferFunctionSet` \| `Bundle` \| `Dataset` \| `Datastream` \| `Algorithm` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                         |
+| `status`       | 1           | État de l'identifiant                | `active` \| `archived`                                                       |
 
 
 <div class="page-break"></div>
@@ -1309,6 +1407,7 @@ TimeSeriesSource (datastream), Observation (datastream)
 | Champ                    | Cardinalité | Définition                                | Valeurs possibles                                                |
 |--------------------------|-------------|-------------------------------------------|------------------------------------------------------------------|
 | `id`                     | 1           | Identifiant technique, clé primaire       | uuid                                                             |
+| `code`                   | 1           | Slug unique par ancre (kebab-case)        | "hea-mercier-d610"                                               |
 | `name`                   | 1           | Nom du flux                               | "Hauteur d'eau - Mercier D610 - OTT PLS 500"                     |
 | `description`            | 0..1        | Description libre                         |                                                                  |
 | `unitOfMeasurement`      | 1 →Unit     | Unité de mesure                           | → Unit                                                           |
@@ -1322,7 +1421,7 @@ TimeSeriesSource (datastream), Observation (datastream)
 | `observationFrequency`   | 0..1        | Fréquence nominale (ISO 8601)             | "PT15M" \| "PT1H" - null si aggregationStatistic=sporadic        |
 | `status`                 | 1           | État du flux                              | `active` \| `inactive` \| `closed`                               |
 | `license`                | 1 →Lic      | Licence des données                       | → License                                                        |
-| `transmissionMode`       | 0..1        | Mode d'arrivée des données dans BDOH      | `auto` \| `manual`                                               |
+| `transmissionMode`       | 0..1        | Modre d'arrivée des données dans BDOH      | `auto` \| `manual`                                               |
 
 ---
 
@@ -1759,7 +1858,16 @@ ValidatedObservation (specimen), ControlObservation (specimen), Observation (spe
 - anchorType + anchorId : pattern TPC, même pattern que Deployment - station dans le cas standard, site pour les campagnes sans station fixe.
 - Cohérence applicative : anchorType/anchorId doit correspondre à l'ancrage des Deployments associés via specimen_deployment.
 - Lien aux Deployments via la table de jointure `specimen_deployment` : un prélèvement peut mobiliser plusieurs équipements simultanément (pompe + flacon + filtre = trois Deployments pour un Specimen), et un Deployment peut produire plusieurs Specimens dans le temps (piège récolté chaque semaine pendant un mois). L'ancrage géographique du Specimen est hérité du Deployment.
-- La chaîne analytique interne au laboratoire est hors modèle - lien via limsReference.
+- Deux voies non exclusives pour la chaîne analytique : LIMS externe référencé
+  par limsReference seul, ou chaîne interne documentée par AnalysisBatch et
+  AnalysisObservation. Voir la note d'AnalysisBatch (Coexistence LIMS/interne,
+  ADR-007 amendé), qui est la source de vérité de cette articulation.
+- status : l'échantillon physique existe-t-il encore ou a-t-il été détruit
+  (épuisé par les analyses, contaminé, périmé). Distinct de la chaîne
+  analytique (résultats, méthode, voir AnalysisBatch, souvent documentée dans
+  BDOH) et de l'inventaire fin (aliquotage, quantité restante), qui reste au
+  LIMS externe s'il est utilisé ; BDOH trace l'existence du Specimen, pas son
+  inventaire physique détaillé.
 - agentType + agentId : pattern TPC - technicien terrain (`Person`) ou préleveur automatique (`Machine`).
 - procedureSampling : protocole de prélèvement appliqué pour ce Specimen précis. Null si le Specimen est issu d'un Deployment automatique et que le protocole est porté par TimeSeries.procedureSampling.
 - foi : FOI proximate - ce qui a été échantillonné précisément (eau de surface à 30cm), distincte de la FOI de Station (la rivière en général).
@@ -1785,6 +1893,7 @@ ValidatedObservation (specimen), ControlObservation (specimen), Observation (spe
 | `condition`           | 0..1        | Observations terrain libres                   | "turbidité élevée, eau brune" |
 | `derivedFrom`         | 0..1 →Spec  | Specimen parent si sous-échantillon           | → Specimen                    |
 | `limsReference`       | 0..1        | Identifiant du prélèvement dans le LIMS       | "LIMS-2024-03-001"            |
+| `status`              | 1           | État physique de l'échantillon                | `active` \| `discarded`       |
 
 <div class="page-break"></div>
 
@@ -1964,10 +2073,12 @@ transferfunctionset_function (les TF composant le jeu, avec leur période d'appl
 | Champ              | Cardinalité | Définition                             | Valeurs possibles                    |
 |--------------------|-------------|----------------------------------------|--------------------------------------|
 | `id`               | 1           | Identifiant technique, clé primaire    | uuid                                 |
+| `code`             | 1           | Slug unique par ancre                  | "bareme-mercier-d610-2024"           |
 | `name`             | 1           | Nom du jeu                             | "Barème Mercier D610 2024"           |
 | `description`      | 0..1        | Description libre                      |                                      |
 | `anchorType`       | 1           | Type d'ancrage géographique            | `Observatory` \| `Site` \| `Station` |
 | `anchorId`         | 1           | UUID de l'Observatory, Site ou Station | uuid                                 |
+| `status`           | 1           | État du jeu                            | `active` \| `archived`               |
 | `comment`          | 0..1        | Justification du choix                 | "nouveau jaugeage après crue"        |
 
 ---
@@ -1995,10 +2106,11 @@ transferfunctionset_function (les TF composant le jeu, avec leur période d'appl
 *Aligné avec* :
 - [CodeMeta](https://codemeta.github.io/) - vocabulaire pour les métadonnées
   logicielles, basé sur [schema.org/SoftwareApplication](https://schema.org/SoftwareApplication).
-  Inspire les champs `codeRepository`, `path`, `version`, `doi`.
+  Inspire les champs `codeRepository`, `path`, `version`.
 - [SWHID - ISO/IEC 18670:2025](https://www.swhid.org/swhid-specification/) -
   identifiant intrinsèque permanent du code source. Un même swhid identifie
   toujours le même état exact du code, indépendamment de sa localisation.
+  Porté par `Identifier` (codeType=swhid).
 - [Software Heritage](https://www.softwareheritage.org/) - archive universelle
   du code source publié, infrastructure de référence pour résoudre les SWHID.
 
@@ -2006,16 +2118,24 @@ transferfunctionset_function (les TF composant le jeu, avec leur période d'appl
 TransformationBatch (algorithm)
 
 *Relations inverses (requêter par resourceType='Algorithm')* :<br>
-aucune pour l'instant
+Identifier, Responsibility, KeywordAssignment
 
 *Note* :
 - Objet global, non ancré géographiquement : un algorithme est réutilisable sur toutes les stations.
 - codeRepository pointe vers le dépôt vivant (GitHub, GitLab, forge INRAE...).
 - path précise le script ou la fonction dans ce dépôt.
-- swhid épingle la version exacte du code exécuté. Immuable par ligne : deux états de code différents = deux lignes Algorithm distinctes. Contrainte d'unicité sur swhid quand non-null.
-- version = tag de release git par convention ("v2.1.0"). Texte libre, non contraint par le modèle. "Latest" pour un name donné = la ligne avec status=active.
-- Épinglage applicatif : au moment d'un batch manuel, le runner résout le swhid courant du script et crée (ou réutilise) la ligne Algorithm correspondante. Un batch auto réutilise la ligne déjà épinglée sans en créer une nouvelle. La notif "le dépôt git a changé" (via Software Heritage ou webhook) est hors modèle, à prévoir côté applicatif.
-- doi identifie la publication du logiciel si elle existe (HAL, Zenodo...).
+- swhid épingle la version exacte du code exécuté. Porté par `Identifier`
+  (codeType=swhid), pas par une colonne en dur, comme le DOI (même
+  raisonnement, ADR-009/027, ADR-052 amendé). Unicité garantie par un index
+  unique partiel sur `Identifier.code` restreint à `codeType='swhid'`.
+  Caractère obligatoire (une ligne Algorithm n'existe qu'associée à un swhid)
+  garanti applicativement, pas par une contrainte native : c'est le même
+  niveau de garantie que le reste du pattern TPC resource (ADR-060), pas une
+  exception.
+- code, name, version, swhid, quatre rôles distincts : `code` est le slug d'URL lisible et versionné ("agregation-qjxa-v3"), confort de navigation modifiable comme partout ; `name` est le libellé lisible ("Agrégation QJXA") ; `version` est le tag git informatif, texte libre non contraint ; `swhid` (via Identifier) est l'épingle cryptographique immuable de la version exacte, seule à faire foi pour la reproductibilité. Le `code` nomme lisiblement la version, il ne l'épingle pas : ne pas confondre son suffixe "v3" avec la garantie portée par le swhid. Le suffixe de version du slug reprend `version` s'il est renseigné, sinon un incrément simple (v1, v2...).
+- supersededBy chaîne les versions : quand une ligne passe status=superseded, elle pointe vers la ligne qui la remplace. Permet de reconstituer l'historique dans l'ordre (suivre la chaîne jusqu'à la ligne status=active) sans dépendre d'un horodatage ou du champ version, tous deux absents ou non fiables à cet usage. Null tant que la ligne est active ou simplement deprecated sans remplaçante connue.
+- Épinglage applicatif, gating sur l'archivage : au moment d'un batch manuel, le runner déclenche (ou vérifie) l'archivage Software Heritage du script, attend la résolution du swhid (de l'ordre de quelques minutes), cherche un Identifier existant (resourceType=Algorithm, codeType=swhid, code=<swhid résolu>) et réutilise l'Algorithm associé, ou crée la ligne Algorithm et son Identifier si aucun ne correspond. Aucun batch ne s'exécute sur un code non archivé. Un batch auto réutilise la ligne déjà épinglée sans en créer une nouvelle. La notif "le dépôt git a changé" (via Software Heritage ou webhook) est hors modèle, à prévoir côté applicatif.
+- Le DOI de la publication du logiciel, s'il existe (HAL, Zenodo...), est porté par `Identifier` (codeType=doi), même mécanisme que swhid, comme pour Bundle et Dataset.
 - La configuration d'exécution (paramètres propres au batch) vit sur TransformationBatch.parameters, pas ici.
 - Cas d'usage types (le dépôt et les conventions de nommage sont à spécifier, voir B2) :
   * Agrégation (QJXA) : codeRepository="https://github.com/inrae/bdoh-scripts",
@@ -2033,14 +2153,14 @@ aucune pour l'instant
 | Champ            | Cardinalité | Définition                                    | Valeurs possibles                                    |
 |------------------|-------------|-----------------------------------------------|------------------------------------------------------|
 | `id`             | 1           | Identifiant technique, clé primaire           | uuid                                                 |
-| `name`           | 1           | Nom stable de l'algorithme (toutes versions)  | "agregation-qjxa"                                    |
+| `code`           | 1           | Slug unique globalement, version dans le slug | "agregation-qjxa-v3"                                 |
+| `name`           | 1           | Libellé lisible de l'algorithme               | "Agrégation QJXA"                                    |
 | `description`    | 0..1        | Description libre                             |                                                      |
 | `codeRepository` | 1           | URL du dépôt source                           | "https://github.com/inrae/bdoh-scripts"              |
 | `path`           | 0..1        | Chemin du script dans le dépôt                | "aggregation/qjxa.py"                                |
-| `version`        | 0..1        | Tag de release git (texte libre par convention) | "v2.1.0"                                           |
-| `swhid`          | 0..1        | Identifiant Software Heritage (ISO/IEC 18670) | "swh:1:rel:22ece559cc7cc2364edc5e5593d63ae8bd229f9f" |
-| `doi`            | 0..1        | DOI du logiciel si publié                     | "10.5281/zenodo.1234567"                             |
+| `version`        | 0..1        | Tag de release git, informatif (texte libre)  | "v2.1.0"                                             |
 | `status`         | 1           | État de la version                            | `active` \| `superseded` \| `deprecated`             |
+| `supersededBy`   | 0..1 →Algo  | Version qui remplace cette ligne, si superseded | → Algorithm                                        |
 
 ---
 
@@ -2253,7 +2373,7 @@ Responsibility, Identifier, Memory
 |----------------|-------------|-------------------------------------|-----------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                |
 | `project`      | 1 →Proj     | Projet actif sur cette période      | → Project                                           |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `TimeSeries` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `TimeSeries` \| `TransformedTimeSeries` \| `Datastream` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                |
 | `validFrom`    | 1           | Début de la période                 | "2012-01-01"                                        |
 | `validTo`      | 0..1        | Fin de la période, null si actif    | null                                                |
@@ -2350,6 +2470,7 @@ dataset_resource (les ressources BDOH incluses dans l'export)
 | `temporalCoverageEnd`   | 1           | Fin de la fenêtre exportée                      | "2015-12-31T23:59:59Z"       |
 | `repositoryUrl`         | 0..1        | URL du dépôt sur l'entrepôt externe             | "https://entrepot.../dataset/123" |
 | `sourceBundle`          | 0..1 →Bun   | Bundle d'origine si l'export en provient         | → Bundle                     |
+| `status`                | 1           | État du reçu d'export                            | `active` \| `superseded`     |
 
 ---
 
@@ -2396,7 +2517,7 @@ Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deploymen
 | Champ          | Cardinalité | Définition                          | Valeurs possibles                                                               |
 |----------------|-------------|-------------------------------------|---------------------------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                            |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `TransformedTimeSeries` \| `Deployment` \| `Project` \| `TransferFunction` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `TransformedTimeSeries` \| `Deployment` \| `Project` \| `TransferFunction` \| `Specimen` \| `Datastream` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                            |
 | `datetime`     | 1           | Date de la note ou de l'événement   | "2014-04-17T00:00:00Z"                                                          |
 | `title`        | 0..1        | Titre court                         | "Modification contrôle hydraulique"                                             |
@@ -2404,3 +2525,4 @@ Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deploymen
 | `mediaUrl`     | 0..*        | Photos ou documents associés (S3)   | "https://storage.obs.fr/memories/2014-lame.jpg"                                 |
 | `agentType`    | 0..1        | Type d'agent auteur de la note      | `Person` \| `Machine`                                                           |
 | `agentId`      | 0..1        | UUID de la Person ou Machine        | uuid                                                                            |
+| `status`       | 1           | État de la note                     | `active` \| `archived`                                                          |

@@ -35,10 +35,6 @@ pratique : c'est ainsi que naissent les divergences.
 6. sources.md
    Bibliographie annotée des standards et propriétaire unique de leur état daté.
 
-Deux fichiers complètent l'écosystème, à consulter au besoin plutôt qu'au
-démarrage : integrity_checks.md (triggers et requêtes d'intégrité TPC) et
-agent_TPC_philosophie_synthese.md (justification philosophique du pattern TPC).
-
 ---
 
 Puis vérifie en ligne l'état actuel des standards qui évoluent. Leur état connu

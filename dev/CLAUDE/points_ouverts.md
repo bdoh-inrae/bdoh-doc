@@ -39,23 +39,23 @@ structurel ou dette de migration).
 
 | ID  | Constat                                                        | Sévérité | Effort  |
 |-----|----------------------------------------------------------------|----------|---------|
-| C5  | Catalogue TPC agent mentionne encore TransformationBatch       | élevée   | faible  |
-| C1  | `Datastream` n'a pas de colonne `code`                         | élevée   | faible  |
-| C3  | Couverture de la suppression logique incomplète                | élevée   | faible  |
-| C2  | "code obligatoire sur toutes les entités" est trop fort        | moyenne  | faible  |
-| C4  | `TimeSeriesSource` sans mécanisme de suppression               | moyenne  | faible  |
-| C6  | `codeType` mal classé en discriminant TPC                      | moyenne  | faible  |
-| M1  | Valeurs censurées (<LOD, <LOQ) hors de la couche capteur       | élevée   | moyen   |
-| M5  | PK UUID sur hypertables et UUID inutile sur tables de valeurs  | élevée   | moyen   |
-| S1  | TPC sans FK : intégrité référentielle seulement applicative    | élevée   | élevé   |
-| M2  | `aggregationStatistic` mélange cadence et statistique          | moyenne  | moyen   |
-| M3  | Provenance point brut vers validé non conservée                | moyenne  | moyen   |
-| M4  | `Datastream.system` obligatoire, lourd pour le labo            | moyenne  | moyen   |
-| M7  | DataCite Publisher indéfini pour `Dataset`                     | moyenne  | faible  |
+| C5  | Catalogue TPC agent mentionne TransformationBatch (clos)       | -        | -       |
+| C1  | `Datastream` code manquant (clos)                              | -        | -       |
+| C3  | Couverture suppression logique incomplète (clos)               | -        | -       |
+| C2  | code obligatoire sur toutes les entités : trop fort (clos)     | -        | -       |
+| C4  | `TimeSeriesSource` sans mécanisme de suppression (clos)        | -        | -       |
+| C6  | codeType mal classé en discriminant TPC (clos)                 | -        | -       |
+| M1  | Valeurs censurées LOD/LOQ hors couche capteur (clos)           | -        | -       |
+| M5  | PK UUID sur hypertables et tables de valeurs (clos)            | -        | -       |
+| S1  | TPC sans FK native, intégrité applicative seule (clos, ADR-060)| -        | -       |
+| M2  | aggregationStatistic mélange cadence et statistique (clos)     | -        | -       |
+| M3  | Provenance point brut vers validé non conservée (clos)         | -        | -       |
+| M4  | Datastream.system obligatoire, lourd pour le labo (clos)       | -        | -       |
+| M7  | DataCite Publisher indéfini pour Dataset (clos)                | -        | -       |
 | S2  | Double vérité de l'ancrage flux / Deployment                   | moyenne  | moyen   |
 | S3  | Invariants applicatifs cumulés : inventaire à tenir            | moyenne  | moyen   |
-| S5  | AnalysisObservation hors du graphe TPC et des exports          | moyenne  | moyen   |
-| M6  | Export STA : quel Thing pour un ancrage Site ou Observatory    | moyenne  | moyen   |
+| S5  | AnalysisObservation hors graphe TPC (clos)                     | -        | -       |
+| M6  | Export STA : Thing pour ancrage Site/Observatory (clos)        | -        | -       |
 | M8  | Conformité GeoJSON / CRS et asymétrie géométrie FOI            | faible   | faible  |
 | V1  | OGC API Connected Systems comme cible v2                       | veille   | -       |
 | V2  | Alignement STAMPLATE et écosystème européen                    | veille   | -       |
@@ -85,151 +85,203 @@ scientifique et tenue à l'échelle), puis S1 et le reste.
 
 Locaux, actionnables. Probablement des défauts à corriger, pas des choix.
 
-## C5. Le catalogue TPC agent mentionne encore TransformationBatch
-**Reliquat de la session A1.** La section *Pattern TPC agent* liste toujours
-`TransformationBatch (appliedBy : Person | Machine)`, alors qu'ADR-051 a remplacé
-le couple `agentType/agentId` par `runner 1 →Machine` + `algorithm`. La ligne du
-catalogue est donc fausse. Question de fond restée non écrite : l'utilisatrice a
-posé que toute transformation passe par une machine ou un service (manuel ou auto,
-c'est pareil, un humain paramétrise mais ne calcule pas à la main).
-**Piste :** retirer `TransformationBatch` du catalogue TPC agent, et acter
-explicitement dans la note de `TransformationBatch` ou un ADR que l'exécutant est
-toujours une Machine (le `runner`), l'agent humain étant tracé via la
-`Responsibility` sur la TTS si besoin. Décision déjà prise oralement, à graver.
+## C5. Le catalogue TPC agent mentionne encore TransformationBatch (clos)
+Résolu : `TransformationBatch` retiré du catalogue TPC agent, avec note explicite
+que son exécutant est toujours une Machine (le `runner`), jamais un couple
+`agentType/agentId`. `AnalysisBatch` ajouté au catalogue à sa place (agent réel,
+absent jusqu'ici).
 
-## C1. `Datastream` n'a pas de colonne `code`
-La table `Datastream` ne liste aucun `code`, alors que la section *Scopes
-d'unicité du code* déclare "Datastream unique par ancre" et que le modèle pose
-"code obligatoire sur toutes les entités". Incohérence entre trois endroits.
-**Piste :** ajouter `code` (slug unique par ancre, comme `TimeSeries`), ou
-retirer `Datastream` des scopes si un flux brut n'a pas à être adressable par
-slug. À trancher selon que les techniciens naviguent les Datastreams par code.
+## C1. `Datastream` n'a pas de colonne `code` (clos)
+Résolu : `code` ajouté à `Datastream` (slug unique par ancre, en miroir de
+`TimeSeries`), et `Datastream` complété dans les six tables transverses resource
+où figurent `TimeSeries` et `TransformedTimeSeries` (`Responsibility`,
+`KeywordAssignment`, `KeywordRequirement`, `Identifier`, `HistoricalProject`,
+`Memory`). La couche brute peut porter des `Identifier` pour l'interopérabilité,
+choix assumé conforme à la pratique. Reste ouvert : C2 (formuler la classe qui
+porte un `code`) est de même nature mais non tranché ici.
 
-## C2. "code obligatoire sur toutes les entités" est trop fort
-`Bundle`, `Dataset`, `TransferFunctionSet`, `Memory`, `Responsibility`,
-`Identifier`, les Batch, les tables de valeurs n'ont pas de `code`. La règle
-réelle est : `code` sur les ressources nommées navigables, pas sur tout.
-**Piste :** reformuler la section `code` en listant la classe concernée (ou en
-la dérivant d'une propriété, par exemple "entités exposées en
-`/resources/{uuid}`"). Empêche l'ajout de `code` partout par excès de zèle.
+## C2. "code obligatoire sur toutes les entités" est trop fort (clos)
+Résolu : la section `code` ne dit plus "obligatoire sur toutes les entités"
+mais énonce la règle réelle avec ses listes explicites. Le `code` est présent
+et obligatoire sur les entités nommées navigables (17 listées), absent sur les
+lignes d'observation, `Person`, `Bundle`, `Dataset`, `Specimen`, `Memory`,
+chacune avec sa raison écrite. Décision de fond actée au passage : le `code`
+n'est jamais optionnel (obligatoire là où il existe, ou absent), pour éviter la
+double vision UUID/code où l'on devine la bonne entrée. `Algorithm` reçoit un
+`code` versionné dans le slug ("agregation-qjxa-v3"), sur le modèle déjà en
+place de `TransferFunction` ("hea-qmj-v3"), et garde son `name` lisible : pas
+d'exception, une seule règle d'URL. Le `swhid` garde son rôle d'épingle de
+version, le `code` ne fait que la nommer. Anomalie corrigée en même temps :
+`FeatureOfInterest` et `TransferFunctionSet` ajoutés aux scopes d'unicité (le
+premier avait un `code` sans scope déclaré, le second reçoit `code` et scope).
 
 ## C3. Couverture de la suppression logique incomplète
 La section *Suppression logique* annonce `prevent_physical_delete` sur toutes
 les entités, puis énumère deux listes (`status`, `archivedAt`) et une exemption
 (jointures). Plusieurs entités référencées n'apparaissent nulle part :
 `Specimen`, `ControlObservation`, `TransferFunctionSet`, `Identifier`,
-`HistoricalLocation`, `Memory`, `Responsibility`, `Dataset`, et les nouveaux
-`AnalysisBatch`, `AnalysisObservation`, `Algorithm`. Mécanisme de désactivation
-indéfini pour elles.
-**Piste :** déclarer les listes exhaustives et combler (probablement `archivedAt`
-pour la plupart), ou les dire illustratives et donner la règle par défaut.
-Vérifier chaque entité une à une, y compris celles créées en dernière session.
+`HistoricalLocation`, `Memory`, `Responsibility`, `Dataset`, `Algorithm`.
+Mécanisme de désactivation indéfini pour elles.
+**Piste :** avant de conclure à un manque, vérifier comme pour `AnalysisBatch`
+(voir S5, clos) si l'entité porte déjà `status` ou une colonne équivalente
+simplement absente de l'index : plusieurs cas listés ici pourraient être des
+oublis d'index plutôt que des trous réels. Pour les vrais trous, déclarer les
+listes exhaustives et combler (probablement `archivedAt` pour la plupart), ou
+les dire illustratives et donner la règle par défaut.
 
-## C4. `TimeSeriesSource` n'a aucun mécanisme de suppression
-Entité centrale de la couture, absente des listes `status`/`archivedAt` et de
-l'exemption jointures. Aucune sémantique de désactivation définie pour une table
-qui porte l'historique des changements de capteur.
-**Piste :** lui ajouter `archivedAt`, ou l'exempter explicitement en justifiant
-(une ligne de couture ne se désactive peut-être pas, elle se borne par `validTo`).
+## C3. Couverture de la suppression logique incomplète (clos)
+Résolu, entité par entité, sans supposer de trou avant vérification.
+Déjà couvertes, simple oubli d'index : `HistoricalLocation`, `Responsibility`
+et `TimeSeriesSource` avaient déjà `validFrom`/`validTo`, qui est leur
+mécanisme de désactivation propre (voir C4). `Algorithm` avait déjà `status`.
+Vrais trous comblés par `status` : `TransferFunctionSet`, `Dataset`, `Memory`,
+`Identifier`, `Specimen` (objet physique réel, peut être détruit ou épuisé,
+contrairement à un simple constat figé). Exempté avec raison écrite :
+`ControlObservation` seule, constat scientifique figé comme une ligne
+`Observation`, jamais obsolète au sens où une station ou un barème peuvent
+l'être. La section *Suppression logique* documente maintenant trois
+mécanismes (status, archivedAt, validTo) au lieu de deux, et explicite
+chaque exemption plutôt que de laisser une entité absente sans dire pourquoi.
 
-## C6. `codeType` mal classé en discriminant TPC
-La section enum/Keyword range `codeType` parmi les discriminants TPC. Or
-`codeType` (`doi | orcid | ror | sandre | wigos | igsn | pidinst | other`) ne
-sélectionne aucune entité cible : c'est `resourceType` qui pilote la résolution
-polymorphe d'`Identifier`. `codeType` est une étiquette à liste ouverte par
-curation (ajouter Handle ou ARK impose aujourd'hui une migration), donc par le
-critère du modèle lui-même il penche vers Keyword ou table de référence. Même
-odeur, plus légère, pour `thesaurus` sur `Keyword`.
-**Piste :** reclasser `codeType` hors des discriminants TPC, puis choisir : table
-de référence `IdentifierScheme` (intégrité base, ajout par donnée) ou Keyword.
-Mettre à jour la justification de la grille enum/Keyword en conséquence.
+## C4. `TimeSeriesSource` n'a aucun mécanisme de suppression (clos)
+Faux positif : `TimeSeriesSource` a déjà `validFrom`/`validTo`, qui ferme la
+ligne en cas de changement de capteur. Ajouté à la liste des tables datées
+dans la section *Suppression logique*. Résolu dans la même passe que C3.
+
+## C6. `codeType` mal classé en discriminant TPC (clos)
+Résolu, mais pas par la piste envisagée au départ. Le rangement était bien faux
+et corrigé : `codeType` retiré des discriminants TPC (c'est `resourceType` qui
+pilote la résolution polymorphe d'`Identifier`, `codeType` ne route rien), et
+déplacé dans les comportementaux fermés de la grille enum/Keyword.
+Le basculement vers Keyword ou table de référence, en revanche, est écarté.
+L'argument de C6 ("liste ouverte donc Keyword") ne tient pas : un type
+d'identifiant non prévu n'est jamais purement informatif, il réclame toujours
+un traitement propre (format, résolution, validation). Ajouter une valeur est
+donc un acte de développement volontaire, exactement le critère qui justifie de
+rester en SQL, pas l'inverse. Pas de valeur `other` en secours : elle
+laisserait entrer des identifiants sans que ce traitement soit jamais construit,
+ce qui aurait été la mauvaise réponse à la question. Et sur le fond,
+`Identifier` existe pour porter des identifiants structurellement fiables ; en
+faire un `Keyword`, vocabulaire curable au fil de l'eau, casserait cette
+garantie. Reste SQL, comme `aggregationStatistic` et `Procedure.type`.
+Signalé en passant, non traité : `Keyword.thesaurus` a une odeur similaire
+(petite liste apparemment fermée) mais l'enjeu est mineur, purement informatif,
+sans garantie d'identité à protéger. Pas un point à part entière.
 
 
 # Points de modélisation à clarifier
 
-## M1. Valeurs censurées (<LOD, <LOQ) hors de la couche capteur
-**Partiellement traité en session, à compléter.** `AnalysisObservation` porte
-`detectionLimit` et `quantificationLimit`, donc la chimie labo a de quoi situer
-une valeur par rapport à ses seuils. Mais il manque toujours : un **code de
-censure** explicite (la valeur est-elle un `<LOD`, un `<LOQ`, ou une mesure
-réelle ?), absent même sur `AnalysisObservation` ; et toute notion d'incertitude
-ou de censure sur `ValidatedObservation` et `Transformation` côté capteur, alors
-qu'on y a ajouté `uncertaintyLow/High` mais pas de censure. `qualityFlag`
-(good/suspect/bad/missing) ne capte pas la censure.
-**Pistes :**
-- Ajouter un qualificateur `censoring` (`none | below | above`) sur
-  `AnalysisObservation` au minimum, alignable ODM2 (ResultQualifier) ou SANDRE.
-- Décider si la censure peut concerner aussi des séries capteur (saturation,
-  sous-gamme) et donc remonter sur `ValidatedObservation`/`Transformation`.
+## M1. Valeurs censurées (<LOD, <LOQ) hors de la couche capteur (clos)
+Volet chimie résolu : `AnalysisObservation` porte `censoring`
+(`none | below_lod | below_loq | above_saturation`), aligné SANDRE RqAna
+(nomenclature 155), orthogonal à `qualityFlag`, une valeur censurée reste
+`good`. Quand `censoring != none`, `result` porte le seuil concerné, pas une
+estimation inventée.
+Volet capteur écarté, pas par manque de cas mais par différence de nature :
+une échelle dépassée en crue donne quand même un chiffre, par extrapolation de
+la courbe de tarage ou méthode indirecte, ce n'est pas une borne connue avec
+certitude comme un `<LOQ`, c'est une estimation moins fiable. Déjà couvert par
+`uncertaintyLow`/`uncertaintyHigh` (marge élargie) et `qualityFlag=suspect`
+(fiabilité réduite) sur `ValidatedObservation`. La censure formaliserait une
+certitude qu'on n'a pas dans ce cas. Pas de champ ajouté côté capteur.
 
-## M2. `aggregationStatistic` mélange cadence et statistique
-L'enum mêle deux axes orthogonaux : `sporadic` décrit une cadence (pas de temps
-irrégulier), les autres décrivent la nature statistique (`instantaneous`,
-`average`, `cumulative`, `maximum`...). Une série sporadique en moyenne ne peut
-pas être exprimée : `sporadic` avale la dimension statistique. Point distinct de
-la décision enum/Keyword (ADR-058) qui a gardé le champ en SQL sans voir ce
-mélange d'axes.
-**Piste :** séparer deux champs, un pour la statistique (toujours rempli), un
-pour la régularité (régulier avec `observationFrequency`, ou irrégulier).
-`sporadic` cesse d'être une valeur de `aggregationStatistic`.
+## M2. `aggregationStatistic` mélange cadence et statistique (clos)
+Résolu par la piste initiale, pas par le contournement documentaire d'abord
+tenté. Vérification faite sur ODM2 : `sporadic` y est un terme officiel du
+vocabulaire AggregationStatistic, dans la même liste plate que `average` ou
+`maximum`, donc le mélange était bien hérité du standard. Première tentative :
+documenter que `observationFrequency=null` peut déjà exprimer l'irrégularité
+avec n'importe quelle valeur de `aggregationStatistic`, sans toucher au schéma.
+Rejetée en relecture : un `null` qui signifie tantôt "sporadic explicite" tantôt
+"irrégulier pour une moyenne" est la même ambiguïté que celle éliminée ailleurs
+cette session (le `code` obligatoire ou absent, jamais optionnel).
+Décision finale : nouveau champ `temporalRegularity` (`regular` \| `irregular`)
+sur `Datastream`, `TimeSeries`, `TransformedTimeSeries`, qui gouverne seul la
+cardinalité effective de `observationFrequency`. `sporadic` retiré de
+`aggregationStatistic`, qui ne porte plus que la nature statistique (7 valeurs).
+Écart assumé par rapport à ODM2, justifié dans la note de Datastream : les deux
+axes désormais séparés couvrent un cas qu'ODM2 ne sait pas exprimer proprement
+non plus (moyenne à pas irrégulier), et la reconstruction du terme `sporadic`
+à l'export reste triviale (`instantaneous` + `irregular`).
 
-## M3. Provenance point brut vers validé non conservée
-Le lien `Observation` vers `ValidatedObservation` se reconstruit par jointure
-temporelle, sans FK directe. Dans le cas parallèle désormais autorisé (ADR
-TimeSeriesSource), une `ValidatedObservation` à l'instant T ne peut plus être
-rattachée au point brut exact dont elle dérive. La filiation est au niveau
-série/période, pas au point.
-**Pistes :**
-- Écrire que la lignée point à point n'est pas préservée, seulement la lignée
-  série/période. Confirmer que c'est acceptable scientifiquement.
-- Si la filiation au point est nécessaire pour les séries critiques : lien
-  optionnel `sourceObservation` sur `ValidatedObservation`.
+## M3. Provenance point brut vers validé non conservée (clos)
+Résolu : choix assumé et écrit dans la note de `ValidatedObservation`. La
+filiation est au niveau batch et période (`ValidationBatch` avec sa fenêtre
+`periodStart`/`periodEnd`), pas point à point, et cette granularité existait
+déjà sans être nommée comme un choix. Pas de FK point à point ajoutée : une
+session de validation ajoute, corrige ou supprime des points bruts en bloc,
+une correspondance ligne à ligne n'aurait pas de sens stable, et ça aurait
+coûté une colonne sur les tables les plus volumineuses pour un gain que
+l'usage ne réclame pas. Porte ouverte pour plus tard si un besoin réel de
+lignée point à point apparaît sur des séries critiques.
 
-## M4. `Datastream.system` obligatoire, lourd pour le labo
-`Datastream.system` est obligatoire et `systemType=sensor`. Pour un `lab_sample`,
-cela force un System(sensor) représentant l'analyseur. Avec `AnalysisBatch` qui
-porte déjà le `system` analyseur (en option), cette contrainte sur Datastream
-devient possiblement redondante pour le labo, ou source de System placeholder.
-**Piste :** vérifier sur cas réels si `system` obligatoire est tenable côté labo,
-et articuler avec `AnalysisBatch.system` pour éviter de déclarer l'instrument à
-deux endroits. Rendre `system` optionnel quand `acquisitionType=lab_sample` est
-une option.
+## M4. `Datastream.system` obligatoire, lourd pour le labo (clos)
+Résolu, mais pas par la piste envisagée (rendre `system` optionnel). En
+vérifiant, le vrai problème était en amont : `acquisitionType=lab_sample`
+n'aurait jamais dû exister sur `Datastream`. La propre définition de l'entité
+dit "flux de données brutes pour un unique System(sensor)", et rien
+n'oblige une `TimeSeries` à posséder un `TimeSeriesSource` : la chimie labo ne
+transite jamais par la couche IoT brute (Specimen vers AnalysisBatch vers
+AnalysisObservation, directement vers TimeSeries). `acquisitionType` retiré du
+tableau `Datastream` (devenu une colonne à une seule valeur, sans information,
+une fois `lab_sample` écarté) et de sa note. `Datastream.system` reste
+strictement obligatoire, confirmé : `Datastream` redevient sans exception un
+objet capteur, l'assouplir aurait dégradé la qualité des métadonnées pour rien.
+Note ajoutée sur `TimeSeries` : jamais de `Datastream` ni de `System(sensor)`
+placeholder pour une série lab_sample.
+Signalé en passant, traité dans la foulée : `TransformedTimeSeries` portait
+aussi `acquisitionType`, retiré. Une série dérivée peut être calculée à partir
+de plusieurs entrées mêlées (`transformationbatch_inputseries` accepte
+`TimeSeries` et `TransformedTimeSeries`), donc d'origine potentiellement mixte
+capteur et labo : un seul champ mentirait dans ce cas. La provenance réelle se
+lit dans le `TransformationBatch` et ses entrées, pas dans un raccourci
+dupliqué sur la TTS. `TimeSeries` garde le champ sans changement, une série
+métier n'a qu'une seule voie d'acquisition, jamais mixte.
 
-## M5. PK UUID sur hypertables et UUID inutile sur tables de valeurs
-Les tables de valeurs (`Observation`, `ValidatedObservation`, `Transformation`,
-`TransferFunctionPoint`, et maintenant `AnalysisObservation`) ont une PK `id`
-uuid mais ne sont cibles d'aucun TPC : leur UUID ne sert pas l'identité citable
-qui le justifie ailleurs. Si `Observation` est partitionnée sur
-`phenomenonTimeStart` (hypertable TimescaleDB), un index unique doit inclure la
-colonne de partition : une PK sur `id` seul est refusée ou impose
-`(id, phenomenonTimeStart)`. À l'échelle de milliards de lignes, UUID superflu =
-index perdu et localité d'insertion dégradée.
-**Pistes :**
-- Clarifier quelles tables de valeurs sont des hypertables et comment leur PK
-  inclut la colonne de partition.
-- Se demander si ces tables ont besoin d'un surrogate UUID, ou si une clé
-  naturelle `(série, phenomenonTimeStart)` suffit. `ControlObservation`, cible
-  TPC, garde son UUID.
+## M5. PK UUID sur hypertables et UUID inutile sur tables de valeurs (clos)
+Résolu sur les six tables de valeurs. Colonne id uuid retirée, remplacée par
+une clé primaire composite naturelle, incluant toujours la colonne de temps
+(exigence TimescaleDB : la colonne de partition doit être non nulle et faire
+partie de toute clé primaire ou index unique).
+Observation : (datastream, phenomenonTimeStart).
+ValidatedObservation : (timeSeries, phenomenonTimeStart).
+Transformation : (transformedTimeSeries, phenomenonTimeStart).
+ControlObservation : (seriesId, phenomenonTimeStart), rejoint le lot après
+retrait de son statut de ressource citable (plus simple : citer la série
+suffit, ses ControlObservation se retrouvent par seriesId, symétrique des
+autres lignes d'observation).
+TransferFunctionPoint : (function, x). Cas à part signalé en cours de route :
+ce n'est pas une hypertable (une dizaine à une cinquantaine de points par
+barème), mais la même raison de fond s'applique, jamais citée individuellement.
+AnalysisObservation : (timeSeries, phenomenonTimeStart, replicate). Cas
+distinct découvert en cours de route : contrairement aux cinq autres, la
+chimie admet plusieurs répétitions analytiques légitimes au même instant, donc
+pas de valeur unique garantie par (série, instant) seul. Colonne replicate
+ajoutée pour distinguer les répétitions, sans toucher à la colonne de
+partition (phenomenonTimeStart reste seule éligible, resultTime est optionnel
+donc disqualifié d'office). Réduire les répétitions en une valeur unique, si
+besoin, passe par un TransformationBatch ordinaire, aucune nouvelle structure
+requise.
 
-## M6. Export STA : quel Thing pour un ancrage Site ou Observatory
-Le mapping STA pose Station égale Thing, mais un `Datastream` peut être ancré
-`Site` ou `Observatory`. STA exige `Datastream` vers `Thing`. Comment `/Things`
-est-il peuplé pour les flux sans Station ?
-**Piste :** définir la règle de résolution du Thing pour les ancrages non-Station
-(exposer Site et Observatory comme Things, ou Thing synthétique), dans la couche
-d'export.
+## M6. Export STA : quel Thing pour un ancrage Site ou Observatory (clos)
+Résolu, et plus simplement que prévu : les trois pièces de la réponse
+existaient déjà séparément, Observatory, Site et Station sont chacune déjà
+alignées Thing STA de leur côté. Il ne manquait qu'une phrase pour les relier.
+Ajoutée dans Pattern TPC anchor : anchorType donne directement l'entité à
+exposer comme Thing, pas de résolution synthétique ni de repli sur Station par
+défaut, les properties STAMPLATE portées par l'entité réellement ancrée.
 
-## M7. DataCite Publisher indéfini pour `Dataset`
-Le mapping DataCite dérive Publisher de l'Observatory rattaché, mais `Dataset`
-n'a aucun lien Observatory : seulement `dataset_resource` vers des séries qui
-peuvent couvrir plusieurs Observatories. La dérivation est indéfinie. Question
-voisine : `Bundle.Observatory` est unique, ce qui suppose qu'un Bundle ne mélange
-pas plusieurs Observatories, sans que l'invariant soit écrit.
-**Pistes :**
-- Spécifier la dérivation du Publisher pour Dataset (Observatory commun aux
-  ressources, erreur si divergence).
-- Écrire l'invariant "un Bundle appartient à un seul Observatory" s'il est voulu,
-  et le vérifier à l'ajout dans `bundle_series`.
+## M7. DataCite Publisher indéfini pour `Dataset` (clos)
+Résolu sur les deux volets. Invariant de confinement écarté, décision assumée :
+`Bundle` et `Dataset` peuvent librement regrouper des ressources de plusieurs
+Observatory, méta-BDOH accepté. `Bundle.Observatory` reste le Publisher choisi
+par le curateur pour la citation, pas une frontière technique sur les séries
+incluses. Publisher pour `Dataset` : `sourceBundle.Observatory` si le Dataset
+provient d'un Bundle mono-observatoire, sinon repli sur une constante
+institutionnelle (INRAE UR RiverLy), qui couvre aussi bien les exports
+méta-BDOH que les Dataset créés sans Bundle. Mapping DataCite corrigé en
+conséquence, seule source de vérité, plus de ligne unique traitant Bundle et
+Dataset comme identiques.
 
 ## M8. Conformité GeoJSON / CRS et asymétrie géométrie FOI
 `Location.geometry` est annoncée "application/geo+json" avec un `crs` pouvant
@@ -242,34 +294,24 @@ alors que tout le reste passe par `Location` (donc pas d'historique de position)
 - Décider si l'asymétrie FOI est assumée (FOI conceptuelle sans historique) ou à
   aligner sur `Location`.
 
-
 # Risques structurels
 
 Choix de fond, souvent délibérés. Le but est de nommer le coût accepté et de
 combler ce qui n'est pas spécifié, pas d'annuler.
 
-## S1. TPC sans FK native : intégrité référentielle seulement applicative
-Tous les liens polymorphes (`resourceType+resourceId`, `anchorType+anchorId`,
-`agentType+agentId`, `seriesType+seriesId`) n'ont aucune FK PostgreSQL. Les
-triggers valident à l'écriture mais ne couvrent pas le sens inverse : rien
-n'empêche un `resourceId` de pointer vers une entité archivée, la cascade n'est
-définie nulle part (que devient un `KeywordAssignment` vers une `Property`
-deprecated), et la base ne garantit pas que `(resourceType, resourceId)` soit
-cohérent.
-Cas particulier : `anchor` (Observatory|Site|Station) et `agent`
-(Person|Machine|Organization) ont un ensemble cible petit et figé. Ce sont
-exactement les cas où "une FK nullable par type + CHECK d'exclusion" donnerait
-une vraie intégrité base à coût quasi nul. En les passant en TPC pour
-l'uniformité, on abandonne l'intégrité là où elle était la plus facile à garder.
-**Pistes (par ambition croissante) :**
-- Documenter les garanties réelles : intégrité immédiate à l'écriture, cohérence
-  seulement éventuelle pour le reste (job périodique). Nommer la fenêtre tolérée.
-- Pour `anchor` et `agent` : FK nullables + CHECK d'exclusion mutuelle, intégrité
-  base sans changer l'API.
-- Supertable `Resource` (PK partagée par les entités navigables, FK réelle vers
-  elle pour `Identifier`, `Memory`, `KeywordAssignment`, `Responsibility`).
-  Restaure l'intégrité polymorphe et colle au modèle `/resources/{uuid}`. Coût :
-  une jointure de plus.
+## S1. TPC sans FK native : intégrité référentielle seulement applicative (clos, voir ADR-060)
+Fermé : pas de supertable ni de FK native. Le risque visé (un lien polymorphe
+pointant vers une ligne qui n'existe plus) suppose une suppression physique
+d'une entité référencée, déjà interdite par ADR-043 sur toute entité
+référencée. L'intégrité applicative existante (trigger + vérification
+périodique) suffit tant que cet invariant tient. Raisonnement complet dans
+ADR-060.
+Reste un travail réel, distinct de S1 : les quatre grilles TPC (resource,
+anchor, agent, series) ont des listes de types qui divergent d'une table à
+l'autre sans justification écrite (ex. `AnalysisObservation` absente partout).
+Ce n'est pas un défaut de structure mais un défaut de complétude, à traiter
+par audit avant de considérer le modèle stabilisé. Voir tâche correspondante
+dans `CLAUDE.md`.
 
 ## S2. Double vérité de l'ancrage flux / Deployment
 Le modèle dit que chaque flux porte son `anchorType/anchorId` autoportant, que le
@@ -296,22 +338,16 @@ règles et de l'exécution des jobs. La base seule ne décrit plus un état vali
 pour chacun déclencheur, requête de détection, action, fréquence. Ajouter des
 tests qui injectent des violations et vérifient leur détection.
 
-## S5. AnalysisObservation hors du graphe TPC et des exports
-**Ajout de cette session.** `AnalysisObservation` et `AnalysisBatch` ont été
-créés (ADR-059) mais leur intégration transversale n'a pas été passée en revue :
-ils n'apparaissent pas dans les listes de `resourceType` (Identifier, Memory,
-KeywordAssignment, Responsibility), ni dans le mapping STA/export, ni dans les
-scopes de suppression logique (voir C3). Une mesure chimique citable ou
-annotable, ou exportable en STA comme une Observation, n'est pour l'instant pas
-raccordée.
-**Pistes :**
-- Décider si `AnalysisObservation` doit être cible TPC (annotable par Memory,
-  citable par Identifier). Probablement non au point de mesure, comme
-  ValidatedObservation, mais à acter.
-- Vérifier l'export STA d'une `AnalysisObservation` (elle se rattache à une
-  TimeSeries lab_sample, donc devrait suivre le même mapping que
-  ValidatedObservation, à confirmer).
-- Intégrer `AnalysisBatch`/`AnalysisObservation`/`Algorithm` dans la passe C3.
+## S5. AnalysisObservation hors du graphe TPC et des exports (clos)
+Résolu sur les deux volets vérifiés. TPC resource : `AnalysisObservation` est
+une ligne de donnée symétrique de `ValidatedObservation`, correctement absente
+de `Identifier`/`Memory`/`KeywordAssignment`/`Responsibility`, ce n'est pas un
+oubli. Suppression logique : `AnalysisBatch` porte déjà `status` (comme
+`ValidationBatch`, `ObservationBatch`), simplement absent de l'index canonique,
+corrigé. `AnalysisObservation` n'en a pas besoin, même raison que
+`ValidatedObservation`. Reste hors scope, non traité ici : le mapping export STA
+d'`AnalysisObservation`, question distincte à traiter avec M6 le jour où
+l'export STA de la chaîne labo devient prioritaire.
 
 ## S4. Historique des valeurs : propriété à écrire, pas à corriger
 Le recalcul d'une `TransformedTimeSeries` écrase les valeurs dans
