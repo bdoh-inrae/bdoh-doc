@@ -42,7 +42,7 @@ les divergences ; ce ne sera plus le cas une fois l'implémentation commencée.
 | Fichier | Possède (source de vérité de...) |
 |---------|-----------------------------------|
 | `modele_donnees_v12.md` | la **structure** : entités, colonnes, patterns TPC, conventions de nommage, scopes d'unicité, enums SQL, suppression logique, vocabulaires Keyword |
-| `decisions_index.md` | le **pourquoi** : ADR-001 à ADR-062, alternatives écartées |
+| `decisions_index.md` | le **pourquoi** : ADR-001 à ADR-064, alternatives écartées |
 | `points_ouverts.md` | ce qui **n'est pas tranché** : constats concrets (C), risques structurels (S), points de modélisation (M), veille standards (V), avec triage sévérité/effort |
 | `sources.md` | les **standards externes** et leur état daté, table source vers entités |
 | `SOUL.md` | la **manière de penser et de collaborer** |

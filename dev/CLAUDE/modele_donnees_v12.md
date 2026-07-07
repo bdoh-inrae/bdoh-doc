@@ -129,7 +129,7 @@ pérenne) ou par `Identifier` (identifiant externe cité). Le modifier est donc
 sans conséquence sur l'intégrité, cela relève de la lisibilité, pas de
 l'identification.
 
-Portent un `code` : Observatory, Site, Station, Sensor, Actuator, Sampler, Platform, Kit, Deployment, Datastream,
+Portent un `code` : Observatory, Facility, Site, Station, Sensor, Actuator, Sampler, Platform, Kit, Deployment, Datastream, SamplingBatch,
 TimeSeries, TransformedTimeSeries, TransferFunction, TransferFunctionSet,
 Algorithm, Project, Organization, Property, Unit, Procedure, FeatureOfInterest.
 Pour `Algorithm` et `TransferFunction`, dont plusieurs lignes coexistent au fil
@@ -156,11 +156,13 @@ pas par `code`. Le `code` est interne à BDOH.
 ```
 Observatory           unique globalement
 Organization          unique globalement
+Facility              unique globalement
 Sensor                unique globalement
 Actuator              unique globalement
 Sampler               unique globalement
 Platform              unique globalement
 Kit                   unique globalement
+SamplingBatch         unique globalement
 Project               unique globalement
 Procedure             unique globalement
 Property              unique globalement
@@ -266,16 +268,47 @@ administratif, la localisation précise vit dans `Location`.
 | `TransferFunction`      | Barème (courbe de tarage...)  | voir `TransferFunction.anchorType`       |
 | `TransferFunctionSet`   | Jeu de barèmes                | voir `TransferFunctionSet.anchorType`    |
 
-Source de vérité de l'ancrage d'un flux : le lieu d'un flux (`Datastream`) est
-dérivé automatiquement du `Deployment` courant de son `system` à la création,
-puis figé (un changement de capteur crée un nouveau `Datastream`). L'ancre est
-recopiée sur le flux pour être lisible sans remonter la chaîne datée system vers
-Deployment à chaque requête (question fréquente "quels flux sont rattachés à
-cette station ?"), mais elle n'est jamais saisie ni modifiée directement : le
-`Deployment` en est la source unique, corriger un rattachement erroné se fait
-là et le flux se recale. Une TimeSeries ou TransformedTimeSeries porte son
-propre ancrage de la même façon, cohérent avec les Datastreams qui l'alimentent
-via TimeSeriesSource.
+L'ancre est une propriété d'identité, pas un cache : cohérence de chaîne.
+
+L'ancre (`anchorType` + `anchorId`) d'un `Datastream`, d'une `TimeSeries` et
+d'une `TransformedTimeSeries` est une propriété d'identité de l'objet, au même
+rang que sa `property` ou sa `procedure`, pas une valeur dérivée à resynchroniser
+en continu. Elle est fixée une fois à la création puis figée. Un changement
+d'ancre n'est jamais une mise à jour : c'est soit un nouvel objet, soit la
+correction d'une erreur.
+
+Règle de fixation, à la création de tout objet ou lien de la chaîne
+`Datastream` vers `TimeSeries` vers `TimeSeriesSource` :
+- si un amont existe, l'ancre est dérivée automatiquement de lui (le `Datastream`
+  la dérive du `Deployment` pointé, en remontant au `Deployment` racine qui la
+  porte ; la `TimeSeries` la dérive des `Datastream` qu'elle coud via
+  `TimeSeriesSource`) ;
+- s'il n'existe pas d'amont (dépôt direct, série de labo), l'ancre est saisie ;
+- dans les deux cas, la cohérence des ancres est une CONDITION de la jonction :
+  relier un `Datastream` à une `TimeSeries` d'une autre ancre, ou coudre des
+  `Datastream` d'ancres différentes sous une même `TimeSeries`, est refusé. Une
+  `TimeSeriesSource` ne coud que des flux de la même ancre : une série n'agrège
+  pas plusieurs stations.
+
+Cette cohérence garantie à l'écriture est ce qui permet de ne JAMAIS remonter la
+chaîne en lecture. La question fréquente "quels Datastreams / TimeSeries /
+TimeSeriesSource sont rattachés à cette station ?" lit directement la colonne
+`anchorId` de l'objet, sans jointure récursive sur `Deployment` ni résolution de
+source courante. La cascade de `Deployment` (parentDeployment) et la chaîne
+DS vers TS ne sont parcourues qu'une fois, à l'écriture, pour figer et vérifier
+l'ancre, jamais en lecture.
+
+La `TransformedTimeSeries` suit ses `TimeSeries` d'entrée : elle en dérive son
+ancre, et la même condition de cohérence s'applique (ses entrées partagent une
+ancre, sinon la jonction est refusée). L'agrégation spatiale multi-stations
+n'est pas un besoin BDOH.
+
+Correction d'erreur : si une ancre a été mal fixée, sa correction est un acte
+explicite de gestionnaire, jamais un effet de bord silencieux (elle change
+l'identité géographique d'une chronique). La correction doit être propagée à
+tous les objets figés en aval. C'est un invariant applicatif (voir S3 dans
+`points_ouverts.md`), pas une mécanique de synchronisation permanente : en
+régime normal, rien ne bouge, donc rien n'est à propager.
 
 Export STA, résolution du Thing : `anchorType` donne directement l'entité à
 exposer comme Thing (`Observatory`, `Site` ou `Station` selon le cas, chacune
@@ -341,6 +374,7 @@ Ces tables encodent des relations many-to-many portées par l'entité
 |------------------------------------|------------------------------------|
 | `person_organization`              | Person ↔ Organization              |
 | `transformationbatch_inputseries`  | TransformationBatch ↔ TimeSeries ou TransformedTimeSeries (seriesType + seriesId, pattern TPC series) |
+| `specimen_parents`                 | Specimen (enfant) ↔ Specimen (parents), filiation via PreparationBatch |
 | `transferfunctionset_function`     | TransferFunctionSet ↔ TransferFunction |
 | `dataset_resource`                 | Dataset ↔ TimeSeries, TransformedTimeSeries, TransferFunction ou ControlObservation (TPC series) |
 
@@ -398,8 +432,8 @@ peuvent l'être ; elle ne porte donc aucun des trois mécanismes ci-dessus.
 qui peut être détruit ou épuisé : il porte `status`, malgré sa parenté avec les
 constats figés.
 
-Tables avec `status` (mécanisme natif) : Observatory, Site, Station, Sensor,
-Actuator, Sampler, Platform, Kit, Deployment, Datastream, ObservationBatch, ValidationBatch, AnalysisBatch,
+Tables avec `status` (mécanisme natif) : Observatory, Facility, Site, Station, Sensor,
+Actuator, Sampler, Platform, Kit, Deployment, Datastream, ObservationBatch, ValidationBatch, SamplingBatch, PreparationBatch, AnalysisBatch, CalibrationBatch,
 TransferFunction, TransferFunctionBatch, TransformationBatch,
 TransformedTimeSeries, TimeSeries, Project, Algorithm, TransferFunctionSet,
 Dataset, Memory, Identifier, Specimen.
@@ -553,7 +587,7 @@ Observatory, Site, Station, Sensor, Actuator, Sampler, Platform, Kit, Datastream
 | `agentType`    | 1           | Type d'acteur responsable                  | `Person` \| `Organization` \| `Machine`                                   |
 | `agentId`      | 1           | UUID de la Person, Organization ou Machine | uuid                                                                      |
 | `role`         | 1           | Rôle fonctionnel CI_RoleCode ISO 19115-1   | `resourceProvider` \| `custodian` \| `owner` \| `user` \| `distributor` \| `originator` \| `pointOfContact` \| `principalInvestigator` \| `processor` \| `publisher` \| `author` \| `sponsor` \| `coAuthor` \| `collaborator` \| `editor` \| `mediator` \| `rightsHolder` \| `contributor` \| `funder` \| `stakeholder` |
-| `resourceType` | 1           | Type de ressource ciblée                   | `Observatory` \| `Site` \| `Station` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `Datastream` \| `TimeSeries` \| `TransformedTimeSeries` \| `TransferFunction` \| `TransferFunctionSet` \| `Project` \| `Bundle` \| `Algorithm` |
+| `resourceType` | 1           | Type de ressource ciblée                   | `Observatory` \| `Site` \| `Station` \| `Facility` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `Datastream` \| `TimeSeries` \| `TransformedTimeSeries` \| `TransferFunction` \| `TransferFunctionSet` \| `Project` \| `Bundle` \| `Algorithm` |
 | `resourceId`   | 1           | UUID de la ressource ciblée                | uuid                                                                      |
 | `validFrom`    | 0..1        | Début de responsabilité                    | "2022-01-01"                                                              |
 | `validTo`      | 0..1        | Fin, null si toujours actif                | "2024-12-31" \| null                                                      |
@@ -676,16 +710,16 @@ KeywordAssignment
   protocoles publiés (DOI, normes ISO).
 
 *Utilisé par* :<br>
-TimeSeries (procedureObservation, procedureValidation, procedureSampling), ControlObservation (procedureObservation), TransferFunction (procedureModeling), TransformedTimeSeries (procedureTransformation), Datastream (procedureObservation), Specimen (procedureSampling), AnalysisBatch (procedure)
+TimeSeries (procedureObservation, procedureValidation, procedureSampling), ControlObservation (procedureObservation), TransferFunction (procedureModeling), TransformedTimeSeries (procedureTransformation), Datastream (procedureObservation), SamplingBatch (procedure), PreparationBatch (procedure), AnalysisBatch (procedure), CalibrationBatch (procedure)
 
 *Note* :
 - Entité réutilisable - une même Procedure peut être référencée par plusieurs objets. Le type discrimine le rôle et filtre les choix dans l'interface.
 - Types et exemples :
-  * **sampling** - prélever un échantillon terrain (ex : "Prélèvement eau de surface au seau", "Prélèvement automatique ISCO 3700")
+  * **sampling** - prélever un échantillon terrain (ex : "Prélèvement eau de surface au seau", "Prélèvement automatique ISCO 3700", "Piège à particules séquentiel PPS 3")
+  * **preparation** - préparer un échantillon au laboratoire avant analyse (ex : "Filtration membrane 0.45µm", "Broyage tamisage sédiment", "Dilution acidification", "Aliquotage composite")
   * **observation** - mesurer une valeur par capteur continu ou instrument de terrain (ex : "Mesure sonde multiparamètre YSI EXO2", "Jaugeage au micro-moulinet OTT C2")
   * **analysis** - analyser un Specimen en laboratoire (ex : "NF EN ISO 10304-1 chromatographie ionique nitrates", "ICP-MS métaux traces eau", "DOC par combustion catalytique Shimadzu")
   * **modeling** - construire un modèle depuis des mesures ("BaRatin v3 - courbe de tarage bayésienne", "Régression polynomiale turbidité/MES")
-  * **aggregation** - agréger temporellement ou spatialement des valeurs (ex : "Moyenne journalière sur plage horaire", "Cumul pluviométrique mensuel")
   * **transformation** - appliquer un calcul pour produire de nouvelles valeurs (ex : "Application courbe de tarage par interpolation linéaire", "Correction offset dérive capteur")
   * **validation** - qualifier des données existantes (ex : "Validation visuelle Wiski par opérateur", "Pipeline automatique contrôle bornes SANDRE")
 
@@ -694,7 +728,7 @@ TimeSeries (procedureObservation, procedureValidation, procedureSampling), Contr
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                                           |
 | `code`         | 1           | Slug unique globalement             | "iso-10304-1"                                                                                  |
 | `name`         | 1           | Nom du protocole                    | "NF EN ISO 10304-1"                                                                            |
-| `type`         | 1           | Rôle du protocole                   | `sampling` \| `observation` \| `analysis` \| `modeling` \| `aggregation` \| `transformation` \| `validation` |
+| `type`         | 1           | Rôle du protocole                   | `sampling` \| `preparation` \| `observation` \| `analysis` \| `modeling` \| `transformation` \| `validation` |
 | `description`  | 0..1        | Description libre                   |                                                                                                |
 | `version`      | 0..1        | Version du protocole                | "2021"                                                                                         |
 | `reference`    | 0..1        | URI ou DOI du document normatif     | "https://www.iso.org/standard/..."                                                             |
@@ -885,7 +919,7 @@ Observatory, Site, Station, TimeSeries, TransformedTimeSeries, Bundle, Property,
 |----------------|-------------|-------------------------------------|----------------------------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                             |
 | `keyword`      | 1 →Keyw     | Keyword assigné                     | → Keyword                                                                        |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `TimeSeries` \| `TransformedTimeSeries` \| `Bundle` \| `Property` \| `Unit` \| `Organization` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `Deployment` \| `FeatureOfInterest` \| `Specimen` \| `ControlObservation` \| `TransferFunction` \| `TransferFunctionSet` \| `Datastream` \| `Project` \| `Memory` \| `Algorithm` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Facility` \| `TimeSeries` \| `TransformedTimeSeries` \| `Bundle` \| `Property` \| `Unit` \| `Organization` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `Deployment` \| `FeatureOfInterest` \| `Specimen` \| `ControlObservation` \| `TransferFunction` \| `TransferFunctionSet` \| `Datastream` \| `Project` \| `Memory` \| `Algorithm` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                             |
 
 ---
@@ -991,7 +1025,7 @@ Observatory, Site, Station, Sensor, Actuator, Sampler, Platform, Kit, TimeSeries
 | `code`         | 1           | Valeur de l'identifiant             | "V3015810" \| "0000-0001-1234-1234" \| "0-20000-0-06610"                     |
 | `codeType`     | 1           | Type d'identifiant                  | `doi` \| `orcid` \| `ror` \| `sandre` \| `wigos` \| `igsn` \| `pidinst` \| `swhid` |
 | `codeSource`   | 1           | Système ou organisme émetteur       | "SANDRE" \| "TheiaOZCAR" \| "NERC" \| "DataCite" \| "ROR" \| "PIDINST"       |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `TimeSeries` \| `TransformedTimeSeries` \| `Person` \| `Organization` \| `Specimen` \| `Property` \| `Procedure` \| `FeatureOfInterest` \| `Project` \| `TransferFunction` \| `TransferFunctionSet` \| `Bundle` \| `Dataset` \| `Datastream` \| `Algorithm` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Facility` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `TimeSeries` \| `TransformedTimeSeries` \| `Person` \| `Organization` \| `Specimen` \| `Property` \| `Procedure` \| `FeatureOfInterest` \| `Project` \| `TransferFunction` \| `TransferFunctionSet` \| `Bundle` \| `Dataset` \| `Datastream` \| `Algorithm` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                         |
 | `status`       | 1           | État de l'identifiant                | `active` \| `archived`                                                       |
 
@@ -1061,7 +1095,7 @@ Observatory, Site, Station, Deployment, FeatureOfInterest (via resourceType + re
 |----------------|-------------|-------------------------------------|------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                 |
 | `location`     | 1 →Loc      | Géométrie associée                  | → Location                                           |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Deployment` \| `FeatureOfInterest` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Facility` \| `Deployment` \| `FeatureOfInterest` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                 |
 | `validFrom`    | 1           | Début de validité                   | "2014-04-17T00:00:00Z"                               |
 | `validTo`      | 0..1        | Fin de validité, null si courant    | null                                                 |
@@ -1151,6 +1185,51 @@ HistoricalLocation, HistoricalProject, Responsibility, Identifier, Memory, Keywo
 | `endDate`            | 0..1           | Date de fin, null si actif          | null                                     |
 | `status`             | 1              | État de l'observatoire              | `active` \| `inactive` \| `discontinued` |
 | `url`                | 0..1           | Site web du réseau                  | "https://..."                            |
+
+---
+
+## Facility
+> Lieu physique de recherche (laboratoire, plateforme analytique, atelier) : racine d'ancrage autonome, pair d'Observatory.
+
+*Aligné avec* :
+- [ROR - Research Organization Registry](https://ror.org/) - catégorie "Facility"
+  du registre : un lieu de recherche spécialisé (laboratoire, plateforme), distinct
+  de l'organisation qui le porte. Facility peut être identifiée par un ROR de type
+  facility via Identifier.
+- [RRID / SciCrunch](https://scicrunch.org/resources) - identifiant de ressource de
+  recherche, pensé pour les plateformes analytiques partagées entre plusieurs
+  équipes ou observatoires. Porté via Identifier quand la plateforme en a un.
+- [ISO 19115 MD_DataIdentification](https://www.iso.org/standard/53798.html)
+  - section d'identification d'une ressource, reprise pour décrire une facility.
+
+*Utilisé par* :<br>
+Cible d'ancrage possible (anchorType='Facility') pour Deployment. Les instruments de laboratoire (Sensor, Actuator, Sampler, Kit) y sont déployés comme un capteur de terrain sur une Station.
+
+*Relations inverses (requêter par resourceType='Facility')* :<br>
+HistoricalLocation, Responsibility, Identifier, Memory, KeywordAssignment
+
+*Note* :
+- Racine d'ancrage autonome, hors de la hiérarchie Observatory vers Site vers
+  Station. Un laboratoire de chimie partagé n'appartient à aucun observatoire en
+  particulier : il est multi-observatoire par nature.
+- Aucun rattachement par FK à Organization : l'institution responsable est
+  exprimée par une Responsibility taguant la Facility (même mécanisme que pour
+  Observatory), pas par un lien rigide. Facility est un objet sur lequel on tague
+  des ressources et on ancre des Deployments, rien de plus.
+- facilityType (via Keyword) décrit la nature du lieu, distinct de
+  organizationType : c'est le bâtiment ou la plateforme, pas l'institution.
+
+*Keywords attendus (voir KeywordRequirement)* :<br>
+- facilityType : laboratory, analytical platform, calibration center, workshop, field station
+
+| Champ         | Cardinalité | Définition                          | Valeurs possibles                        |
+|---------------|-------------|-------------------------------------|------------------------------------------|
+| `id`          | 1           | Identifiant technique, clé primaire | uuid                                     |
+| `code`        | 1           | Code court unique                   | "labo-chimie-riverly"                    |
+| `name`        | 1           | Nom de la facility                  | "Plateforme analytique INRAE RiverLy"    |
+| `description` | 0..1        | Description                         | "Laboratoire de chimie des eaux"         |
+| `location`    | 0..1 →Loc   | Emprise ou point géographique       | → Location                               |
+| `status`      | 1           | État de la facility                 | `active` \| `inactive` \| `discontinued` |
 
 ---
 
@@ -1415,9 +1494,9 @@ Memory, Responsibility, Identifier, KeywordAssignment
 - Entité physique à identité propre, indépendante de son contexte de déploiement.
 - Rôle SOSA distinct de Sensor : l'Actuator ne produit pas de mesure conservée
   dans BDOH, il transforme l'échantillon ou l'environnement. La chaîne
-  préparation puis mesure se lit par la filiation des Specimens (derivedFrom)
-  et par les actes analytiques. L'articulation fine préparation/mesure au labo
-  reste un point ouvert (voir points_ouverts.md).
+  Un Actuator déployé est pointé par un PreparationBatch (broyeur, doseur) qui
+  produit un Specimen enfant ; la chaîne préparation puis mesure se lit
+  PreparationBatch puis AnalysisBatch.
 - Pas de calibration STA ni d'encodingType (ce n'est pas un capteur STA), pas de
   material/volume/preservationMethod (ce n'est pas un contenant).
 
@@ -1592,7 +1671,7 @@ Memory, Identifier, HistoricalLocation
 - Trace toutes les relations physiques entre objets instrumentaux (Sensor, Actuator, Sampler, Platform, Kit), et entre ces objets et leur ancrage.
 - systemType + systemId : pattern TPC, l'objet déployé est l'une des cinq entités d'instrumentation. Intégrité applicative (pas de FK native), comme les autres liens TPC du modèle.
 - Récursif via parentDeployment - un capteur déployé sur une bouée déployée sur une station forme une hiérarchie de Deployments imbriqués.
-- anchorType + anchorId : pattern TPC, ancrage sur Station ou Site.
+- anchorType + anchorId : pattern TPC, ancrage sur Station, Site, Observatory (terrain) ou Facility (laboratoire).
 - deploymentDepth : profondeur nominale de l'objet dans ce Deployment.
 - Si l'objet est déplacé sur un autre ancrage, c'est un nouveau Deployment.
 - Position dans le temps - deux mécanismes selon la nature du changement :
@@ -1607,8 +1686,8 @@ Memory, Identifier, HistoricalLocation
 | `systemType`       | 1           | Type d'objet déployé (discriminant TPC)            | `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit`      |
 | `systemId`         | 1           | UUID du Sensor, Actuator, Sampler, Platform ou Kit | uuid                                                            |
 | `parentDeployment` | 0..1 →Dep   | Déploiement parent (récursif)                      | → Deployment                                                    |
-| `anchorType`       | 0..1        | Type d'ancrage territorial (null si autonome)      | `Observatory` \| `Site` \| `Station`                            |
-| `anchorId`         | 0..1        | UUID de l'Observatory, Site ou Station             | uuid                                                            |
+| `anchorType`       | 0..1        | Type d'ancrage territorial (null si autonome)      | `Observatory` \| `Site` \| `Station` \| `Facility`             |
+| `anchorId`         | 0..1        | UUID de l'Observatory, Site, Station ou Facility   | uuid                                                            |
 | `location`         | 0..1 →Loc   | Position propre si différente de l'ancre           | → Location                                                      |
 | `deploymentDepth`  | 0..1        | Profondeur nominale de l'objet dans ce Deployment  | "-1.5"                                                          |
 | `depthReference`   | 0..1        | Référence de profondeur                            | `surface_relative` \| `bottom_relative` \| `absolute_elevation` |
@@ -1647,8 +1726,8 @@ TimeSeriesSource (datastream), Observation (datastream)
 - FOI absente de la couche IoT - portée par Station et TimeSeries (couche métier).
 - anchorType + anchorId : pattern TPC pour le rattachement géographique.
 - Cas station fixe : anchorType='Station'. Cas drone : anchorType='Site'.
-- Ancrage dérivé, pas saisi : anchorType/anchorId ne sont jamais renseignés à la main. Ils sont recopiés automatiquement depuis le Deployment courant du system au moment de la création du Datastream, puis figés (un changement de capteur crée un nouveau Datastream, pas une modification de celui-ci, donc l'ancre ne bouge jamais après coup). Le Deployment est ainsi la source unique du lieu : corriger une erreur d'ancrage se fait sur le Deployment, jamais sur le flux, ce qui rend impossible la divergence entre les deux (ancienne double vérité, voir S2). L'ancre reste stockée sur le Datastream pour la lecture rapide du rattachement administratif (quels flux sur cette Station), sans jamais avoir à remonter la chaîne datée system vers Deployment à chaque requête.
-- anchorType hérite de celui du Deployment courant (Observatory, Site ou Station selon l'échelle à laquelle le capteur est déployé).
+- Ancrage dérivé à la création, puis figé : anchorType/anchorId sont dérivés du Deployment pointé (en remontant au Deployment racine qui porte l'ancre) au moment de la création du Datastream, puis figés. Un changement de capteur crée un nouveau Datastream, donc l'ancre ne bouge jamais après coup. L'ancre est une propriété d'identité du flux, stockée sur lui pour la lecture rapide (quels flux sur cette Station), jamais remontée en requête. Règle complète de fixation et de cohérence de chaîne Datastream vers TimeSeries vers TimeSeriesSource : voir Pattern TPC anchor.
+- anchorType hérite de celui du Deployment (Observatory, Site ou Station selon l'échelle à laquelle le capteur est déployé).
 - procedure optionnelle (0..1) ici, alors qu'elle est obligatoire (1) sur TimeSeries : volontaire. Un flux brut doit pouvoir être déposé dès l'installation du capteur, avant que le protocole de mesure ne soit formalisé ; il sera enrichi plus tard. La série métier validée, elle, exige un protocole défini.
 - aggregationStatistic et temporalRegularity, deux axes orthogonaux, chacun
   toujours renseigné :
@@ -1691,6 +1770,84 @@ TimeSeriesSource (datastream), Observation (datastream)
 | `status`               | 1           | État du flux                              | `active` \| `inactive` \| `closed`                                                                           |
 | `license`              | 1 →Lic      | Licence des données                       | → License                                                                                                    |
 | `transmissionMode`     | 0..1        | Mode d'arrivée des données dans BDOH      | `auto` \| `manual`                                                                                           |
+
+---
+
+## CalibrationBatch
+> Acte de calibration d'un instrument : quand, par qui, contre quel étalon, avec quels paramètres de correction produits.
+
+*Aligné avec* :
+- [ODM2 Calibration Action](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/core_actions.md)
+  - la calibration d'un équipement est une Action ODM2 datée et attribuée, liée à
+  un standard de référence. CalibrationBatch en est l'équivalent.
+- [W3C PROV-O Activity](https://www.w3.org/TR/prov-o/#Activity) - acte daté,
+  attribué à un agent, qui caractérise la réponse d'un instrument.
+- [GUM (JCGM 100:2008)](https://www.bipm.org/documents/20126/2071204/JCGM_100_2008_E.pdf)
+  - les paramètres de correction (offset, gain) et leur incertitude s'expriment
+  dans le cadre GUM, comme pour TransferFunctionParameter.
+
+*Utilisé par* :<br>
+CalibrationParameter (calibrationBatch)
+
+*Note* :
+- Frère des autres Batch : acte daté, attribué à un agent, portant sur un
+  instrument déployé. Historise les calibrations (chaque calibration est une
+  ligne), là où Sensor.calibrationDate ne gardait que la dernière.
+- sensor : le Deployment de l'instrument calibré (systemType=Sensor le plus
+  souvent, mais un Sampler ou un Actuator peuvent aussi être calibrés).
+- referenceStandard : l'étalon utilisé (solution certifiée, poids étalon), en
+  texte libre ou référencé via un Identifier si tracé comme objet.
+- Les paramètres de correction produits (offset, pente, coefficients) vivent dans
+  CalibrationParameter, frère de TransferFunctionParameter (même patron :
+  coefficient nommé, valeur, incertitude, unité).
+- L'application effective de ces paramètres pour corriger des données brutes est
+  une transformation entre Datastream et TimeSeries : hors de ce batch, non
+  modélisée à ce stade (voir points_ouverts.md).
+- agentType + agentId : pattern TPC, métrologue (`Person`) ou banc automatique (`Machine`).
+
+| Champ               | Cardinalité | Définition                             | Valeurs possibles                   |
+|---------------------|-------------|----------------------------------------|-------------------------------------|
+| `id`                | 1           | Identifiant technique, clé primaire    | uuid                                |
+| `sensor`            | 1 →Dep      | Déploiement de l'instrument calibré    | → Deployment                        |
+| `procedure`         | 0..1 →Proc  | Protocole de calibration appliqué      | → Procedure (type=observation)      |
+| `agentType`         | 1           | Type d'agent ayant calibré             | `Person` \| `Machine`               |
+| `agentId`           | 1           | UUID de la Person ou Machine           | uuid                                |
+| `referenceStandard` | 0..1        | Étalon de référence utilisé            | "Solution KCl 1413 µS/cm certifiée" |
+| `certificate`       | 0..1        | Référence du certificat de calibration | "CERT-2024-COND-017"                |
+| `calibratedAt`      | 1           | Date et heure de la calibration        | "2024-01-15T10:00:00Z"              |
+| `comment`           | 0..1        | Commentaire libre                      |                                     |
+| `status`            | 1           | État du batch                          | `active` \| `archived`              |
+
+---
+
+## CalibrationParameter
+> Coefficient de correction produit par une calibration (offset, gain, coefficient), avec son incertitude.
+
+*Aligné avec* :
+- [GUM (JCGM 100:2008)](https://www.bipm.org/documents/20126/2071204/JCGM_100_2008_E.pdf)
+  - chaque paramètre est caractérisé par une valeur et une loi d'incertitude,
+  conforme au cadre GUM. Même structure que TransferFunctionParameter.
+
+*Utilisé par* :<br>
+CalibrationBatch (via calibrationBatch FK - relation inverse)
+
+*Note* :
+- Frère de TransferFunctionParameter : même patron de coefficient nommé avec
+  incertitude marginale. Réceptacle stable, contenu extensible.
+- Chaque ligne est un coefficient de correction (offset, pente, ou terme d'un
+  polynôme de correction) avec sa valeur centrale et sa loi d'incertitude.
+
+| Champ                | Cardinalité | Définition                          | Valeurs possibles                               |
+|----------------------|-------------|-------------------------------------|-------------------------------------------------|
+| `id`                 | 1           | Identifiant technique, clé primaire | uuid                                            |
+| `calibrationBatch`   | 1 →CBat     | Calibration parente                 | → CalibrationBatch                              |
+| `name`               | 1           | Nom du coefficient                  | "offset", "gain", "a0", "a1"                    |
+| `value`              | 1           | Valeur centrale                     | 0.02                                            |
+| `distributionType`   | 0..1        | Forme de la loi marginale           | `normal` \| `lognormal` \| `uniform` \| `gamma` |
+| `distributionParam1` | 0..1        | Premier paramètre de la loi         | écart-type si normal                            |
+| `distributionParam2` | 0..1        | Second paramètre si nécessaire      | max si uniform                                  |
+| `unit`               | 0..1 →Unit  | Unité du coefficient                | → Unit                                          |
+| `comment`            | 0..1        | Description du rôle du coefficient  | "décalage de zéro de la sonde"                  |
 
 ---
 
@@ -1831,7 +1988,7 @@ HistoricalProject, Responsibility, Identifier, Memory, KeywordAssignment
 *Note* : 
 - Porte tout ce qui est fixe et commun à toute la série.
 - Contrat analytique garantissant la comparabilité de tous les points.
-- anchorType + anchorId : pattern TPC - station dans le cas standard, site pour les séries de chimie sans station fixe ou campagnes mobiles.
+- anchorType + anchorId : pattern TPC, station dans le cas standard, site pour les séries de chimie sans station fixe ou campagnes mobiles. Propriété d'identité figée à la création (dérivée des Datastreams via TimeSeriesSource si source IoT, saisie sinon), cohérente par construction sur toute la chaîne. Règle complète : voir Pattern TPC anchor.
 - Le ou les capteurs courants se retrouvent via TimeSeriesSource WHERE validTo IS NULL (plusieurs résultats possibles en cas de Datastreams parallèles).
 - acquisitionType=lab_sample : aucune ligne TimeSeriesSource, aucun Datastream.
   `Datastream` est par définition un flux de Sensor, la chimie
@@ -2036,6 +2193,104 @@ TimeSeries (controlObservations), TransformedTimeSeries (controlObservations)
 
 ---
 
+## SamplingBatch
+> Acte de prélèvement sur le terrain : qui a prélevé, où, quand, avec quel matériel et selon quel protocole. Regroupe les Specimens d'une même sortie ou d'un même déploiement de préleveur.
+
+*Aligné avec* :
+- [ODM2 Specimen collection Action](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/core_actions.md)
+  - dans ODM2, la collecte d'un ou plusieurs Specimens est une Action datée,
+  attribuée à un acteur, avec son équipement et sa méthode. SamplingBatch en est
+  l'équivalent : un acte de prélèvement pouvant produire plusieurs Specimens.
+- [W3C PROV-O Activity](https://www.w3.org/TR/prov-o/#Activity) - le prélèvement
+  est une activité PROV qui génère des échantillons.
+- [ISO 5667 échantillonnage des eaux](https://www.iso.org/standard/72369.html)
+  - un préleveur séquentiel ou un piège à particules produit une série
+  d'échantillons successifs sur un même déploiement (godets d'un piège PPS 3,
+  aliquotes horaires d'un ISCO). SamplingBatch porte l'acte commun, chaque
+  Specimen sa fenêtre propre.
+
+*Utilisé par* :<br>
+Specimen (samplingBatch)
+
+*Note* :
+- Obligatoire : tout Specimen provient d'un acte de prélèvement, donc d'un
+  SamplingBatch, même quand ce batch ne produit qu'un seul Specimen. C'est le
+  pendant terrain d'AnalysisBatch, et ça complète la chaîne d'actes réifiés du
+  modèle (pas d'acte de production non réifié).
+- Porte ce qui est commun à toute la sortie : ancrage géographique, projet ou
+  campagne, protocole de prélèvement, agent, matériel déployé, dates de pose et
+  de récupération. Chaque Specimen porte ce qui lui est propre (sa fenêtre
+  temporelle, sa profondeur, son volume, sa conservation).
+- Un piège séquentiel : un seul SamplingBatch (la pose du piège), N Specimens
+  (un par godet), chacun avec sa fenêtre horaire et sa profondeur.
+- anchorType + anchorId : ancrage géographique commun aux Specimens du batch.
+  Un Specimen hérite son ancre de son SamplingBatch (voir note de Specimen).
+- deployment : le Deployment du matériel de prélèvement (Kit composite, Sampler,
+  ou objet unique), qui porte lui-même le lieu physique du matériel.
+- agentType + agentId : pattern TPC, préleveur humain (`Person`) ou préleveur
+  automatique (`Machine`, ex : centrale ISCO programmée).
+
+| Champ           | Cardinalité | Définition                                          | Valeurs possibles                    |
+|-----------------|-------------|-----------------------------------------------------|--------------------------------------|
+| `id`            | 1           | Identifiant technique, clé primaire                 | uuid                                 |
+| `code`          | 1           | Slug unique globalement                             | "prel-yzr-mercier-2024-03-15"        |
+| `anchorType`    | 1           | Type d'ancrage géographique                         | `Observatory` \| `Site` \| `Station` |
+| `anchorId`      | 1           | UUID de l'Observatory, Site ou Station              | uuid                                 |
+| `project`       | 0..1 →Proj  | Projet ou campagne dont dépend ce prélèvement       | → Project                            |
+| `procedure`     | 0..1 →Proc  | Protocole de prélèvement appliqué                   | → Procedure (type=sampling)          |
+| `agentType`     | 1           | Type d'agent ayant réalisé le prélèvement           | `Person` \| `Machine`                |
+| `agentId`       | 1           | UUID de la Person ou Machine                        | uuid                                 |
+| `deployment`    | 0..1 →Dep   | Déploiement du matériel de prélèvement              | → Deployment                         |
+| `collectedFrom` | 1           | Début du prélèvement ou pose du préleveur           | "2024-03-15T09:00:00Z"               |
+| `collectedTo`   | 0..1        | Fin ou récupération du préleveur (null si ponctuel) | "2024-03-15T09:30:00Z"               |
+| `comment`       | 0..1        | Commentaire libre sur la sortie                     |                                      |
+| `status`        | 1           | État du batch                                       | `active` \| `archived`               |
+
+---
+
+## PreparationBatch
+> Acte de préparation d'un échantillon au laboratoire (filtration, broyage, dilution, aliquotage) : produit un Specimen enfant à partir d'un ou plusieurs Specimens parents.
+
+*Aligné avec* :
+- [ODM2 Specimen preparation Action](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/core_actions.md)
+  - la préparation d'un Specimen (filtration, sous-échantillonnage, dilution) est
+  une Action ODM2 distincte de l'analyse, datée et attribuée. PreparationBatch en
+  est l'équivalent, produisant un Specimen enfant plutôt qu'un résultat de mesure.
+- [W3C PROV-O wasDerivedFrom](https://www.w3.org/TR/prov-o/#wasDerivedFrom) - le
+  Specimen enfant est dérivé de son ou ses parents par cette activité de
+  préparation.
+
+*Utilisé par* :<br>
+Specimen (preparationBatch)
+
+*Note* :
+- Frère d'AnalysisBatch et de SamplingBatch : même famille, même pattern (acte
+  daté, attribué, avec instrument et procédure). Se distingue par sa procédure
+  (type=preparation) et par ce qu'il produit : un Specimen enfant, pas une mesure.
+- Remplace l'ancien champ Specimen.derivedFrom : la filiation d'échantillon
+  passe désormais par un acte tracé (quel instrument, quel agent, quand), au lieu
+  d'un simple FK sans acte. C'est ce qui permet de savoir quel appareil a filtré
+  ou broyé, comblant le trou signalé en S2.D.
+- Plusieurs Specimens parents possibles (échantillon composite : plusieurs godets
+  d'un piège réunis, plusieurs prélèvements ponctuels agrégés) via la jointure
+  specimen_parents. Un seul Specimen enfant produit par batch.
+- deployment : le Deployment de l'appareil de préparation (Actuator pour un
+  broyeur ou un doseur, Sampler pour un filtre), ancré sur une Facility de labo.
+- agentType + agentId : pattern TPC, technicien (`Person`) ou automate (`Machine`).
+
+| Champ                 | Cardinalité | Définition                               | Valeurs possibles              |
+|-----------------------|-------------|------------------------------------------|--------------------------------|
+| `id`                  | 1           | Identifiant technique, clé primaire      | uuid                           |
+| `procedure`           | 1 →Proc     | Protocole de préparation appliqué        | → Procedure (type=preparation) |
+| `agentType`           | 1           | Type d'agent ayant préparé               | `Person` \| `Machine`          |
+| `agentId`             | 1           | UUID de la Person ou Machine             | uuid                           |
+| `deployment`          | 0..1 →Dep   | Déploiement de l'appareil de préparation | → Deployment                   |
+| `preparationDateTime` | 1           | Date et heure de la préparation          | "2024-03-15T14:00:00Z"         |
+| `comment`             | 0..1        | Commentaire libre                        |                                |
+| `status`              | 1           | État du batch                            | `active` \| `archived`         |
+
+---
+
 ## AnalysisBatch
 > Acte analytique en laboratoire sur un Specimen - qui a analysé quoi, avec quel appareil et quelle méthode.
 
@@ -2045,8 +2300,8 @@ TimeSeries (controlObservations), TransformedTimeSeries (controlObservations)
   correspond à l'Action d'analyse ODM2 (type=laboratoryAnalysis) portant la
   méthode, l'équipement et l'opérateur.
 - [CUAHSI ODM2 Specimen Actions](https://github.com/ODM2/ODM2/blob/master/doc/ODM2Docs/core_actions.md)
-  - la chaîne CUAHSI (prélèvement, préparation, analyse) se modélise par
-  filiation de Specimens (derivedFrom) et un AnalysisBatch par étape d'analyse.
+  - la chaîne CUAHSI (prélèvement, préparation, analyse) se modélise par une
+  suite d'actes : SamplingBatch, PreparationBatch, AnalysisBatch (Actions ODM2).
 
 *Utilisé par* :<br>
 AnalysisObservation (analysisBatch)
@@ -2059,15 +2314,18 @@ AnalysisObservation (analysisBatch)
   qualityFlag) vivent sur AnalysisObservation.
 - sensor optionnel : l'appareil analytique (ICP-MS, spectromètre, chromatographe) est
   un Sensor, car ce qu'il laisse dans BDOH est une valeur mesurée. Il est pointé via son
-  Deployment, comme partout dans le modèle. La préparation d'échantillon (broyage, dosage)
-  relève d'un Actuator sur un Specimen parent, hors de ce batch : voir points_ouverts.md.
+  Deployment, ancré sur une Facility de labo. La préparation d'échantillon (broyage,
+  filtration, dilution) est un acte distinct porté par PreparationBatch, sur le ou les
+  Specimens parents, hors de ce batch.
 - Coexistence LIMS/interne : si la chimie est traitée dans un LIMS externe,
   Specimen.limsReference suffit et AnalysisBatch n'est pas créé. Si la chaîne
   analytique est interne, AnalysisBatch + AnalysisObservation la documentent
   complètement. Les deux voies sont non exclusives (ADR-007 amendé).
-- Filiation des Specimens : prélèvement brut → Specimen enfant filtré (derivedFrom)
-  → Specimen aliquote → AnalysisBatch. La chaîne CUAHSI (collecte, préparation,
-  analyse) passe par la filiation des Specimens, pas par une hiérarchie de batchs.
+- Chaîne complète d'un échantillon : SamplingBatch (prélèvement) produit un
+  Specimen, PreparationBatch (filtration, broyage) produit des Specimens enfants,
+  AnalysisBatch (mesure) produit des AnalysisObservation. Chaque acte est un batch
+  daté et attribué, aligné sur les Actions ODM2. La filiation des échantillons
+  passe par les PreparationBatch, pas par un FK derivedFrom.
 
 | Champ              | Cardinalité | Définition                                  | Valeurs possibles                |
 |--------------------|-------------|---------------------------------------------|----------------------------------|
@@ -2157,7 +2415,7 @@ TimeSeries (observations, acquisitionType=lab_sample)
 ---
 
 ## Specimen
-> Acte de prélèvement terrain daté - résultat de l'activation d'un ou plusieurs équipements via Deployment.
+> Échantillon physique prélevé pour analyse ex situ : le résultat matériel d'un SamplingBatch (prélèvement) ou d'un PreparationBatch (préparation).
 
 *Aligné avec* :
 - [OGC OMS - SF_Specimen / ISO 19156:2023](https://docs.ogc.org/as/20-082r4/20-082r4.html)
@@ -2171,55 +2429,94 @@ TimeSeries (observations, acquisitionType=lab_sample)
   observations qui en sont issues.
 
 *Utilisé par* :<br>
-ValidatedObservation (specimen), ControlObservation (specimen), Observation (specimen)
+ValidatedObservation (specimen), ControlObservation (specimen), Observation (specimen), AnalysisBatch (specimen), PreparationBatch (via specimen_parents), specimen_parents (childSpecimen, parentSpecimen)
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
 - specimenType (required) : water, soil, sediment, biological
 - samplingMedium (required) : surface water, groundwater, depth
 
-*Note* : 
-- Acte de prélèvement physique - un flacon rempli, un piège récolté.
-- Distinct de Station (point de surveillance spatial permanent).
-- anchorType + anchorId : pattern TPC, même pattern que Deployment - station dans le cas standard, site pour les campagnes sans station fixe.
-- Cohérence applicative : anchorType/anchorId doit correspondre à l'ancrage du Deployment pointé par le champ deployment.
-- Lien au matériel via le champ `deployment` (un seul Deployment par Specimen) : quand le prélèvement mobilise plusieurs objets (pompe, flacon, filtre), ils sont regroupés sous un Kit, et le champ pointe vers le Deployment du Kit ; ses membres sont les Deployments enfants (parentDeployment). Un même Deployment peut produire plusieurs Specimens dans le temps (piège récolté chaque semaine) : cette relation un-à-plusieurs se lit par requête inverse, sans table de jointure. L'ancrage géographique du Specimen est hérité du Deployment. Règle applicative : pour lister le matériel d'un Specimen précis, croiser sa date avec le validFrom/validTo de chaque Deployment enfant, afin qu'un membre ajouté après coup ne s'applique pas rétroactivement.
+*Note* :
+- Échantillon physique (un flacon rempli, un godet de piège, un aliquote filtré),
+  distinct de Station (point de surveillance spatial permanent).
+- Séparation acte / résultat (alignée ODM2) : l'acte de prélèvement et ses
+  métadonnées communes (ancrage, projet, protocole, agent, matériel, dates de
+  campagne) vivent sur SamplingBatch ; le Specimen ne porte que ce qui lui est
+  propre. Un Specimen provient soit d'un SamplingBatch (prélèvement terrain),
+  soit d'un PreparationBatch (préparation labo), jamais des deux : exactement
+  l'une des deux origines est renseignée.
+- Ancrage hérité, non porté : le Specimen n'a pas d'anchorType/anchorId propre.
+  Il hérite son ancrage géographique de son SamplingBatch. Un Specimen issu d'un
+  PreparationBatch (aliquote de labo) hérite par remontée : PreparationBatch vers
+  Specimen(s) parent(s) vers SamplingBatch. Un aliquote filtré au labo garde donc
+  l'ancre du prélèvement terrain d'origine, ce qui est correct scientifiquement.
+- samplingBatch / preparationBatch : exactement l'un des deux est renseigné.
+  samplingBatch pour un échantillon prélevé, preparationBatch pour un échantillon
+  produit au labo à partir d'un ou plusieurs parents.
+- Filiation composite : un PreparationBatch peut réunir plusieurs Specimens
+  parents en un seul enfant (échantillon composite : godets d'un piège réunis,
+  prélèvements ponctuels agrégés). Ces parents sont listés dans la jointure
+  specimen_parents, rattachée au PreparationBatch. Remplace l'ancien FK derivedFrom.
+- phenomenonTimeStart / phenomenonTimeEnd : fenêtre temporelle propre à CE
+  Specimen. Pour un prélèvement ponctuel, start = end (un instant). Pour un godet
+  de piège séquentiel, la fenêtre couvre l'intervalle de collecte de ce godet,
+  distincte des dates de pose et de récupération du piège (portées par
+  SamplingBatch.collectedFrom / collectedTo).
 - Deux voies non exclusives pour la chaîne analytique : LIMS externe référencé
   par limsReference seul, ou chaîne interne documentée par AnalysisBatch et
   AnalysisObservation. Voir la note d'AnalysisBatch (Coexistence LIMS/interne,
   ADR-007 amendé), qui est la source de vérité de cette articulation.
 - status : l'échantillon physique existe-t-il encore ou a-t-il été détruit
   (épuisé par les analyses, contaminé, périmé). Distinct de la chaîne
-  analytique (résultats, méthode, voir AnalysisBatch, souvent documentée dans
-  BDOH) et de l'inventaire fin (aliquotage, quantité restante), qui reste au
+  analytique et de l'inventaire fin (aliquotage, quantité restante), qui reste au
   LIMS externe s'il est utilisé ; BDOH trace l'existence du Specimen, pas son
   inventaire physique détaillé.
-- agentType + agentId : pattern TPC - technicien terrain (`Person`) ou préleveur automatique (`Machine`).
-- procedureSampling : protocole de prélèvement appliqué pour ce Specimen précis. Null si le Specimen est issu d'un Deployment automatique et que le protocole est porté par TimeSeries.procedureSampling.
-- foi : FOI proximate - ce qui a été échantillonné précisément (eau de surface à 30cm), distincte de la FOI de Station (la rivière en général).
-- derivedFrom : sous-échantillon issu d'un Specimen parent (aliquote, dilution).
+- foi : FOI proximate - ce qui a été échantillonné précisément (eau de surface à
+  30cm), distincte de la FOI de Station (la rivière en général).
 
 
-| Champ                 | Cardinalité | Définition                                                            | Valeurs possibles                    |
-|-----------------------|-------------|-----------------------------------------------------------------------|--------------------------------------|
-| `id`                  | 1           | Identifiant technique, clé primaire                                   | uuid                                 |
-| `datetime`            | 1           | Horodatage de la récolte                                              | "2024-03-15T09:30:00Z"               |
-| `anchorType`          | 1           | Type d'ancrage géographique                                           | `Observatory` \| `Site` \| `Station` |
-| `anchorId`            | 1           | UUID de l'Observatory, Site ou Station                                | uuid                                 |
-| `foi`                 | 0..1 →FOI   | FOI proximate - ce qui a été échantillonné                            | → FeatureOfInterest                  |
-| `project`             | 0..1 →Proj  | Projet ou campagne dont dépend ce prélèvement                         | → Project                            |
-| `procedureSampling`   | 0..1 →Proc  | Protocole de prélèvement appliqué                                     | → Procedure (type=sampling)          |
-| `depth`               | 0..1        | Profondeur de prélèvement en mètres                                   | "0.30"                               |
-| `volume`              | 0..1        | Volume prélevé en litres                                              | "1.0"                                |
-| `filtrationOnSite`    | 0..1        | Filtration effectuée sur le terrain                                   | `true` \| `false`                    |
-| `filtrationThreshold` | 0..1        | Seuil de filtration en µm                                             | "0.45"                               |
-| `agentType`           | 0..1        | Type d'agent ayant réalisé la récolte                                 | `Person` \| `Machine`                |
-| `agentId`             | 0..1        | UUID de la Person ou Service                                          | uuid                                 |
-| `deployment`          | 0..1 →Dep   | Déploiement du matériel de prélèvement (Kit, Sampler ou objet unique) | → Deployment                         |
-| `location`            | 0..1 →Loc   | Position exacte si différente de l'ancre                              | → Location                           |
-| `condition`           | 0..1        | Observations terrain libres                                           | "turbidité élevée, eau brune"        |
-| `derivedFrom`         | 0..1 →Spec  | Specimen parent si sous-échantillon                                   | → Specimen                           |
-| `limsReference`       | 0..1        | Identifiant du prélèvement dans le LIMS                               | "LIMS-2024-03-001"                   |
-| `status`              | 1           | État physique de l'échantillon                                        | `active` \| `discarded`              |
+| Champ                 | Cardinalité | Définition                                             | Valeurs possibles             |
+|-----------------------|-------------|--------------------------------------------------------|-------------------------------|
+| `id`                  | 1           | Identifiant technique, clé primaire                    | uuid                          |
+| `samplingBatch`       | 0..1 →SBat  | Prélèvement d'origine (exclusif avec preparationBatch) | → SamplingBatch               |
+| `preparationBatch`    | 0..1 →PBat  | Préparation d'origine (exclusif avec samplingBatch)    | → PreparationBatch            |
+| `phenomenonTimeStart` | 1           | Début de la fenêtre propre à ce Specimen               | "2024-03-15T09:30:00Z"        |
+| `phenomenonTimeEnd`   | 0..1        | Fin de la fenêtre (null si prélèvement ponctuel)       | "2024-03-15T10:30:00Z"        |
+| `foi`                 | 0..1 →FOI   | FOI proximate : ce qui a été échantillonné             | → FeatureOfInterest           |
+| `depth`               | 0..1        | Profondeur de prélèvement en mètres                    | "0.30"                        |
+| `volume`              | 0..1        | Volume prélevé en litres                               | "1.0"                         |
+| `filtrationOnSite`    | 0..1        | Filtration effectuée sur le terrain                    | `true` \| `false`             |
+| `filtrationThreshold` | 0..1        | Seuil de filtration en µm                              | "0.45"                        |
+| `location`            | 0..1 →Loc   | Position exacte si différente de l'ancre du batch      | → Location                    |
+| `condition`           | 0..1        | Observations terrain libres                            | "turbidité élevée, eau brune" |
+| `limsReference`       | 0..1        | Identifiant du prélèvement dans le LIMS                | "LIMS-2024-03-001"            |
+| `status`              | 1           | État physique de l'échantillon                         | `active` \| `discarded`       |
+
+## specimen_parents
+> Jointure : les Specimens parents d'un Specimen enfant produit par préparation (filiation, éventuellement composite).
+
+*Utilisé par* :<br>
+PreparationBatch (filiation), Specimen (parents et enfants)
+
+*Note* :
+- Table de jointure explicite portant la filiation d'échantillon. Remplace
+  l'ancien FK Specimen.derivedFrom, qui ne gérait que le cas un parent vers un
+  enfant.
+- childSpecimen : le Specimen enfant produit. parentSpecimen : un Specimen source.
+  Plusieurs lignes pour un même childSpecimen expriment un échantillon composite
+  (plusieurs parents réunis en un enfant).
+- preparationBatch : l'acte de préparation qui a produit l'enfant, redondant avec
+  childSpecimen.preparationBatch mais utile pour tracer quel batch a consommé quels
+  parents. À maintenir cohérent (invariant applicatif).
+- Un childSpecimen a toujours au moins une ligne ici, et son champ
+  preparationBatch renseigné ; un Specimen issu d'un SamplingBatch n'apparaît
+  jamais comme childSpecimen.
+
+| Champ              | Cardinalité | Définition                          | Valeurs possibles  |
+|--------------------|-------------|-------------------------------------|--------------------|
+| `id`               | 1           | Identifiant technique, clé primaire | uuid               |
+| `childSpecimen`    | 1 →Spec     | Specimen enfant produit             | → Specimen         |
+| `parentSpecimen`   | 1 →Spec     | Specimen parent consommé            | → Specimen         |
+| `preparationBatch` | 1 →PBat     | Préparation ayant produit l'enfant  | → PreparationBatch |
 
 <div class="page-break"></div>
 
@@ -2572,7 +2869,7 @@ TransformedTimeSeries (observations)
 ---
 
 ## TransformedTimeSeries
-> Série dérivée d'une ou plusieurs TimeSeries via des fonctions de transfert - analogue à TimeSeries.
+> Série dérivée d'une ou plusieurs TimeSeries via des fonctions de transfert, analogue à TimeSeries.
 
 *Aligné avec* :
 - [OGC STA 1.1 Datastream](https://docs.ogc.org/is/18-088/18-088.html) - une
@@ -2594,20 +2891,21 @@ Identifier, Memory, KeywordAssignment
 
 *Note* : 
 - Série dérivée d'une ou plusieurs TimeSeries via des TransformationBatch.
-- Analogue à TimeSeries - même structure de métadonnées, sauf acquisitionType :
+- Analogue à TimeSeries, même structure de métadonnées, sauf acquisitionType :
   absent volontairement. Une TTS peut être calculée à partir de plusieurs
   entrées (transformationbatch_inputseries accepte TimeSeries et
   TransformedTimeSeries mêlées), donc d'origine potentiellement mixte
   (capteur et labo). Un seul champ mentirait dans ce cas. La provenance
   réelle se lit dans le TransformationBatch et ses entrées, jamais résumée
   ici par un raccourci.
-- Plusieurs TransformedTimeSeries peuvent coexister sur la même station et la même variable sans hiérarchie - c'est le contexte scientifique qui désigne laquelle utiliser (même principe que TimeSeries).
+- Plusieurs TransformedTimeSeries peuvent coexister sur la même station et la même variable sans hiérarchie : c'est le contexte scientifique qui désigne laquelle utiliser (même principe que TimeSeries).
 - Plage temporelle couverte : non stockée. `phenomenonTimeStart` et `phenomenonTimeEnd` de la série sont calculés à la demande (MIN/MAX du phenomenonTime des Transformations), exposés en lecture seule par l'API. Recomposés en l'intervalle `phenomenonTime` à l'export STA.
 - recalculationMode : contrôle le déclenchement du recalcul quand une série source change. `auto` déclenche un nouveau TransformationBatch automatiquement (via trigger). `manual` laisse le curateur relancer le calcul explicitement. Dans les deux cas le recalcul écrase les valeurs précédentes dans `Transformation`.
 - Fork curé : quand un état de calcul a une valeur scientifique durable (ancien barème à comparer, version ayant servi à une analyse publiée), il ne faut pas l'écraser silencieusement. Le geste est de créer une TTS coexistante ("Débit barème 2020") avant de recalculer la TTS courante avec le nouveau barème. Les deux coexistent sans hiérarchie, le contexte scientifique discrimine. C'est un acte de curation explicite, analogue au fork git : une lignée diverge volontairement et vit à côté. Aucun objet nouveau requis, ADR-026 l'autorise déjà.
 - Pour les états publiés devant persister avec un DOI, utiliser Dataset (A7) plutôt que le fork.
 - aggregationStatistic et temporalRegularity : voir la note de Datastream,
   qui porte l'explication canonique.
+- anchorType + anchorId : propriété d'identité figée à la création, dérivée des TimeSeries d'entrée (qui partagent une ancre, sinon la jonction est refusée : pas d'agrégation multi-stations). Cohérente par construction, jamais remontée en lecture. Règle complète : voir Pattern TPC anchor.
 - code unique par Station.
 
 | Champ                      | Cardinalité | Définition                             | Valeurs possibles                                                |
@@ -2874,7 +3172,7 @@ Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deploymen
 | Champ          | Cardinalité | Définition                          | Valeurs possibles                                                               |
 |----------------|-------------|-------------------------------------|---------------------------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                            |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `System` \| `TimeSeries` \| `TransformedTimeSeries` \| `Deployment` \| `Project` \| `TransferFunction` \| `Specimen` \| `Datastream` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Facility` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `TimeSeries` \| `TransformedTimeSeries` \| `Deployment` \| `Project` \| `TransferFunction` \| `Specimen` \| `Datastream` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                            |
 | `datetime`     | 1           | Date de la note ou de l'événement   | "2014-04-17T00:00:00Z"                                                          |
 | `title`        | 0..1        | Titre court                         | "Modification contrôle hydraulique"                                             |

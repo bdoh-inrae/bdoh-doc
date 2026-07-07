@@ -353,33 +353,34 @@ différente de la proposition initiale (samplerType vers System|Person). Ce qui 
   La relation un Deployment vers plusieurs Specimens se lit par requête inverse.
 - C.1 (note d'ancrage périmée de Specimen) corrigée dans la foulée.
 
-### C. Restant ouvert sur l'ancrage de TimeSeries et TransformedTimeSeries
-Principe unique dégagé (à appliquer) : l'ancre admin est DÉRIVÉE quand une source
-de rattachement existe, SAISIE sinon, jamais les deux à la fois. Application non
-encore gravée :
-- TransformedTimeSeries : source toujours présente une fois le premier
-  TransformationBatch créé (ses séries d'entrée sont ancrées), mais ABSENTE tant
-  qu'aucun batch n'existe (une TTS est créée avant son batch). Même régime mixte
-  que TimeSeries, contrairement à ce qu'on croyait (« toujours dérivée »).
-- TimeSeries : source présente si alimentée par des Datastreams (IoT), absente si
-  dépôt direct ou série de labo. Régime mixte : dérivée si source, saisie sinon.
-- Décision de forme non tranchée : champ explicite `anchorMode` (derived|manual)
-  sur ces deux entités, ou règle purement applicative sans champ (qui part alors
-  dans S3). Recommandation : pas de champ, déduction par présence de source,
-  comme pour Datastream ; à confirmer.
-- Sticky à graver : une fois une série dérivée au moins une fois, elle le reste
-  même si toutes ses sources ferment (pas de retour au régime manuel), pour ne
-  pas rouvrir une fenêtre d'édition dangereuse après coup. Va aussi dans S3.
+### C. Ancrage de TimeSeries et TransformedTimeSeries (clos, gravé ADR-063)
+Tranché et gravé. L'ancre est une propriété d'identité (pas un cache, pas de
+champ de mode), fixée à la création : dérivée de l'amont s'il existe, saisie
+sinon, et cohérente par construction sur toute la chaîne Datastream vers
+TimeSeries vers TimeSeriesSource. Relier des objets d'ancres différentes est
+refusé (condition de jonction). Une TimeSeriesSource ne coud que des flux de
+la même ancre, une TransformedTimeSeries n'agrège que des entrées de
+la même ancre : pas d'agrégation multi-stations (non-besoin BDOH confirmé).
+Lecture directe de anchorId, jamais de remontée de chaîne. L'idée d'un champ
+`anchorMode` est explicitement abandonnée (après création, un seul régime figé).
+Le comportement « sticky » est absorbé par ce cadrage : l'ancre ne change jamais
+sauf correction d'erreur. Invariants applicatifs (garde de cohérence à la
+jonction, propagation d'une correction) portés dans S3. Voir ADR-063 et la
+section Pattern TPC anchor du modèle.
 
-### D. Restant ouvert : articulation préparation/mesure au labo (Actuator)
-`Actuator` existe désormais comme entité, mais son branchement sur la chaîne
-analytique n'est pas modélisé. Un appareil de préparation (broyeur, doseur,
-centrifugeuse) transforme un Specimen en Specimen enfant (derivedFrom), mais
-aucun champ ne trace QUEL Actuator a produit cette filiation. `AnalysisBatch`
-produit une AnalysisObservation (une mesure), pas un Specimen enfant, donc ne
-couvre pas l'étape de préparation. À trancher : faut-il un lien
-Specimen(enfant) vers Actuator, ou un acte de préparation dédié ? Question de
-terrain (granularité de traçabilité voulue au labo) à poser à l'utilisatrice.
+### D. Articulation préparation/mesure au labo (clos, gravé ADR-064)
+Tranché et gravé. La chaîne de laboratoire est complète et alignée ODM2 :
+SamplingBatch (prélèvement), PreparationBatch (préparation : filtration, broyage,
+dilution, produisant un Specimen enfant via l'Actuator ou le Sampler pointé par
+son deployment), AnalysisBatch (mesure). Le FK derivedFrom est remplacé par la
+jointure specimen_parents rattachée au PreparationBatch (filiation, y compris
+composite). CalibrationBatch historise les calibrations. Facility ancre les
+instruments de labo. Voir ADR-064.
+
+Reste secondaire, non gravé : l'application effective des corrections de
+calibration aux données brutes, qui serait une transformation entre Datastream
+et TimeSeries (pas au niveau TransformedTimeSeries). À modéliser si le besoin de
+rejouer les corrections dans BDOH se confirme.
 
 ### E. Restant ouvert : renommage de Machine
 `Machine` (entité agent : service, runner, pipeline) porte un nom qui évoque un
@@ -401,10 +402,27 @@ ancrage flux/Deployment, ancrage Specimen/Deployment, unicité "une seule locati
 courante", chaîne ControlObservation vers System vers Deployment, exclusion
 runner/algorithme, etc. La correction du modèle dépend de la complétude de ces
 règles et de l'exécution des jobs. La base seule ne décrit plus un état valide.
-**Piste :** tenir un inventaire unique et exhaustif des invariants applicatifs
-(le projet pointe `integrity_checks.md`, vérifier qu'il les couvre tous), avec
-pour chacun déclencheur, requête de détection, action, fréquence. Ajouter des
-tests qui injectent des violations et vérifient leur détection.
+**Piste :** tenir un inventaire unique et exhaustif des invariants applicatifs,
+avec pour chacun déclencheur, requête de détection, action, fréquence. Ajouter
+des tests qui injectent des violations et vérifient leur détection.
+
+Invariants déjà identifiés à porter (liste vivante, non exhaustive) :
+- Suppression physique interdite sur toute entité référencée (prevent_physical_delete).
+- Intégrité de chaque lien TPC (resourceType/Id, anchorType/Id, agentType/Id,
+  seriesType/Id, systemType/Id) : la cible existe et est du bon type.
+- Cohérence d'ancre sur la chaîne Datastream vers TimeSeries vers
+  TimeSeriesSource (ADR-063) : à l'ajout d'une
+  TimeSeriesSource, le Datastream cousu a la même ancre que la TimeSeries ; à la
+  création d'une TTS, ses TimeSeries d'entrée partagent une ancre. Jonction
+  refusée sinon.
+- Propagation d'une correction d'ancre (ADR-063) : une correction d'ancre sur un
+  objet amont, acte explicite et rare, doit se répercuter sur les ancres figées
+  des objets en aval. Pas de synchronisation permanente : ne se déclenche qu'à la
+  correction.
+- Ordre d'écriture : un Datastream est créé et ancré avant d'être cousu à une
+  TimeSeries via TimeSeriesSource (l'invariant de cohérence lit son ancre figée).
+- Sur un Deployment en cascade, seul le Deployment racine porte anchorType/anchorId ;
+  les enfants les laissent vides et héritent par remontée de parentDeployment.
 
 ## S5. AnalysisObservation hors du graphe TPC et des exports (clos)
 Résolu sur les deux volets vérifiés. TPC resource : `AnalysisObservation` est

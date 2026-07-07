@@ -1086,6 +1086,131 @@ de la dérivation d'ancre, renommage éventuel de Machine.
 
 ---
 
+## ADR-063 -- L'ancre est une propriété d'identité, cohérente par construction sur la chaîne Datastream vers TimeSeries vers TimeSeriesSource
+
+**Décision** : `anchorType` + `anchorId` d'un `Datastream`, d'une `TimeSeries` et
+d'une `TransformedTimeSeries` sont une propriété d'identité de l'objet, au même
+rang que `property` ou `procedure`. Elle est fixée une fois à la création puis
+figée : dérivée automatiquement de l'amont s'il existe (Datastream depuis le
+Deployment racine, TimeSeries depuis ses Datastreams via TimeSeriesSource, TTS
+depuis ses TimeSeries d'entrée), saisie sinon (dépôt direct, série de labo). La
+cohérence des ancres est une condition de la jonction : relier des objets
+d'ancres différentes est refusé. Une TimeSeriesSource ne coud que des flux de la
+même ancre ; une TTS n'agrège que des entrées de la même ancre.
+
+**Ce que ça n'est pas** : pas un cache à resynchroniser en continu, et pas de
+champ de mode (l'idée d'un `anchorMode` derived/manual est écartée : après
+création il n'y a qu'un seul régime, figé, quelle que soit l'origine de la
+valeur). Un changement d'ancre n'est jamais une mise à jour de fonctionnement :
+c'est soit un nouvel objet (changement réel de station = nouvelle chronique),
+soit la correction d'une erreur.
+
+**Motivation performance** : la cohérence garantie à l'écriture est ce qui
+autorise à ne jamais remonter la chaîne en lecture. La requête fréquente "quels
+Datastreams / TimeSeries / TimeSeriesSource sur cette station" lit directement la
+colonne anchorId, sans jointure récursive sur Deployment (cascade
+parentDeployment) ni résolution de source courante. La chaîne n'est parcourue
+qu'une fois, à l'écriture, pour figer et vérifier ; jamais en lecture.
+
+**Alternative écartée** : remonter la chaîne Deployment et DS vers TS à chaque
+requête pour éviter de stocker l'ancre. Rejetée : coût d'une jointure récursive
+sur la requête la plus fréquente du système, pour économiser deux invariants de
+garde et une procédure de correction rare. Arbitrage nettement en faveur du
+stockage.
+
+**Cas multi-stations** : une TimeSeriesSource ou une TTS combinant plusieurs
+stations n'a pas de sens métier reconnu à BDOH (l'agrégation spatiale n'est pas
+un besoin). La condition de cohérence d'ancre l'interdit par construction plutôt
+que de laisser une ancre ambiguë à résoudre.
+
+**Coût assumé** : deux invariants applicatifs (garde de cohérence d'ancre à la
+jonction DS vers TS et aux entrées de TTS) et une procédure de correction
+d'erreur explicite qui propage la nouvelle ancre aux objets figés en aval. En
+régime normal rien ne bouge, donc rien n'est à propager : ce n'est pas une
+synchronisation permanente. Détail dans S3 de `points_ouverts.md`.
+
+**Portée** : consolide et ferme S2.A et S2.C de `points_ouverts.md`. Prolonge la
+dérivation d'ancre du Datastream (déjà actée) à toute la chaîne, sous le lien
+Datastream vers Deployment d'ADR-062. Ne rouvre pas ADR-050 (bornes temporelles
+calculées) : l'ancre, elle, est stockée, parce que c'est une identité et non une
+plage dérivable.
+
+---
+
+## ADR-064 -- Chaîne d'actes de laboratoire réifiés, Facility, et calibration historisée
+
+**Décision** : compléter la chaîne de production des échantillons pour que chaque
+acte scientifique soit un batch daté et attribué, aligné sur les Actions ODM2, et
+introduire le lieu de laboratoire comme racine d'ancrage.
+
+**SamplingBatch (nouveau, obligatoire)** : l'acte de prélèvement terrain devient
+un batch, comme l'analyse l'était déjà. Tout Specimen provient d'un SamplingBatch,
+même à un seul échantillon. Motivation : un préleveur séquentiel ou un piège à
+particules (PPS 3, ISCO) produit une série de Specimens sur un seul déploiement
+(ISO 5667), et sans batch l'agent, le matériel et la campagne seraient ressaisis
+à chaque godet. Le batch porte ce qui est commun (ancrage, projet, procédure,
+agent, deployment, dates de pose et de récupération) ; le Specimen ne garde que
+ce qui lui est propre (fenêtre temporelle, profondeur, volume, conservation).
+
+**PreparationBatch (nouveau)** : la préparation de labo (filtration, broyage,
+dilution, aliquotage) devient un batch produisant un Specimen enfant, distinct de
+l'analyse. Remplace le FK Specimen.derivedFrom, qui ne traçait aucun acte (ni
+instrument, ni agent, ni date). Comble le trou signalé en S2.D : on sait désormais
+quel appareil a préparé un échantillon. Type de procédure preparation ajouté.
+
+**Batchs séparés, pas fusionnés** : SamplingBatch, PreparationBatch et
+AnalysisBatch restent trois entités distinctes, chacune avec un seul type de
+procédure (sampling, preparation, analysis), comme tous les autres batchs du
+modèle (ValidationBatch, TransformationBatch, TransferFunctionBatch). Une fusion
+en LabBatch a été envisagée puis écartée : elle aurait créé la seule exception du
+modèle où un batch porte deux types d'acte. Le critère de réification retenu, aligné
+sur ODM2 (une Action peut produire plusieurs Results) : un acte est un batch quand
+il peut produire plusieurs résultats ou grouper une session, sinon il reste embarqué
+dans l'entité résultat (ControlObservation, TransferFunction).
+
+**Filiation composite (specimen_parents)** : un PreparationBatch peut réunir
+plusieurs Specimens parents en un enfant (échantillon composite : godets d'un piège
+réunis, ISO 5667). Table de jointure sur le patron de transformationbatch_inputseries,
+remplaçant le FK simple derivedFrom qui ne gérait que un vers un.
+
+**Ancrage de Specimen hérité, non porté** : Specimen perd anchorType/anchorId
+propres et hérite de son SamplingBatch. Un Specimen issu d'un PreparationBatch
+hérite par remontée (PreparationBatch vers parents vers SamplingBatch) : un aliquote
+de labo garde l'ancre du prélèvement terrain d'origine, ce qui est correct
+scientifiquement.
+
+**Facility (nouveau)** : lieu physique de recherche (laboratoire, plateforme
+analytique), racine d'ancrage autonome, pair d'Observatory, hors de la hiérarchie
+Observatory vers Site vers Station. Un labo partagé est multi-observatoire, il
+n'appartient à aucun en particulier. Aucun FK vers Organization : l'institution
+responsable est exprimée par une Responsibility taguant la Facility (même mécanisme
+qu'Observatory), pas par un rattachement rigide. Aligné ROR (catégorie facility) et
+RRID (plateformes analytiques partagées). Quatrième valeur de Deployment.anchorType :
+un instrument de labo se déploie sur une Facility comme un capteur sur une Station.
+
+**CalibrationBatch + CalibrationParameter (nouveaux)** : la calibration devient un
+acte historisé (date, agent, étalon, certificat) au lieu des deux colonnes
+calibrationDate/calibrationCertificate qui ne gardaient que la dernière. Les
+paramètres de correction produits (offset, gain) vivent dans CalibrationParameter,
+frère de TransferFunctionParameter (même patron GUM). L'application effective des
+corrections aux données brutes (transformation Datastream vers TimeSeries) reste
+non modélisée à ce stade (points_ouverts.md).
+
+**Retrait de aggregation** : la valeur aggregation de Procedure.type est retirée,
+aucune entité ne la portait et une agrégation est une transformation (portée par
+TransformationBatch). Réintroductible si un besoin distinct émerge.
+
+**Alignement ODM2** : la chaîne SamplingBatch (Specimen collection), PreparationBatch
+(Specimen preparation), AnalysisBatch (Specimen analysis), CalibrationBatch
+(Calibration) couvre les ActionType de laboratoire d'ODM2. Restent non couverts, par
+choix : Equipment maintenance (gestion de parc, hors périmètre BDOH).
+
+**Portée** : ferme S2.D. Remanie Specimen en profondeur. Ajoute cinq entités
+(Facility, SamplingBatch, PreparationBatch, CalibrationBatch, CalibrationParameter)
+et une jointure (specimen_parents). N'affecte pas la couche IoT ni la couche série.
+
+---
+
 ## Décisions remplacées
 
 Ces décisions ont été remplacées par une décision ultérieure. Leur numéro est
