@@ -52,11 +52,11 @@ structurel ou dette de migration).
 | M3  | Provenance point brut vers validé non conservée (clos)         | -        | -       |
 | M4  | Datastream.system obligatoire, lourd pour le labo (clos)       | -        | -       |
 | M7  | DataCite Publisher indéfini pour Dataset (clos)                | -        | -       |
-| S2  | Double vérité de l'ancrage flux / Deployment                   | moyenne  | moyen   |
+| S2  | Ancrage + lien matériel/agent objets analytiques (en cours)    | haute    | lourd   |
 | S3  | Invariants applicatifs cumulés : inventaire à tenir            | moyenne  | moyen   |
 | S5  | AnalysisObservation hors graphe TPC (clos)                     | -        | -       |
 | M6  | Export STA : Thing pour ancrage Site/Observatory (clos)        | -        | -       |
-| M8  | Conformité GeoJSON / CRS et asymétrie géométrie FOI            | faible   | faible  |
+| M8  | Conformité GeoJSON/CRS et asymétrie géométrie FOI (clos)       | -        | -       |
 | V1  | OGC API Connected Systems comme cible v2                       | veille   | -       |
 | V2  | Alignement STAMPLATE et écosystème européen                    | veille   | -       |
 
@@ -272,27 +272,37 @@ exposer comme Thing, pas de résolution synthétique ni de repli sur Station par
 défaut, les properties STAMPLATE portées par l'entité réellement ancrée.
 
 ## M7. DataCite Publisher indéfini pour `Dataset` (clos)
-Résolu sur les deux volets. Invariant de confinement écarté, décision assumée :
-`Bundle` et `Dataset` peuvent librement regrouper des ressources de plusieurs
-Observatory, méta-BDOH accepté. `Bundle.Observatory` reste le Publisher choisi
-par le curateur pour la citation, pas une frontière technique sur les séries
-incluses. Publisher pour `Dataset` : `sourceBundle.Observatory` si le Dataset
-provient d'un Bundle mono-observatoire, sinon repli sur une constante
-institutionnelle (INRAE UR RiverLy), qui couvre aussi bien les exports
-méta-BDOH que les Dataset créés sans Bundle. Mapping DataCite corrigé en
-conséquence, seule source de vérité, plus de ligne unique traitant Bundle et
-Dataset comme identiques.
+Résolu, en deux temps, le premier corrigé après discussion. Première passe
+écartée : gardait `Bundle.Observatory` comme Publisher choisi par le curateur,
+avec repli institutionnel pour Dataset. Rejetée : ne répondait pas au besoin
+réel de représenter plusieurs observatoires producteurs, et un champ stocké
+`Observatory` sur un Bundle trans-observatoire aurait fini par diverger du
+contenu réel, comme tout champ recopié plutôt que dérivé.
+Décision finale : `Bundle.Observatory` retiré, aucun champ Observatory sur
+Bundle ni Dataset. DataCite distingue Publisher (l'entité qui héberge et
+diffuse, singulier) de Contributor (les entités productrices, explicitement
+répétable) : Publisher devient une constante institutionnelle (INRAE UR
+RiverLy), toujours vraie. Les observatoires producteurs, un ou plusieurs, sont
+portés par Contributor (contributorType=HostingInstitution), calculés par
+requête à travers bundle_series/dataset_resource jusqu'à l'ancrage des séries
+incluses, jamais stockés donc jamais périmés. Filtrer "les Bundles d'un
+observatoire" passe par cette même requête, pas par un champ direct.
 
-## M8. Conformité GeoJSON / CRS et asymétrie géométrie FOI
-`Location.geometry` est annoncée "application/geo+json" avec un `crs` pouvant
-valoir EPSG:2154. GeoJSON (RFC 7946) impose WGS84 : la combinaison n'est pas du
-GeoJSON conforme. Connexe : `FeatureOfInterest` embarque sa géométrie inline
-alors que tout le reste passe par `Location` (donc pas d'historique de position).
-**Pistes :**
-- Si le stockage est PostGIS avec sérialisation à la volée, le dire et réserver
-  l'étiquette geo+json à la sortie 4326. Sinon distinguer stockage et export.
-- Décider si l'asymétrie FOI est assumée (FOI conceptuelle sans historique) ou à
-  aligner sur `Location`.
+## M8. Conformité GeoJSON / CRS et asymétrie géométrie FOI (clos)
+Résolu sur les deux volets. Un GPS calcule nativement en WGS84 (référentiel des
+constellations satellites elles-mêmes) ; le Lambert-93 est toujours une
+projection calculée après coup, jamais une sortie brute de mesure, vérifié
+concrètement (RGF93 quasi-équivalent WGS84, Lambert-93 = la même position
+aplatie en mètres pour la cartographie française). `Location.crs` retiré :
+toujours WGS84, conforme GeoJSON (RFC 7946, qui n'autorise aucun autre système
+de coordonnées) sans exception à gérer. Une projection locale reste possible à
+la demande, à l'export ou dans un outil SIG, jamais stockée en double.
+Asymétrie FOI corrigée : `FeatureOfInterest` rejoint `Location` comme les
+autres entités géographiques (Observatory, Site, Station, Deployment), au lieu
+de dupliquer geometry/encodingType en inline. Ajoutée au domaine de
+`HistoricalLocation`, dont le critère ("changements discrets et rares, pas de
+suivi continu") correspond exactement au cas réel identifié : un tracé de
+berge ou une emprise de zone humide redessinés après une nouvelle campagne.
 
 # Risques structurels
 
@@ -313,19 +323,77 @@ Ce n'est pas un défaut de structure mais un défaut de complétude, à traiter
 par audit avant de considérer le modèle stabilisé. Voir tâche correspondante
 dans `CLAUDE.md`.
 
-## S2. Double vérité de l'ancrage flux / Deployment
-Le modèle dit que chaque flux porte son `anchorType/anchorId` autoportant, que le
-`Deployment` porte aussi le sien, et qu'en cas de divergence le flux fait foi.
-C'est une redondance avec arbitrage, donc une double vérité, alors que le projet
-défend "un seul propriétaire". La raison (éviter la remontée récursive flux vers
-System vers Deployment) est une performance légitime, mais ce n'est pas un cas de
-propriétaire unique. Sous-problème : la cohérence est mal définie quand un flux
-est ancré `Observatory` et le Deployment `Station` ou `Site`.
-**Pistes :**
-- Nommer la chose : dénormalisation contrôlée motivée par la performance, arbitrée
-  en faveur du flux. La sortir du discours "un seul propriétaire".
-- Définir la cohérence par inclusion géographique (l'ancre du flux doit être
-  l'ancre du Deployment ou un de ses ancêtres) et la porter dans le check.
+## S2. Ancrage et lien au matériel des objets analytiques (lien matériel gravé, ancrage TS/TTS restant)
+
+### A. Ancrage : ACTÉ et gravé
+- `Datastream` : anchorType/anchorId dérivés du Deployment courant à la création,
+  puis figés, jamais saisis. Le Deployment est la source unique du lieu, le flux
+  n'en porte qu'une copie de lecture non éditable. Double vérité levée, lecture
+  rapide conservée.
+- `Deployment`, `Datastream`, `Specimen` acceptent les trois échelles d'ancrage
+  (Observatory | Site | Station). Aucune entité n'a d'ancrage restreint.
+
+### B. Lien au matériel et éclatement de System : ACTÉ et gravé (ADR-062)
+Le chantier « lien au matériel » a été tranché et gravé, sous une forme
+différente de la proposition initiale (samplerType vers System|Person). Ce qui a
+été fait :
+- `System` éclaté en cinq entités TPC : Sensor, Actuator, Sampler, Platform, Kit
+  (ADR-062, remplace la fusion d'ADR-037). Métadonnées alignées SensorML / SMS /
+  PIDINST. `equipment` réabsorbé dans Sampler. `Actuator` ajouté (SOSA) pour la
+  préparation de labo. `Kit` (propre à BDOH) pour regrouper du matériel sans
+  portage physique, composition portée par la récursivité de Deployment.
+- Le lien objet analytique vers matériel pointe vers un `Deployment` (pas vers
+  un System nu), uniformément : `Datastream.deployment`, `ControlObservation.deployment`,
+  `AnalysisBatch.sensor`, `Specimen.deployment`. Le Deployment porte l'objet, le
+  lieu et la période. La proposition initiale d'un `samplerType` polymorphe
+  System|Person a été écartée au profit de ce lien vers Deployment : plus simple,
+  et cohérent avec ce que Datastream faisait déjà.
+- `specimen_deployment` (table de jointure M2M) remplacée par la colonne
+  `Specimen.deployment` (un seul Deployment, Kit composite si plusieurs objets).
+  La relation un Deployment vers plusieurs Specimens se lit par requête inverse.
+- C.1 (note d'ancrage périmée de Specimen) corrigée dans la foulée.
+
+### C. Restant ouvert sur l'ancrage de TimeSeries et TransformedTimeSeries
+Principe unique dégagé (à appliquer) : l'ancre admin est DÉRIVÉE quand une source
+de rattachement existe, SAISIE sinon, jamais les deux à la fois. Application non
+encore gravée :
+- TransformedTimeSeries : source toujours présente une fois le premier
+  TransformationBatch créé (ses séries d'entrée sont ancrées), mais ABSENTE tant
+  qu'aucun batch n'existe (une TTS est créée avant son batch). Même régime mixte
+  que TimeSeries, contrairement à ce qu'on croyait (« toujours dérivée »).
+- TimeSeries : source présente si alimentée par des Datastreams (IoT), absente si
+  dépôt direct ou série de labo. Régime mixte : dérivée si source, saisie sinon.
+- Décision de forme non tranchée : champ explicite `anchorMode` (derived|manual)
+  sur ces deux entités, ou règle purement applicative sans champ (qui part alors
+  dans S3). Recommandation : pas de champ, déduction par présence de source,
+  comme pour Datastream ; à confirmer.
+- Sticky à graver : une fois une série dérivée au moins une fois, elle le reste
+  même si toutes ses sources ferment (pas de retour au régime manuel), pour ne
+  pas rouvrir une fenêtre d'édition dangereuse après coup. Va aussi dans S3.
+
+### D. Restant ouvert : articulation préparation/mesure au labo (Actuator)
+`Actuator` existe désormais comme entité, mais son branchement sur la chaîne
+analytique n'est pas modélisé. Un appareil de préparation (broyeur, doseur,
+centrifugeuse) transforme un Specimen en Specimen enfant (derivedFrom), mais
+aucun champ ne trace QUEL Actuator a produit cette filiation. `AnalysisBatch`
+produit une AnalysisObservation (une mesure), pas un Specimen enfant, donc ne
+couvre pas l'étape de préparation. À trancher : faut-il un lien
+Specimen(enfant) vers Actuator, ou un acte de préparation dédié ? Question de
+terrain (granularité de traçabilité voulue au labo) à poser à l'utilisatrice.
+
+### E. Restant ouvert : renommage de Machine
+`Machine` (entité agent : service, runner, pipeline) porte un nom qui évoque un
+objet physique, alors que le physique est maintenant Sensor/Actuator/Sampler/
+Platform. La distinction de fond est claire (Machine = ce qui a un swhid, agent
+logiciel ; les entités d'instrumentation = ce qui a un serialNumber ou pidinst).
+Reste le nom : `Service` envisagé, mais bute sur `Algorithm.runner` qui désigne
+l'infrastructure d'exécution (serveur, HPC), sens différent de l'agent logiciel.
+À trancher séparément, l'utilisatrice le suit de son côté.
+
+### Ordre de reprise suggéré
+1. Ancrage TS/TTS (partie C) : trancher la forme (champ ou règle) et graver.
+2. Articulation Actuator au labo (partie D) : question de terrain d'abord.
+3. Renommage Machine (partie E) : chantier autonome.
 
 ## S3. Invariants applicatifs cumulés : inventaire à tenir
 Beaucoup de contraintes vivent uniquement en applicatif plus job périodique :

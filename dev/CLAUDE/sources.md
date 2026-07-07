@@ -282,7 +282,8 @@ métadonnées STA. Elle est surtout utile par les questions qu'elle soulève sur
 l'interprétation de l'entité Thing : selon le grain de précision retenu, une
 Thing peut désigner un point de mesure, une zone, une centrale d'acquisition
 ou un capteur. Cette ambiguïté est exactement celle que BDOH tranche en
-distinguant explicitement Observatory, Site, Station et System plutôt que de
+distinguant explicitement Observatory, Site, Station et les entités
+d'instrumentation (Sensor, Actuator, Sampler, Platform, Kit) plutôt que de
 tout réunir dans une Thing polymorphe. Le guide propose par ailleurs une
 définition de FeatureOfInterest qui mérite discussion au regard du choix BDOH
 (FeatureOfInterest = entité réelle observée, distincte du point de mesure).
@@ -338,6 +339,18 @@ Identifiant intrinsèque permanent du code source. Utilisé dans BDOH via
 - Spécification : https://www.swhid.org/swhid-specification/
 - Archive Software Heritage : https://www.softwareheritage.org/
 
+## PIDINST - Persistent Identification of Instruments (RDA)
+Schéma de métadonnées de la Research Data Alliance pour l'identification pérenne
+des instruments (schéma 1.0, 2022 ; mapping DataCite). Utilisé dans BDOH comme
+référence des métadonnées des cinq entités d'instrumentation (Sensor, Actuator,
+Sampler, Platform, Kit) : Manufacturer (make), Model (model), AlternateIdentifier
+de type serialNumber et inventoryNumber, Owner, InstrumentType, MeasuredVariable.
+Complète SensorML (encodage riche) et le SMS (implémentation) pour ancrer make /
+model / serialNumber / inventoryNumber sur un standard d'identification dédié.
+Implémenté côté handle via des services comme B2INST.
+- Spécification : https://docs.pidinst.org/
+- Schéma 1.0 : https://www.rd-alliance.org/wp-content/uploads/2022/01/pidinst-schema-1.0_Final.pdf
+
 
 <div class="page-break"></div>
 
@@ -349,18 +362,18 @@ pour vérifier la cohérence des alignements et pour les enrichir.
 
 | Source | Entités BDOH alignées | Nature de l'apport |
 |--------|------------------------|---------------------|
-| OGC STA 1.1 | Property, Unit, Procedure, Location, HistoricalLocation, FeatureOfInterest, Observatory, Site, Station, System, Datastream, Observation, ValidatedObservation, Specimen, Transformation, TransformedTimeSeries, qualityFlag | Structure de base et interface ; vocabulaire des entités IoT |
-| OGC API - Connected Systems | System, Deployment, TimeSeriesSource | Modèle System unifié + Deployment récursif (ADR-037) |
+| OGC STA 1.1 | Property, Unit, Procedure, Location, HistoricalLocation, FeatureOfInterest, Observatory, Site, Station, Sensor, Datastream, Observation, ValidatedObservation, Specimen, Transformation, TransformedTimeSeries, qualityFlag | Structure de base et interface ; vocabulaire des entités IoT (le Sensor STA = entité Sensor BDOH) |
+| OGC API - Connected Systems | Sensor, Actuator, Sampler, Platform, Kit, Deployment, TimeSeriesSource | Deployment récursif ; ressource System unifiée reconstituée en vue (BDOH éclate en cinq entités, ADR-062) |
 | OGC OMS / ISO 19156:2023 | FeatureOfInterest, Procedure, Observation, ControlObservation, Specimen | Concept d'observation et de feature of interest |
 | OGC STAplus | Project | Entité Project (campagnes) et License |
-| OGC SensorML 3.0 | Deployment | Encodage des propriétés de déploiement |
-| W3C SSN/SOSA | System, Deployment | Ontologie sémantique sous-jacente |
+| OGC SensorML 3.0 | Deployment, Sensor, Actuator, Sampler, Platform, Kit | Encodage des propriétés de déploiement, d'instrument et d'actionneur |
+| W3C SSN/SOSA | Sensor, Actuator, Sampler, Platform, Kit, Deployment | Ontologie sémantique : rôles Sensor, Actuator, Sampler, Platform (Kit propre à BDOH) |
 | W3C PROV-O | Machine, Responsibility, ObservationBatch, ValidationBatch, TransferFunctionBatch, TransformationBatch | Traçabilité : agents, activités, génération |
 | ODM2 | Person, Organization, Responsibility, Property, Unit, Procedure, KeywordType, Keyword, Identifier, ObservationBatch, Observation, TimeSeriesSource, ValidationBatch, ValidatedObservation, ControlObservation, Specimen, TransferFunction, TransferFunctionBatch, TransferFunctionSet, TransformationBatch, Transformation, TransformedTimeSeries, Bundle, Memory | Sémantique environnementale de référence (variables, méthodes, actions, provenance, annotations) |
 | HydroServer | Property, Unit, Datastream, TimeSeriesSource, ValidatedObservation, TransformedTimeSeries | Implémentation de référence ; justification empirique de plusieurs ADR |
 | STAMPLATE Schema | Observatory, Station | Profil de métadonnées STA pour l'environnement |
 | FROST-Server | Datastream, Observation | Implémentation de référence STA |
-| Helmholtz SMS | System, Procedure ; SMS-CV : Keyword, License | Gestion du cycle de vie des instruments ; vocabulaires |
+| Helmholtz SMS | Sensor, Actuator, Sampler, Platform, Kit, Procedure ; SMS-CV : Keyword, License | Cycle de vie des instruments, Basic Data ; Configuration inspire Kit ; vocabulaires |
 | ISO 19115 | Responsibility (CI_RoleCode), KeywordType (MD_KeywordTypeCode), Keyword (MD_Keywords), Observatory (MD_DataIdentification) | Métadonnées géographiques et gouvernance |
 | ISO 19107 | Location | Schéma spatial des géométries |
 | schema.org | Person, Organization, Responsibility, Observatory, Project, Machine, Identifier, Memory | Sérialisation JSON-LD (souvent via STAMPLATE) |
@@ -372,6 +385,7 @@ pour vérifier la cohérence des alignements et pour les enrichir.
 | QUDT / UCUM | Unit | URIs et syntaxe des unités |
 | SPDX | License | Identifiants de licences canoniques |
 | SWHID / Software Heritage | Algorithm | Identifiant permanent du code source |
+| PIDINST (RDA) | Sensor, Actuator, Sampler, Platform, Kit | Métadonnées d'identification pérenne d'instrument (make, model, serialNumber, inventoryNumber) |
 | CodeMeta | Algorithm | Métadonnées logicielles |
 | ORCID / ROR | Person / Organization | Identifiants persistants (via Identifier) |
 | GeoJSON (RFC 7946) | Location | Encodage de la géométrie |

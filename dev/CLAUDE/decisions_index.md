@@ -73,8 +73,8 @@ Une même station peut avoir plusieurs FOI (ADR-038).
 `Responsibility`, `KeywordAssignment`).
 
 **Choix retenu** : schéma uniforme et extensible. L'intégrité référentielle est
-garantie par trigger BEFORE INSERT/UPDATE, pas par FK native PostgreSQL.
-Voir integrity_checks.md pour les requetes de verification periodique.
+garantie par trigger BEFORE INSERT/UPDATE, pas par FK native PostgreSQL, et par
+requête de vérification périodique (inventaire à consolider, S3).
 
 **Justification philosophique** : documentée dans agent_TPC_philosophie_synthese.md.
 TPC est choisi parce que les types cibles sont ontologiquement distincts et
@@ -409,9 +409,10 @@ TransformedTimeSeries, TransferFunction, TransferFunctionSet, Specimen.
 de chimie sans station fixe est ancrée sur un Site. Un bateau peut etre ancré
 sur un Observatory. La FK directe vers Station etait trop restrictive.
 
-**Double vérité assumée** : Datastream.anchorType doit etre cohérent avec
-l'ancrage du Deployment du System associé. Contrainte applicative verifiable
-périodiquement (voir integrity_checks.md).
+**Ancrage du Datastream** : depuis ADR-061 (S2), anchorType/anchorId d'un
+Datastream ne sont plus saisis mais dérivés du Deployment courant du system à la
+création puis figés. Le Deployment est la source unique, la copie sur le flux
+n'est pas éditable : plus de double vérité à arbitrer.
 
 ---
 
@@ -929,6 +930,162 @@ valable ici).
 
 ---
 
+## ADR-061 -- Audit de complétude et de cohérence : décisions groupées
+
+Entrée unique de synthèse pour une passe d'audit des points ouverts. Chaque
+décision amende un ADR existant (indiqué) ou en est un complément. Le détail du
+raisonnement, des contradictions levées et des pistes écartées vit dans
+`points_ouverts.md`, au point cité, qui reste la source du pourquoi. Les
+changements ci-dessous sont gravés dans le modèle.
+
+**Nommage et code** (amende ADR-027, ADR-009)
+- `code` présent et obligatoire sur les 17 entités nommées navigables, absent
+  sur les lignes d'observation, Person, Bundle, Dataset, Specimen, Memory
+  (chacune avec sa raison). Jamais optionnel : obligatoire là où il existe, ou
+  absent, pour éviter la double lecture UUID/code. `Datastream` reçoit son code
+  (C1). Algorithme et TransferFunctionSet ajoutés aux porteurs et aux scopes
+  d'unicité ; FeatureOfInterest, qui avait un code sans scope, ajouté aux
+  scopes. C1, C2.
+- `codeType` (Identifier) retiré des discriminants TPC (il ne route rien, c'est
+  `resourceType` qui le fait), reclassé en comportemental fermé. Pas de valeur
+  `other` : un type d'identifiant réclame toujours un traitement propre, l'ajout
+  est un acte de dev. Amende ADR-058. C6.
+
+**Patterns TPC** (amende ADR-004, ADR-040, ADR-041, ADR-047)
+- Domaine resource explicité (liste de référence des 23 types) et critère
+  `Identifier` (identité dans un registre) contre `Keyword`+uri (classification
+  dans un thésaurus) écrit une fois. Unit aligne ses vocabulaires par Keyword
+  comme Property, pas par une colonne. M1 (index), audit resource.
+- Agent : `TransformationBatch` retiré (son exécutant est le `runner`, FK
+  directe vers Machine), `AnalysisBatch` ajouté. Amende ADR-040. C5.
+- Anchor : l'ancre d'un `Datastream` est dérivée du Deployment courant du system
+  et figée, jamais saisie (double vérité levée). `Deployment`, `Datastream`,
+  `Specimen` acceptent les trois échelles ; plus aucun ancrage restreint. Amende
+  ADR-041. S2 (cœur ; suite en cours dans points_ouverts).
+- Series : sous-section créée, `ControlObservation` retirée des cibles citables
+  (resource et series) ; citer la série parente suffit. Amende ADR-045. M5.
+- Quatre sous-sections TPC uniformisées (même squelette, index des porteurs,
+  renvoi au champ propriétaire). Résolution du Thing STA écrite (anchorType donne
+  l'entité). M6.
+
+**Séries et observations** (amende ADR-044, ADR-002)
+- `aggregationStatistic` ne porte plus que la nature statistique ; `sporadic`
+  retiré, remplacé par `temporalRegularity` (regular|irregular), deux axes
+  orthogonaux. Écart assumé vs ODM2, reconstruit à l'export. Amende ADR-044. M2.
+- `acquisitionType` retiré de `Datastream` (un flux est par définition capteur ;
+  lab_sample n'aurait jamais dû y être, une série labo n'a pas de Datastream) et
+  de `TransformedTimeSeries` (origine potentiellement mixte, provenance lue via
+  le TransformationBatch). Reste sur `TimeSeries`. Amende ADR-044. M4.
+- Tables de valeurs : colonne `id` uuid retirée, clé primaire composite naturelle
+  incluant la colonne de temps (exigence TimescaleDB). `AnalysisObservation`
+  reçoit `replicate` (répétitions analytiques légitimes au même instant en
+  chimie, seule exception au contrat une-valeur-par-instant d'ADR-002). Amende
+  ADR-002. M5.
+- Filiation point brut vers validé assumée au niveau batch et période
+  (ValidationBatch), pas point à point. M3.
+- `censoring` (none|below_lod|below_loq|above_saturation) sur
+  `AnalysisObservation`, aligné SANDRE RqAna, orthogonal à `qualityFlag` (une
+  valeur peut être good et censurée). Volet capteur écarté (l'estimation moins
+  fiable relève de uncertainty + qualityFlag, pas de la censure). Amende
+  ADR-059. M1.
+
+**Transformation et algorithme** (amende ADR-052)
+- Algorithme : `doi` et `swhid` retirés des colonnes, portés par `Identifier`
+  (codeType doi et swhid ajouté), comme Bundle/Dataset (ADR-009/027). `code`
+  slug versionné + `name` lisible (aligné TransferFunction). `supersededBy`
+  pour chaîner les versions. Amende ADR-052.
+
+**Export et citation** (amende ADR-042, ADR-055)
+- `Bundle.Observatory` retiré. Publisher DataCite = constante institutionnelle
+  (une seule valeur, toujours BDOH) ; les observatoires producteurs relèvent de
+  Contributor (HostingInstitution, répétable), calculés par requête via
+  bundle_series jusqu'à l'ancrage. Bundle et Dataset trans-observatoire acceptés
+  (méta-BDOH). Amende ADR-042 et ADR-055. M7.
+
+**Suppression logique et géographie** (amende ADR-043, ADR-038)
+- Trois mécanismes documentés (status, archivedAt, validTo daté), exemptions
+  écrites. `status` ajouté à TransferFunctionSet, Dataset, Memory, Identifier,
+  Specimen (objet physique destructible). ControlObservation exemptée (constat
+  figé). Amende ADR-043. C3, C4.
+- `Location.crs` retiré : toujours WGS84 (GPS natif WGS84, RFC 7946 l'impose ;
+  Lambert-93 = projection calculée à la demande). `FeatureOfInterest` rejoint
+  `Location` (au lieu d'une géométrie inline) et gagne l'historique via
+  HistoricalLocation. Amende ADR-038. M8.
+
+---
+
+## ADR-062 -- Éclatement de System en cinq entités (TPC), remplace la fusion d'ADR-037
+
+**Décision** : l'entité unique `System` (discriminant `systemType` sur une seule
+table, TPH) est éclatée en cinq entités distinctes : `Sensor`, `Actuator`,
+`Sampler`, `Platform`, `Kit`. Elles sont reliées à `Deployment` par le pattern
+TPC `systemType + systemId` (comme resource, anchor, agent, series : cinquième
+déclinaison du même mécanisme, ADR-047). L'ancien rôle `equipment` est réabsorbé
+dans `Sampler`. Chaque entité ne porte que les métadonnées pertinentes pour son
+rôle ; le socle commun (`id`, `code`, `name`, `description`, `status`) est le
+minimum FAIR partagé.
+
+**Rôles** : la distinction fonctionnelle suit SOSA/SSN (W3C/OGC). `Sensor`
+répond à un stimulus et produit une mesure (y compris les appareils analytiques
+de labo : ce qu'ils laissent dans BDOH est une valeur). `Actuator` change l'état
+du monde ou de l'échantillon (doseur, agitateur, broyeur de préparation).
+`Sampler` produit ou contient un échantillon (flacon, seau, tamis, pelle,
+préleveur automatique). `Platform` porte physiquement d'autres objets (bouée,
+drone, chaîne). `Kit` est un ajout propre à BDOH, sans équivalent SOSA : un
+regroupement administratif d'objets utilisés ensemble sans lien de portage
+physique, dont la composition vit dans la récursivité de Deployment
+(parentDeployment), inspiré de la Configuration du Helmholtz SMS.
+
+**Métadonnées** : make, model, serialNumber, inventoryNumber suivent PIDINST
+(Manufacturer, Model, AlternateIdentifier de type serialNumber et
+inventoryNumber) et les Basic Data du SMS. Conformément au principe SMS, aucune
+de ces entités ne porte d'information liée au déploiement : le lieu et la période
+vivent sur Deployment. `inventoryNumber` est ajouté (recommandé par PIDINST et
+SMS, absent de l'ancien System).
+
+**Ce que ça résout** : la table unique accumulait des colonnes systématiquement
+nulles selon le type (une pelle avec calibrationDate, un capteur avec
+preservationMethod), gouvernées par des CHECK conditionnels dont le sens dépend
+du discriminant. L'ajout de Kit puis d'Actuator, dont peu ou pas de colonnes de
+l'ancien System avaient un sens, a rendu ce défaut structurel plutôt que
+cosmétique. La note de System prétendait « pattern TPC, même philosophie que
+agentType », alors qu'elle faisait du TPH ; l'éclatement aligne la structure sur
+ce qu'elle prétendait être.
+
+**Coût assumé** : le TPC n'a pas de FK native, l'intégrité `systemType/systemId`
+est portée par trigger applicatif, comme les quatre autres déclinaisons TPC
+(ADR-047, ADR-060). Cinq cibles à vérifier au lieu d'une. Ce coût est symétrique
+de celui du TPH (le tableau troué et ses CHECK), et repose sur un mécanisme déjà
+présent partout dans le modèle.
+
+**Écart assumé avec CS API** : OGC Connected Systems unifie capteurs, plateformes
+et équipements dans une ressource `System` unique (c'est ce qui justifiait
+ADR-037). BDOH s'en écarte au niveau du stockage, mais la ressource unifiée reste
+reconstituable à l'exposition par une vue SQL faisant l'union des cinq tables,
+exactement comme /Sensors de STA est une vue de `Sensor`. Le découpage suit les
+deux standards les plus proches du besoin de BDOH (SOSA conceptuellement, SMS en
+implémentation), sans perdre l'export unifié.
+
+**Impacts modèle** : `Deployment.system` (FK) devient `systemType + systemId`
+(TPC). Les liens de `Datastream`, `ControlObservation`, `AnalysisBatch` vers
+l'ancien System pointent désormais vers un `Deployment` (le Deployment porte
+l'objet, le lieu et la période ; uniformise l'accès au matériel). `specimen_deployment`
+(table de jointure) est remplacée par la colonne `Specimen.deployment` : un
+Specimen vient d'un seul groupe de matériel (Kit composite si plusieurs objets),
+la relation un Deployment vers plusieurs Specimens se lit par requête inverse.
+La valeur `System` dans les listes `resourceType` (Identifier, Responsibility,
+Memory, KeywordAssignment, KeywordRequirement) est remplacée par les cinq
+valeurs.
+
+**Portée** : remplace ADR-037 (fusion Sensor/Platform/Equipment dans System) et,
+par transitivité, la justification de fusion héritée d'ADR-029 et ADR-034. Ne
+rouvre pas la récursivité de Deployment (ADR-037 la conservait, elle est
+maintenue). Points restants dans `points_ouverts.md` : articulation fine
+préparation/mesure au labo (branchement Actuator, filiation Specimen), sticky
+de la dérivation d'ancre, renommage éventuel de Machine.
+
+---
+
 ## Décisions remplacées
 
 Ces décisions ont été remplacées par une décision ultérieure. Leur numéro est
@@ -944,6 +1101,7 @@ conservé pour que les références anciennes restent résolvables ; le raisonne
 | ADR-029 | InstrumentUsage                          | ADR-037 (System + Deployment récursif)    |
 | ADR-032 | TimeSerieDatastream (structure)          | ADR-036 puis ADR-048 (TimeSeriesSource)   |
 | ADR-034 | Sensor / Equipment séparés               | ADR-037 (fusion dans System)              |
+| ADR-037 | System + Deployment (System fusionné)    | ADR-062 (éclatement en cinq entités TPC)  |
 
 ---
 
@@ -952,5 +1110,6 @@ conservé pour que les références anciennes restent résolvables ; le raisonne
 Les décisions non tranchées (chantiers de conception A1 à A7, décisions en
 attente, ambiguïtés locales, veille standards) sont dans `points_ouverts.md`.
 Les tâches d'implémentation (intégrité applicative, régénération de la
-documentation, ingestion) sont dans `CLAUDE.md`, et le détail des triggers et
-requêtes d'intégrité dans `integrity_checks.md`. Ce fichier ne les duplique pas.
+documentation, ingestion) sont dans `CLAUDE.md`. L'inventaire des invariants
+applicatifs à porter par trigger ou requête périodique reste à consolider (voir
+S3 dans `points_ouverts.md`). Ce fichier ne les duplique pas.

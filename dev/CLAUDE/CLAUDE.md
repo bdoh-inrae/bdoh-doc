@@ -42,12 +42,11 @@ les divergences ; ce ne sera plus le cas une fois l'implémentation commencée.
 | Fichier | Possède (source de vérité de...) |
 |---------|-----------------------------------|
 | `modele_donnees_v12.md` | la **structure** : entités, colonnes, patterns TPC, conventions de nommage, scopes d'unicité, enums SQL, suppression logique, vocabulaires Keyword |
-| `decisions_index.md` | le **pourquoi** : ADR-001 à ADR-060, alternatives écartées |
+| `decisions_index.md` | le **pourquoi** : ADR-001 à ADR-062, alternatives écartées |
 | `points_ouverts.md` | ce qui **n'est pas tranché** : constats concrets (C), risques structurels (S), points de modélisation (M), veille standards (V), avec triage sévérité/effort |
 | `sources.md` | les **standards externes** et leur état daté, table source vers entités |
 | `SOUL.md` | la **manière de penser et de collaborer** |
 | `CLAUDE.md` (ce fichier) | l'**état du travail** et les **règles de rédaction** |
-| `integrity_checks.md` | les **triggers et requêtes d'intégrité** TPC à implémenter |
 | `agent_TPC_philosophie_synthese.md` | la **justification philosophique** du pattern TPC |
 
 Le fichier BDD (`modele_donnees_v12.md`) est la source de vérité ; l'API s'en
@@ -66,10 +65,11 @@ ADR. Ne pas modifier l'un de ces points sans ouvrir une décision.
 2. **TimeSeries = contrat analytique.** Changer un paramètre analytique crée une
    nouvelle TimeSeries. Un changement de capteur est une nouvelle ligne
    `TimeSeriesSource`, pas une nouvelle série (ADR-002, ADR-048).
-3. **Un seul pattern TPC, quatre déclinaisons** (resource, anchor, agent,
-   series). Intégrité applicative, pas de FK native (ADR-047).
-4. **System + Deployment récursif** remplace Sensor, Equipment, Platform et
-   InstrumentUsage (ADR-037).
+3. **Un seul pattern TPC, cinq déclinaisons** (resource, anchor, agent,
+   series, system). Intégrité applicative, pas de FK native (ADR-047, ADR-062).
+4. **Cinq entités d'instrumentation** (Sensor, Actuator, Sampler, Platform, Kit),
+   reliées à Deployment récursif par le TPC system. Remplace l'ancienne fusion
+   System et InstrumentUsage (ADR-062, remplace ADR-037).
 5. **Vocabulaires évolutifs via quadriptyque Keyword**, jamais via enum SQL.
    L'enum SQL est réservé aux discriminants qui satisfont les trois conditions
    de la grille (ADR-030, ADR-058) : le code branche sur la valeur, l'ensemble
@@ -156,7 +156,7 @@ Processus :
 5. Tester avec `mkdocs serve` avant de pousser.
 
 Points de vigilance :
-- `instrumentation.md` (System + Deployment récursif) est à créer.
+- `instrumentation.md` (cinq entités d'instrumentation + Deployment récursif) est à créer.
 - `transformation.md` a été profondément remanié : ne pas repartir de l'ancienne
   version.
 - Le mapping `qualityFlag` ODM2 / SANDRE et l'état de STA 2.0 viennent de
@@ -169,8 +169,9 @@ Tâches d'implémentation, hors conception. Les questions de conception non
 tranchées sont dans `points_ouverts.md` et ne sont pas dupliquées ici.
 
 - **Intégrité applicative** : triggers `prevent_physical_delete`, triggers
-  BEFORE INSERT/UPDATE pour les relations TPC, requêtes de vérification
-  périodique. Détail et requêtes dans `integrity_checks.md`.
+  BEFORE INSERT/UPDATE pour les relations TPC (dont le nouveau TPC system),
+  requêtes de vérification périodique. Inventaire à consolider (voir S3 dans
+  `points_ouverts.md`).
 - **Documentation** : régénérer bdoh-doc (procédure ci-dessus). Section
   `transformation.md` profondément remaniée (Algorithm, TransferFunctionParameter,
   incertitude). Section `organisation.md` à mettre à jour (Bundle, Dataset,
