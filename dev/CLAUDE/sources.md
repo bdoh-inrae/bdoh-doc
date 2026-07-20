@@ -368,7 +368,7 @@ pour vérifier la cohérence des alignements et pour les enrichir.
 | OGC STAplus | Project | Entité Project (campagnes) et License |
 | OGC SensorML 3.0 | Deployment, Sensor, Actuator, Sampler, Platform, Kit | Encodage des propriétés de déploiement, d'instrument et d'actionneur |
 | W3C SSN/SOSA | Sensor, Actuator, Sampler, Platform, Kit, Deployment | Ontologie sémantique : rôles Sensor, Actuator, Sampler, Platform (Kit propre à BDOH) |
-| W3C PROV-O | Machine, Responsibility, ObservationBatch, ValidationBatch, TransferFunctionBatch, TransformationBatch | Traçabilité : agents, activités, génération |
+| W3C PROV-O | Service (SoftwareAgent), Machine, Responsibility, SamplingBatch, PreparationBatch, AnalysisBatch, CalibrationBatch, ObservationBatch, ValidationBatch, TransferFunctionBatch, TransformationBatch | Traçabilité : agents (Person/Service/Organization), activités, génération |
 | ODM2 | Person, Organization, Responsibility, Property, Unit, Procedure, KeywordType, Keyword, Identifier, ObservationBatch, Observation, TimeSeriesSource, ValidationBatch, ValidatedObservation, ControlObservation, Specimen, TransferFunction, TransferFunctionBatch, TransferFunctionSet, TransformationBatch, Transformation, TransformedTimeSeries, Bundle, Memory | Sémantique environnementale de référence (variables, méthodes, actions, provenance, annotations) |
 | HydroServer | Property, Unit, Datastream, TimeSeriesSource, ValidatedObservation, TransformedTimeSeries | Implémentation de référence ; justification empirique de plusieurs ADR |
 | STAMPLATE Schema | Observatory, Station | Profil de métadonnées STA pour l'environnement |

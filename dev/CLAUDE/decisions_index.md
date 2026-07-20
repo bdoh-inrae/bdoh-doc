@@ -1205,9 +1205,85 @@ TransformationBatch). Réintroductible si un besoin distinct émerge.
 (Calibration) couvre les ActionType de laboratoire d'ODM2. Restent non couverts, par
 choix : Equipment maintenance (gestion de parc, hors périmètre BDOH).
 
+**Distinction manuel/automatique et grab/composite (Keyword, pas colonne)** :
+deux axes indépendants, tracés différemment selon la grille ADR-058.
+`samplingMode` (manual | automatic) est une colonne enum sur SamplingBatch :
+ensemble fermé et stable, toujours renseignable même sans deployment tracé, et
+non déductible de façon fiable du matériel (le type de Sampler est lui-même un
+Keyword optionnel au bout de trois sauts). Distingue la responsabilité forte de
+l'humain (manuel) du prélèvement automatique (l'humain répond de la pose, pas de
+chaque prélèvement). `sampleType` (grab | composite) est un Keyword required sur
+Specimen : vocabulaire réglementaire aligné (US EPA, ISO 5667), à ne jamais
+mélanger dans un calcul d'agrégation, vivant naturellement avec les autres Keyword
+de Specimen. Les deux axes sont indépendants (un autosampler peut produire des
+grabs programmés), d'où deux attributs à deux niveaux : enum pour le mode
+(fermé, sur l'acte), Keyword pour la nature (standard, sur l'échantillon).
+
+**Ajustements après validation terrain** : le champ Specimen.limsReference est
+supprimé au profit d'un Identifier (codeType=lims ajouté, ou igsn pour un
+échantillon physique tracé), conforme au principe du projet (les codes externes
+sont portés par Identifier, pas par une colonne dédiée). Un SamplingBatch est le
+carnet de sortie d'une personne (un agent), les prélèvements collectifs se
+modélisent par plusieurs SamplingBatch partageant un même Kit. La correspondance
+batch / ActionType ODM2 est documentée en un seul endroit (préambule de la
+section 7 du modèle), et la Derivation ODM2 est explicitée comme l'effet d'un
+PreparationBatch, non comme un acte séparé.
+
 **Portée** : ferme S2.D. Remanie Specimen en profondeur. Ajoute cinq entités
 (Facility, SamplingBatch, PreparationBatch, CalibrationBatch, CalibrationParameter)
 et une jointure (specimen_parents). N'affecte pas la couche IoT ni la couche série.
+
+---
+
+## ADR-065 -- Service (agent logiciel) distinct de Machine (hardware) et d'Algorithm (code intriqué)
+
+**Décision** : séparer trois rôles logiciels/matériels qui étaient confondus dans
+l'ancienne entité Machine.
+
+- **Algorithm** (existant, inchangé) : le code de transformation interne à BDOH,
+  objet intriqué qui agit dans le modèle (épinglage swhid obligatoire, gating
+  d'archivage Software Heritage, versionnement, garant de reproductibilité).
+- **Service** (nouveau) : l'agent logiciel responsable d'un acte, purement
+  documentaire (pipeline de traitement, service de curation ou d'annotation IA,
+  soft externe). Il répond de l'acte comme le ferait une Person, sans porter la
+  machinerie de reproductibilité d'Algorithm. Aligné sur prov:SoftwareAgent (PROV-O).
+- **Machine** (recentré) : le hardware d'exécution (serveur, cluster, HPC, ordi de
+  terrain), purement documentaire, jamais agent responsable. Reste utilisé
+  uniquement comme runner (TransformationBatch).
+
+**agentType ne contient plus Machine** : un résultat ne dépend pas (à quelques
+bits près) de la machine qui le calcule, donc le hardware n'est pas responsable.
+Le domaine de agentType devient Person, Service, Organization. Le hardware
+d'exécution est porté séparément par runner.
+
+**Le hardware automatique n'est jamais un agent** : un préleveur (centrale ISCO)
+ou un capteur autonome est un outil (Sampler, Sensor tracé via Deployment), pas
+un agent. La responsabilité remonte à la Person qui l'a déployé et programmé, ou
+au Service qui pilote la décision. Ceci vaut pour tous les cas d'acte automatique
+(prélèvement, calibration, préparation).
+
+**Critère Service contre Algorithm** : ce n'est pas la nature (les deux sont du
+logiciel) mais la charge fonctionnelle. Si le logiciel produit une donnée dans
+BDOH avec exigence de reproductibilité rejouable, c'est Algorithm (intriqué). Si
+on documente simplement qu'un logiciel a été responsable d'un acte sans que BDOH
+ait besoin de rejouer, c'est Service (documentaire). Un pipeline peut être un
+Service responsable qui utilise des Algorithm comme outils.
+
+**Alternative écartée** : garder Machine polyvalent (hardware et logiciel
+confondus). Rejeté : c'était l'ambiguïté d'origine, où Machine listait à la fois
+serveur/HPC (hardware) et pipeline/agent IA (logiciel). La séparation aligne
+chaque objet sur un rôle unique, cohérent avec PROV-O (SoftwareAgent pour l'agent
+logiciel, Entity pour le code, la machine comme lieu d'exécution).
+
+**Impacts** : nouvelle entité Service. Machine recentrée (définition, note,
+utilisé par). Toutes les cellules agentType Person|Machine deviennent
+Person|Service (et Person|Organization|Machine devient Person|Organization|Service
+sur Responsibility). Notes des batchs ajustées. Index des porteurs TPC agent
+corrigé (Specimen retiré, migré vers SamplingBatch lors d'ADR-064 ;
+SamplingBatch, PreparationBatch, CalibrationBatch ajoutés).
+
+**Portée** : traite le renommage de Machine resté ouvert depuis S2.E. Ne rouvre
+pas Algorithm ni son gating swhid.
 
 ---
 

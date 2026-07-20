@@ -144,8 +144,9 @@ N'en portent pas, chacune pour une raison précise :
 - `Person` : pas de slug fiable (homonymes, changements de nom) ; on la
   recherche par son nom et on la cite par un `Identifier` (ORCID) s'il existe ;
 - `Bundle` et `Dataset` : cités par leur DOI, qui existe forcément ;
-- `Specimen` : identifié par son code de laboratoire externe, porté par
-  `limsReference` (ou un `Identifier`), pas par un slug BDOH ajouté en plus ;
+- `Specimen` : identifié par son code de laboratoire externe ou son numéro
+  d'échantillon, porté par un `Identifier` (codeType=lims ou igsn), pas par un
+  slug BDOH ajouté en plus ;
 - `Memory` : atteinte par navigation depuis la ressource qu'elle annote.
 
 Les codes externes (SANDRE, TheiaOZCAR, WIGOS...) sont portés par `Identifier`,
@@ -195,8 +196,8 @@ Ce pattern TPC est décliné en quatre usages, présentés ci-dessous :
   transverse à n'importe quelle ressource (identifiants, mots-clés, notes...).
 - **TPC anchor** (`anchorType + anchorId`) : ancrer une entité à un contexte
   géographique (Observatory, Site ou Station).
-- **TPC agent** (`agentType + agentId`) : désigner l'acteur d'un acte
-  (Person, Machine ou Organization).
+- **TPC agent** (`agentType + agentId`) : désigner l'acteur responsable d'un acte
+  (Person, Service ou Organization).
 - **TPC series** (`seriesType + seriesId`) : pointer vers une série ou une
   fonction, quel que soit son type (regroupements, exports, entrées de calcul,
   contrôles).
@@ -319,31 +320,42 @@ l'entité réellement ancrée.
 
 ## Pattern TPC agent (agentType + agentId)
 
-Trace l'acteur d'un acte ou d'une responsabilité : un humain (`Person`), un agent
-automatisé (`Machine`) ou une organisation (`Organization`). `agentType`
-discrimine le type, `agentId` porte son uuid.
+Trace l'acteur responsable d'un acte ou d'une responsabilité : un humain
+(`Person`), un agent logiciel (`Service`) ou une organisation (`Organization`).
+`agentType` discrimine le type, `agentId` porte son uuid.
 
-Domaine de référence de `agentType` : `Person`, `Machine`, `Organization`.
+Domaine de référence de `agentType` : `Person`, `Service`, `Organization`.
+
+Le hardware n'est jamais un agent responsable : une machine exécute, elle ne
+répond pas de l'acte (un résultat ne dépend pas, à quelques bits près, de la
+machine qui le calcule). Un préleveur ou un capteur automatique est un outil
+(Sampler, Sensor tracé via un Deployment), pas un agent : la responsabilité
+remonte à la Person qui l'a déployé et programmé, ou au Service qui l'orchestre.
+Le hardware d'exécution des calculs est porté séparément par `runner` (voir
+TransformationBatch), une FK vers `Machine`.
 
 Chaque table n'accepte qu'un sous-ensemble de ce domaine ; la liste exacte est
 portée par le champ `agentType` de son tableau, seule source de vérité. Le
 tableau ci-dessous n'est qu'un index des tables porteuses. Seule
 `Responsibility` accepte les trois types ; les autres se limitent à `Person` et
-`Machine`.
+`Service`.
 
 | Table                   | Acte tracé                        | Cibles autorisées                        |
 |-------------------------|-----------------------------------|------------------------------------------|
 | `Responsibility`        | Responsabilité sur une ressource  | voir `Responsibility.agentType`          |
 | `ValidationBatch`       | Session de validation             | voir `ValidationBatch.agentType`         |
 | `ObservationBatch`      | Import de données                 | voir `ObservationBatch.agentType`        |
+| `SamplingBatch`         | Prélèvement terrain               | voir `SamplingBatch.agentType`           |
+| `PreparationBatch`      | Préparation labo                  | voir `PreparationBatch.agentType`        |
 | `AnalysisBatch`         | Campagne d'analyse labo           | voir `AnalysisBatch.agentType`           |
+| `CalibrationBatch`      | Calibration d'instrument          | voir `CalibrationBatch.agentType`        |
 | `TransferFunctionBatch` | Construction d'un barème          | voir `TransferFunctionBatch.agentType`   |
 | `Memory`                | Note (auteur)                     | voir `Memory.agentType`                  |
-| `Specimen`              | Prélèvement (opérateur)           | voir `Specimen.agentType`                |
 
-`TransformationBatch` n'est pas un porteur TPC agent : son exécutant est porté
-par `runner`, une FK directe vers `Machine` (un calcul est toujours exécuté par
-une machine, jamais par une personne).
+`TransformationBatch` n'est pas un porteur TPC agent : le hardware d'exécution
+est porté par `runner` (FK vers `Machine`), et le code par `algorithm` (FK vers
+`Algorithm`). L'agent responsable, s'il doit être tracé, est le `Service` qui a
+lancé le calcul, non la machine.
 
 ## Pattern TPC series (seriesType + seriesId)
 
@@ -438,7 +450,7 @@ TransferFunction, TransferFunctionBatch, TransformationBatch,
 TransformedTimeSeries, TimeSeries, Project, Algorithm, TransferFunctionSet,
 Dataset, Memory, Identifier, Specimen.
 
-Tables avec `archivedAt` (ajout dédié) : Person, Machine, Organization, Unit,
+Tables avec `archivedAt` (ajout dédié) : Person, Machine, Service, Organization, Unit,
 Procedure, KeywordType, Keyword, License, Location, FeatureOfInterest, Bundle,
 Property (qui a déjà `status=accepted|deprecated|proposed`).
 
@@ -486,31 +498,76 @@ aucune (Person est référencée via agentId ou FK directe)
 ---
 
 ## Machine
-> Système ou service qui exécute des traitements automatisés - runner, pipeline, VM, HPC, agent IA.
+> Hardware d'exécution d'un traitement : serveur, cluster, VM, HPC, ordinateur de terrain. Documentaire, jamais agent responsable.
 
 *Aligné avec* :
-- [W3C PROV-O Agent](https://www.w3.org/TR/prov-o/#Agent) - Machine est un agent
-  PROV au sens de la traçabilité de production (`wasAssociatedWith`).
+- [W3C PROV-O Agent](https://www.w3.org/TR/prov-o/#Agent) - au sens PROV, la
+  machine peut être associée à une activité (`wasAssociatedWith`), mais BDOH ne la
+  traite pas comme l'agent responsable : elle exécute, elle ne répond pas de l'acte.
 
 *Utilisé par* :<br>
-pattern TPC agent (agentType=`Machine`) sur ValidationBatch, ObservationBatch, TransferFunctionBatch, Memory, Specimen.
+TransformationBatch (runner). Machine documente le lieu d'exécution, pas la responsabilité.
 
 *Relations inverses* :<br>
-aucune (Machine est référencée via agentId)
+aucune (Machine est référencée via runner)
 
 *Note* :
-- Représente le système qui a exécuté un traitement : serveur BDOH, HPC distant, pipeline local, agent IA.
-- Ne porte pas les métadonnées du code exécuté : celles-ci vivent sur Algorithm.
-- La reproductibilité scientifique est garantie par Algorithm (via son Identifier swhid), pas par Machine.
-- serviceUrl est utile pour les runners distants (HPC, service cloud) afin de pointer vers le système.
+- Hardware qui a fait tourner un calcul : serveur BDOH, HPC distant, cluster,
+  ordinateur d'un opérateur, machine de terrain. Objet purement documentaire, léger.
+- N'est jamais un agentType : un résultat ne dépend pas (à quelques bits près) de
+  la machine qui le calcule, donc la machine n'est pas responsable. L'agent
+  responsable est une Person ou un Service.
+- Ne porte pas le code exécuté (Algorithm) ni le logiciel responsable (Service) :
+  trois objets distincts, trois rôles (où ça tourne, quel code, qui répond).
+- serviceUrl est utile pour les runners distants (HPC, service cloud).
 
 | Champ         | Cardinalité | Définition                          | Valeurs possibles               |
 |---------------|-------------|-------------------------------------|---------------------------------|
 | `id`          | 1           | Identifiant technique, clé primaire | uuid                            |
-| `name`        | 1           | Nom du système ou service           | "runner-bdoh-prod", "hpc-cines" |
+| `name`        | 1           | Nom du hardware                     | "runner-bdoh-prod", "hpc-cines" |
 | `description` | 0..1        | Description libre                   |                                 |
 | `serviceUrl`  | 0..1        | URL du service si runner distant    | "https://..."                   |
 | `archivedAt`  | 0..1        | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z"  |
+
+---
+
+## Service
+> Agent logiciel responsable d'un acte de gestion ou de traitement de données : pipeline documenté, service de curation automatique, soft externe. Documentaire, distinct d'Algorithm.
+
+*Aligné avec* :
+- [W3C PROV-O SoftwareAgent](https://www.w3.org/TR/prov-o/#SoftwareAgent) - un
+  agent logiciel qui prend la responsabilité d'une activité, au même titre qu'une
+  Person ou une Organization, distinct de l'artefact de code lui-même (prov:Entity).
+  Service est le prov:SoftwareAgent de BDOH.
+
+*Utilisé par* :<br>
+pattern TPC agent (agentType='Service') sur Responsibility, ValidationBatch, ObservationBatch, PreparationBatch, AnalysisBatch, CalibrationBatch, SamplingBatch, TransferFunctionBatch, Memory.
+
+*Relations inverses* :<br>
+aucune (Service est référencé via agentId)
+
+*Note* :
+- Agent logiciel qui répond d'un acte : un pipeline de traitement qui a modifié
+  des données, un service de curation ou d'annotation automatique (IA), un logiciel
+  externe qui a produit ou transformé une ressource.
+- Distinct d'Algorithm, et c'est une différence de charge fonctionnelle, pas de
+  nature : Algorithm est un objet intriqué dans BDOH (script de transformation
+  interne, épinglé par swhid, soumis au gating d'archivage, garant de
+  reproductibilité) ; Service est purement documentaire (on trace qu'un logiciel a
+  été responsable, sans machinerie de reproductibilité). Un pipeline peut être un
+  Service responsable qui utilise des Algorithm comme outils.
+- Distinct de Machine : Service est le logiciel qui répond, Machine est le hardware
+  où ça tourne.
+- Un préleveur ou capteur automatique physique n'est pas un Service : c'est un
+  outil (Sampler, Sensor), et l'agent reste la Person qui l'a déployé.
+
+| Champ         | Cardinalité | Définition                          | Valeurs possibles                        |
+|---------------|-------------|-------------------------------------|------------------------------------------|
+| `id`          | 1           | Identifiant technique, clé primaire | uuid                                     |
+| `name`        | 1           | Nom du service ou logiciel          | "pipeline-curation-mes", "baratin-service" |
+| `description` | 0..1        | Description libre                   |                                          |
+| `serviceUrl`  | 0..1        | URL du service si externe ou distant| "https://..."                            |
+| `archivedAt`  | 0..1        | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z"           |
 
 ---
 
@@ -576,16 +633,16 @@ Observatory, Site, Station, Sensor, Actuator, Sampler, Platform, Kit, Datastream
 *Note* : 
 - Lie un acteur à une ressource avec un rôle fonctionnel et une période de validité.
 - Distinct de Person.organization (appartenance institutionnelle).
-- Pattern TPC agent : agentType discrimine Person, Organization ou Machine.
+- Pattern TPC agent : agentType discrimine Person, Organization ou Service.
 - agentType + agentId obligatoires (1), on sait toujours qui porte la responsabilité.
-- Machine légitime pour certains rôles : custodian (pipeline IA de curation), processor (service de traitement automatique), originator (capteur autonome).
+- Service légitime pour certains rôles : custodian (pipeline IA de curation), processor (service de traitement automatique). Un capteur autonome (originator) n'est pas un Service mais un Sensor : la responsabilité remonte à la Person ou au Service qui l'opère.
 - Liste des rôles alignée sur ISO 19115-1 complète.
 
 | Champ          | Cardinalité | Définition                                 | Valeurs possibles                                                         |
 |----------------|-------------|--------------------------------------------|---------------------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire        | uuid                                                                      |
-| `agentType`    | 1           | Type d'acteur responsable                  | `Person` \| `Organization` \| `Machine`                                   |
-| `agentId`      | 1           | UUID de la Person, Organization ou Machine | uuid                                                                      |
+| `agentType`    | 1           | Type d'acteur responsable                  | `Person` \| `Organization` \| `Service`                                   |
+| `agentId`      | 1           | UUID de la Person, Organization ou Service | uuid                                                                      |
 | `role`         | 1           | Rôle fonctionnel CI_RoleCode ISO 19115-1   | `resourceProvider` \| `custodian` \| `owner` \| `user` \| `distributor` \| `originator` \| `pointOfContact` \| `principalInvestigator` \| `processor` \| `publisher` \| `author` \| `sponsor` \| `coAuthor` \| `collaborator` \| `editor` \| `mediator` \| `rightsHolder` \| `contributor` \| `funder` \| `stakeholder` |
 | `resourceType` | 1           | Type de ressource ciblée                   | `Observatory` \| `Site` \| `Station` \| `Facility` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `Datastream` \| `TimeSeries` \| `TransformedTimeSeries` \| `TransferFunction` \| `TransferFunctionSet` \| `Project` \| `Bundle` \| `Algorithm` |
 | `resourceId`   | 1           | UUID de la ressource ciblée                | uuid                                                                      |
@@ -814,22 +871,23 @@ Chaque ligne montre, pour un type de keyword, des exemples de termes sous
 leurs deux formes : `term_en` (le libellé lisible) et `notation` (l'identifiant
 court qui servirait de segment d'URI).
 
-| keywordType        | S'applique à                   | Exemples (`term_en` -> `notation`)                                              | Standard         |
-|--------------------|--------------------------------|---------------------------------------------------------------------------------|------------------|
-| `discipline`       | Property                       | hydrology -> `hydrology`, chemistry -> `chemistry`                              | ISO 19115        |
-| `theme`            | Property                       | metals -> `metals`, nutrients -> `nutrients`, pesticides -> `pesticides`        | ISO 19115        |
-| `samplingMedium`   | TimeSeries, Specimen, Property | surface water -> `surface-water`, groundwater -> `groundwater`                  | ODM2             |
-| `featureType`      | FeatureOfInterest              | river -> `river`, lake -> `lake`, atmosphere -> `atmosphere`                    | ODM2 / OMS       |
-| `siteType`         | Site                           | watershed -> `watershed`, wetland -> `wetland`, aquifer -> `aquifer`            | BDOH             |
-| `stationType`      | Station                        | stream gage -> `stream-gage`, weather station -> `weather-station`              | SANDRE / WMO     |
-| `sensorType`       | Sensor                         | ICP-MS -> `icp-ms`, spectrophotometer -> `spectrophotometer`                    | Helmholtz SMS-CV |
-| `actuatorType`     | Actuator                       | doser -> `doser`, stirrer -> `stirrer`, centrifuge -> `centrifuge`              | Helmholtz SMS-CV |
-| `samplerType`      | Sampler                        | bottle -> `bottle`, autosampler -> `autosampler`, filter holder -> `filter-holder` | Helmholtz SMS-CV |
-| `platformType`     | Platform                       | buoy -> `buoy`, vertical chain -> `vertical-chain`, drone -> `drone`            | Helmholtz SMS-CV |
-| `organizationType` | Organization                   | laboratory -> `laboratory`, monitoring network -> `monitoring-network`          | ODM2             |
-| `specimenType`     | Specimen                       | water -> `water`, soil -> `soil`, sediment -> `sediment`                        | ODM2             |
-| `controlType`      | ControlObservation             | independent measure -> `independent-measure`, cross validation -> `cross-validation` | BDOH        |
-| `memoryType`       | Memory                         | note -> `note`, event -> `event`, maintenance -> `maintenance`                  | BDOH             |
+| keywordType        | S'applique à                   | Exemples (`term_en` -> `notation`)                                                   | Standard          |
+|--------------------|--------------------------------|--------------------------------------------------------------------------------------|-------------------|
+| `discipline`       | Property                       | hydrology -> `hydrology`, chemistry -> `chemistry`                                   | ISO 19115         |
+| `theme`            | Property                       | metals -> `metals`, nutrients -> `nutrients`, pesticides -> `pesticides`             | ISO 19115         |
+| `samplingMedium`   | TimeSeries, Specimen, Property | surface water -> `surface-water`, groundwater -> `groundwater`                       | ODM2              |
+| `featureType`      | FeatureOfInterest              | river -> `river`, lake -> `lake`, atmosphere -> `atmosphere`                         | ODM2 / OMS        |
+| `siteType`         | Site                           | watershed -> `watershed`, wetland -> `wetland`, aquifer -> `aquifer`                 | BDOH              |
+| `stationType`      | Station                        | stream gage -> `stream-gage`, weather station -> `weather-station`                   | SANDRE / WMO      |
+| `sensorType`       | Sensor                         | ICP-MS -> `icp-ms`, spectrophotometer -> `spectrophotometer`                         | Helmholtz SMS-CV  |
+| `actuatorType`     | Actuator                       | doser -> `doser`, stirrer -> `stirrer`, centrifuge -> `centrifuge`                   | Helmholtz SMS-CV  |
+| `samplerType`      | Sampler                        | bottle -> `bottle`, autosampler -> `autosampler`, filter holder -> `filter-holder`   | Helmholtz SMS-CV  |
+| `platformType`     | Platform                       | buoy -> `buoy`, vertical chain -> `vertical-chain`, drone -> `drone`                 | Helmholtz SMS-CV  |
+| `organizationType` | Organization                   | laboratory -> `laboratory`, monitoring network -> `monitoring-network`               | ODM2              |
+| `specimenType`     | Specimen                       | water -> `water`, soil -> `soil`, sediment -> `sediment`                             | ODM2              |
+| `sampleType`       | Specimen                       | grab -> `grab`, composite -> `composite`                                             | US EPA / ISO 5667 |
+| `controlType`      | ControlObservation             | independent measure -> `independent-measure`, cross validation -> `cross-validation` | BDOH              |
+| `memoryType`       | Memory                         | note -> `note`, event -> `event`, maintenance -> `maintenance`                       | BDOH              |
 
 - Exemples de codes de types : discipline, theme, samplingMedium, stationType,
   sensorType, actuatorType, samplerType, platformType, siteType, deploymentType, featureType, memoryType,
@@ -908,7 +966,7 @@ KeywordAssignment (keyword) entités via KeywordAssignment (type, discipline, th
 > Lien entre un keyword et une ressource - pattern TPC resource, multi-valeurs.
 
 *Utilisé par* :<br>
-Observatory, Site, Station, TimeSeries, TransformedTimeSeries, Bundle, Property, Organization, Sensor, Actuator, Sampler, Platform, Kit, Deployment, FeatureOfInterest, Specimen, ControlObservation, TransferFunction, Datastream (via resourceType + resourceId)
+Observatory, Site, Station, TimeSeries, TransformedTimeSeries, Bundle, Property, Organization, Sensor, Actuator, Sampler, Platform, Kit, Deployment, FeatureOfInterest, Specimen, SamplingBatch, ControlObservation, TransferFunction, Datastream (via resourceType + resourceId)
 
 *Note* : 
 - Permet d'attacher autant de keywords que nécessaire à une ressource.
@@ -919,7 +977,7 @@ Observatory, Site, Station, TimeSeries, TransformedTimeSeries, Bundle, Property,
 |----------------|-------------|-------------------------------------|----------------------------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                             |
 | `keyword`      | 1 →Keyw     | Keyword assigné                     | → Keyword                                                                        |
-| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Facility` \| `TimeSeries` \| `TransformedTimeSeries` \| `Bundle` \| `Property` \| `Unit` \| `Organization` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `Deployment` \| `FeatureOfInterest` \| `Specimen` \| `ControlObservation` \| `TransferFunction` \| `TransferFunctionSet` \| `Datastream` \| `Project` \| `Memory` \| `Algorithm` |
+| `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Facility` \| `TimeSeries` \| `TransformedTimeSeries` \| `Bundle` \| `Property` \| `Unit` \| `Organization` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `Deployment` \| `FeatureOfInterest` \| `Specimen` \| `SamplingBatch` \| `ControlObservation` \| `TransferFunction` \| `TransferFunctionSet` \| `Datastream` \| `Project` \| `Memory` \| `Algorithm` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                             |
 
 ---
@@ -1023,7 +1081,7 @@ Observatory, Site, Station, Sensor, Actuator, Sampler, Platform, Kit, TimeSeries
 |----------------|-------------|-------------------------------------|------------------------------------------------------------------------------|
 | `id`           | 1           | Identifiant technique, clé primaire | uuid                                                                         |
 | `code`         | 1           | Valeur de l'identifiant             | "V3015810" \| "0000-0001-1234-1234" \| "0-20000-0-06610"                     |
-| `codeType`     | 1           | Type d'identifiant                  | `doi` \| `orcid` \| `ror` \| `sandre` \| `wigos` \| `igsn` \| `pidinst` \| `swhid` |
+| `codeType`     | 1           | Type d'identifiant                  | `doi` \| `orcid` \| `ror` \| `rrid` \| `sandre` \| `wigos` \| `igsn` \| `pidinst` \| `swhid` \| `lims` |
 | `codeSource`   | 1           | Système ou organisme émetteur       | "SANDRE" \| "TheiaOZCAR" \| "NERC" \| "DataCite" \| "ROR" \| "PIDINST"       |
 | `resourceType` | 1           | Type de ressource ciblée            | `Observatory` \| `Site` \| `Station` \| `Facility` \| `Sensor` \| `Actuator` \| `Sampler` \| `Platform` \| `Kit` \| `TimeSeries` \| `TransformedTimeSeries` \| `Person` \| `Organization` \| `Specimen` \| `Property` \| `Procedure` \| `FeatureOfInterest` \| `Project` \| `TransferFunction` \| `TransferFunctionSet` \| `Bundle` \| `Dataset` \| `Datastream` \| `Algorithm` |
 | `resourceId`   | 1           | UUID de la ressource ciblée         | uuid                                                                         |
@@ -1803,15 +1861,15 @@ CalibrationParameter (calibrationBatch)
 - L'application effective de ces paramètres pour corriger des données brutes est
   une transformation entre Datastream et TimeSeries : hors de ce batch, non
   modélisée à ce stade (voir points_ouverts.md).
-- agentType + agentId : pattern TPC, métrologue (`Person`) ou banc automatique (`Machine`).
+- agentType + agentId : pattern TPC, métrologue (`Person`) ou service de calibration automatique (`Service`). Le banc physique est un outil, pas l'agent.
 
 | Champ               | Cardinalité | Définition                             | Valeurs possibles                   |
 |---------------------|-------------|----------------------------------------|-------------------------------------|
 | `id`                | 1           | Identifiant technique, clé primaire    | uuid                                |
 | `sensor`            | 1 →Dep      | Déploiement de l'instrument calibré    | → Deployment                        |
 | `procedure`         | 0..1 →Proc  | Protocole de calibration appliqué      | → Procedure (type=observation)      |
-| `agentType`         | 1           | Type d'agent ayant calibré             | `Person` \| `Machine`               |
-| `agentId`           | 1           | UUID de la Person ou Machine           | uuid                                |
+| `agentType`         | 1           | Type d'agent ayant calibré             | `Person` \| `Service`               |
+| `agentId`           | 1           | UUID de la Person ou Service           | uuid                                |
 | `referenceStandard` | 0..1        | Étalon de référence utilisé            | "Solution KCl 1413 µS/cm certifiée" |
 | `certificate`       | 0..1        | Référence du certificat de calibration | "CERT-2024-COND-017"                |
 | `calibratedAt`      | 1           | Date et heure de la calibration        | "2024-01-15T10:00:00Z"              |
@@ -1869,15 +1927,15 @@ Observation (batch)
 - Optionnel - un capteur télétransmis en continu ne crée pas de batch.
 - Nécessaire quand un technicien importe manuellement des données récupérées sur une centrale d'acquisition terrain non connectée.
 - Analogue à ValidationBatch pour la couche IoT.
-- agentType + agentId : pattern TPC - peut être un technicien (`Person`) ou un service d'import automatique (`Machine`).
+- agentType + agentId : pattern TPC, un technicien (`Person`) ou un service d'import automatique (`Service`).
 
 | Champ         | Cardinalité | Définition                                 | Valeurs possibles                    |
 |---------------|-------------|--------------------------------------------|--------------------------------------|
 | `id`          | 1           | Identifiant technique, clé primaire        | uuid                                 |
 | `datastream`  | 1 →DS       | Flux de données cible                      | → Datastream                         |
 | `importedAt`  | 1           | Date et heure de l'import                  | "2024-04-01T08:00:00Z"               |
-| `agentType`   | 0..1        | Type d'agent ayant réalisé l'import        | `Person` \| `Machine`                |
-| `agentId`     | 0..1        | UUID de la Person ou Machine               | uuid                                 |
+| `agentType`   | 0..1        | Type d'agent ayant réalisé l'import        | `Person` \| `Service`                |
+| `agentId`     | 0..1        | UUID de la Person ou Service               | uuid                                 |
 | `source`      | 0..1        | Origine des données (centrale, fichier...) | "centrale YZR-D610" \| "https://..." |
 | `status`      | 1           | État de l'import                           | `pending` \| `done` \| `failed`      |
 | `comment`     | 0..1        | Commentaire libre                          |                                      |
@@ -1969,6 +2027,29 @@ TimeSeries (via timeSeries FK)
 <div class="page-break"></div>
 
 # 7. MONDE ANALYTIQUE
+
+> **Actes réifiés et alignement ODM2.** Chaque acte scientifique produisant ou
+> transformant une donnée est un batch daté et attribué, aligné sur les ActionType
+> du modèle ODM2 (CUAHSI). Correspondance :
+>
+> | Acte | Entité BDOH | ActionType ODM2 |
+> |------|-------------|-----------------|
+> | Prélèvement terrain | SamplingBatch | Specimen collection |
+> | Préparation labo | PreparationBatch | Specimen preparation |
+> | Dérivation / composition | (effet d'un PreparationBatch, via specimen_parents) | Derivation |
+> | Analyse labo | AnalysisBatch | Specimen analysis |
+> | Calibration | CalibrationBatch | Equipment calibration |
+> | Import de données brutes | ObservationBatch | Data retrieval / submission |
+> | Validation | ValidationBatch | (Derivation, sous-type qualité) |
+> | Construction de fonction | TransferFunctionBatch | Derivation (estimation) |
+> | Transformation de série | TransformationBatch | Derivation (estimation) |
+> | Déploiement d'instrument | Deployment | Instrument deployment |
+>
+> La Derivation d'ODM2 n'est pas un acte séparé chez BDOH : c'est l'effet d'un
+> PreparationBatch (filiation d'échantillon) ou d'un batch de transformation
+> (filiation de série). L'Equipment maintenance d'ODM2 n'est pas couvert (gestion
+> de parc, hors périmètre BDOH). Chaque batch porte un agent (Person ou Service),
+> une date, et une Procedure du type correspondant.
 
 ## TimeSeries
 > Contrat analytique d'une série - variable et protocole fixes pour toute la durée.
@@ -2071,7 +2152,7 @@ ValidatedObservation (validationBatch)
 - Groupe d'observations validées en une même session.
 - Un batch couvre une fenêtre temporelle sur une TimeSeries.
 - Alléger ValidatedObservation - les métadonnées de session sont ici, pas répétées sur chaque observation.
-- agentType + agentId obligatoires (1) : pattern TPC - peut être un opérateur humain (`Person`) ou un pipeline de validation automatique (`Machine`).
+- agentType + agentId obligatoires (1) : pattern TPC, un opérateur humain (`Person`) ou un pipeline de validation automatique (`Service`).
 
 | Champ              | Cardinalité | Définition                          | Valeurs possibles                        |
 |--------------------|-------------|-------------------------------------|------------------------------------------|
@@ -2079,8 +2160,8 @@ ValidatedObservation (validationBatch)
 | `timeSeries`        | 1 →TS       | Série validée                       | → TimeSeries                              |
 | `periodStart`      | 1           | Début de la fenêtre validée         | "2024-01-01T00:00:00Z"                   |
 | `periodEnd`        | 1           | Fin de la fenêtre validée           | "2024-03-31T23:59:59Z"                   |
-| `agentType`        | 1           | Type d'agent ayant validé           | `Person` \| `Machine`                    |
-| `agentId`          | 1           | UUID de la Person ou Machine        | uuid                                     |
+| `agentType`        | 1           | Type d'agent ayant validé           | `Person` \| `Service`                    |
+| `agentId`          | 1           | UUID de la Person ou Service        | uuid                                     |
 | `validatedAt`      | 1           | Date d'exécution du batch           | "2024-04-01T08:00:00Z"                   |
 | `validationLogUrl` | 0..1        | URI vers le log externe (Wiski...)  | "https://wiski.inrae.fr/log-2024-q1.csv" |
 | `status`           | 1           | État du batch                       | `pending` \| `validated` \| `rejected`   |
@@ -2225,10 +2306,17 @@ Specimen (samplingBatch)
   (un par godet), chacun avec sa fenêtre horaire et sa profondeur.
 - anchorType + anchorId : ancrage géographique commun aux Specimens du batch.
   Un Specimen hérite son ancre de son SamplingBatch (voir note de Specimen).
+- samplingMode : colonne enum, distingue le prélèvement manuel (humain fortement
+  responsable de chaque prélèvement) de l'automatique (préleveur programmé, l'humain
+  responsable de la pose et du paramétrage, moins de chaque prélèvement). Enum plutôt
+  que Keyword : ensemble fermé et stable (jamais d'autre valeur), toujours renseignable
+  même sans deployment tracé, et non déductible de façon fiable du matériel.
 - deployment : le Deployment du matériel de prélèvement (Kit composite, Sampler,
   ou objet unique), qui porte lui-même le lieu physique du matériel.
-- agentType + agentId : pattern TPC, préleveur humain (`Person`) ou préleveur
-  automatique (`Machine`, ex : centrale ISCO programmée).
+- agentType + agentId : pattern TPC, préleveur humain (`Person`) ou service de
+  prélèvement automatique (`Service`). La centrale ISCO physique est un Sampler
+  (outil tracé via deployment), pas l'agent : la Person qui l'a programmée reste
+  responsable, sauf si un service logiciel pilote la décision de prélever.
 
 | Champ           | Cardinalité | Définition                                          | Valeurs possibles                    |
 |-----------------|-------------|-----------------------------------------------------|--------------------------------------|
@@ -2238,8 +2326,9 @@ Specimen (samplingBatch)
 | `anchorId`      | 1           | UUID de l'Observatory, Site ou Station              | uuid                                 |
 | `project`       | 0..1 →Proj  | Projet ou campagne dont dépend ce prélèvement       | → Project                            |
 | `procedure`     | 0..1 →Proc  | Protocole de prélèvement appliqué                   | → Procedure (type=sampling)          |
-| `agentType`     | 1           | Type d'agent ayant réalisé le prélèvement           | `Person` \| `Machine`                |
-| `agentId`       | 1           | UUID de la Person ou Machine                        | uuid                                 |
+| `agentType`     | 1           | Type d'agent ayant réalisé le prélèvement           | `Person` \| `Service`                |
+| `agentId`       | 1           | UUID de la Person ou Service                        | uuid                                 |
+| `samplingMode`  | 1           | Mode de collecte                                    | `manual` \| `automatic`              |
 | `deployment`    | 0..1 →Dep   | Déploiement du matériel de prélèvement              | → Deployment                         |
 | `collectedFrom` | 1           | Début du prélèvement ou pose du préleveur           | "2024-03-15T09:00:00Z"               |
 | `collectedTo`   | 0..1        | Fin ou récupération du préleveur (null si ponctuel) | "2024-03-15T09:30:00Z"               |
@@ -2276,14 +2365,14 @@ Specimen (preparationBatch)
   specimen_parents. Un seul Specimen enfant produit par batch.
 - deployment : le Deployment de l'appareil de préparation (Actuator pour un
   broyeur ou un doseur, Sampler pour un filtre), ancré sur une Facility de labo.
-- agentType + agentId : pattern TPC, technicien (`Person`) ou automate (`Machine`).
+- agentType + agentId : pattern TPC, technicien (`Person`) ou service de prélèvement automatique (`Service`). Un préleveur automatique physique (centrale ISCO) est un outil (Sampler tracé via deployment), pas l'agent : la responsabilité reste à la Person qui l'a programmé, sauf si un service logiciel pilote réellement la décision.
 
 | Champ                 | Cardinalité | Définition                               | Valeurs possibles              |
 |-----------------------|-------------|------------------------------------------|--------------------------------|
 | `id`                  | 1           | Identifiant technique, clé primaire      | uuid                           |
 | `procedure`           | 1 →Proc     | Protocole de préparation appliqué        | → Procedure (type=preparation) |
-| `agentType`           | 1           | Type d'agent ayant préparé               | `Person` \| `Machine`          |
-| `agentId`             | 1           | UUID de la Person ou Machine             | uuid                           |
+| `agentType`           | 1           | Type d'agent ayant préparé               | `Person` \| `Service`          |
+| `agentId`             | 1           | UUID de la Person ou Service             | uuid                           |
 | `deployment`          | 0..1 →Dep   | Déploiement de l'appareil de préparation | → Deployment                   |
 | `preparationDateTime` | 1           | Date et heure de la préparation          | "2024-03-15T14:00:00Z"         |
 | `comment`             | 0..1        | Commentaire libre                        |                                |
@@ -2317,8 +2406,8 @@ AnalysisObservation (analysisBatch)
   Deployment, ancré sur une Facility de labo. La préparation d'échantillon (broyage,
   filtration, dilution) est un acte distinct porté par PreparationBatch, sur le ou les
   Specimens parents, hors de ce batch.
-- Coexistence LIMS/interne : si la chimie est traitée dans un LIMS externe,
-  Specimen.limsReference suffit et AnalysisBatch n'est pas créé. Si la chaîne
+- Coexistence LIMS/interne : si la chimie est traitée dans un LIMS externe, un
+  Identifier (codeType=lims) sur le Specimen suffit et AnalysisBatch n'est pas créé. Si la chaîne
   analytique est interne, AnalysisBatch + AnalysisObservation la documentent
   complètement. Les deux voies sont non exclusives (ADR-007 amendé).
 - Chaîne complète d'un échantillon : SamplingBatch (prélèvement) produit un
@@ -2332,8 +2421,8 @@ AnalysisObservation (analysisBatch)
 | `id`               | 1           | Identifiant technique, clé primaire         | uuid                             |
 | `specimen`         | 1 →Spec     | Specimen analysé (brut ou aliquote préparé) | → Specimen                       |
 | `procedure`        | 1 →Proc     | Méthode analytique appliquée                | → Procedure (type=analysis)      |
-| `agentType`        | 1           | Type d'agent ayant réalisé l'analyse        | `Person` \| `Machine`            |
-| `agentId`          | 1           | UUID de la Person ou Machine                | uuid                             |
+| `agentType`        | 1           | Type d'agent ayant réalisé l'analyse        | `Person` \| `Service`            |
+| `agentId`          | 1           | UUID de la Person ou Service                | uuid                             |
 | `sensor`           | 0..1 →Dep   | Déploiement de l'appareil analytique        | → Deployment (systemType=Sensor) |
 | `analysisDateTime` | 1           | Date et heure de l'analyse                  | "2024-03-14T14:00:00Z"           |
 | `comment`          | 0..1        | Commentaire libre sur la session            |                                  |
@@ -2433,6 +2522,7 @@ ValidatedObservation (specimen), ControlObservation (specimen), Observation (spe
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
 - specimenType (required) : water, soil, sediment, biological
+- sampleType (required) : grab, composite (nature de l'échantillon ; ne jamais mélanger grab et composite dans un calcul d'agrégation)
 - samplingMedium (required) : surface water, groundwater, depth
 
 *Note* :
@@ -2462,8 +2552,8 @@ ValidatedObservation (specimen), ControlObservation (specimen), Observation (spe
   distincte des dates de pose et de récupération du piège (portées par
   SamplingBatch.collectedFrom / collectedTo).
 - Deux voies non exclusives pour la chaîne analytique : LIMS externe référencé
-  par limsReference seul, ou chaîne interne documentée par AnalysisBatch et
-  AnalysisObservation. Voir la note d'AnalysisBatch (Coexistence LIMS/interne,
+  par un Identifier (codeType=lims ou igsn) seul, ou chaîne interne documentée par
+  AnalysisBatch et AnalysisObservation. Voir la note d'AnalysisBatch (Coexistence LIMS/interne,
   ADR-007 amendé), qui est la source de vérité de cette articulation.
 - status : l'échantillon physique existe-t-il encore ou a-t-il été détruit
   (épuisé par les analyses, contaminé, périmé). Distinct de la chaîne
@@ -2488,7 +2578,6 @@ ValidatedObservation (specimen), ControlObservation (specimen), Observation (spe
 | `filtrationThreshold` | 0..1        | Seuil de filtration en µm                              | "0.45"                        |
 | `location`            | 0..1 →Loc   | Position exacte si différente de l'ancre du batch      | → Location                    |
 | `condition`           | 0..1        | Observations terrain libres                            | "turbidité élevée, eau brune" |
-| `limsReference`       | 0..1        | Identifiant du prélèvement dans le LIMS                | "LIMS-2024-03-001"            |
 | `status`              | 1           | État physique de l'échantillon                         | `active` \| `discarded`       |
 
 ## specimen_parents
@@ -2501,6 +2590,12 @@ PreparationBatch (filiation), Specimen (parents et enfants)
 - Table de jointure explicite portant la filiation d'échantillon. Remplace
   l'ancien FK Specimen.derivedFrom, qui ne gérait que le cas un parent vers un
   enfant.
+- La dérivation (l'ActionType Derivation d'ODM2) n'est pas un acte séparé dans
+  BDOH : c'est l'effet d'un PreparationBatch. Filtrer, c'est préparer un enfant à
+  partir d'un parent ; composer, c'est préparer un enfant à partir de plusieurs.
+  Même acte (PreparationBatch), cardinalité de parents différente. Cette table
+  n'est donc pas un acte oublié : elle liste les parents consommés par un
+  PreparationBatch, l'acte étant déjà porté par ce batch.
 - childSpecimen : le Specimen enfant produit. parentSpecimen : un Specimen source.
   Plusieurs lignes pour un même childSpecimen expriment un échantillon composite
   (plusieurs parents réunis en un enfant).
@@ -2660,15 +2755,15 @@ TransferFunctionPoint (batch)
 - Acte de construction d'une TransferFunction - qui, quand, depuis quel outil.
 - Analogue à ValidationBatch et TransformationBatch.
 - La procédure est portée par TransferFunction parente, pas répétée ici.
-- agentType + agentId : pattern TPC - expert humain (`Person`) pour une courbe de tarage manuelle, ou algorithme automatique (`Machine`) pour BaRatin en mode batch.
+- agentType + agentId : pattern TPC, expert humain (`Person`) pour une courbe de tarage manuelle, ou service automatique (`Service`) pour BaRatin en mode batch (le code exact reste tracé via Algorithm si applicable).
 
 | Champ               | Cardinalité | Définition                             | Valeurs possibles               |
 |---------------------|-------------|----------------------------------------|---------------------------------|
 | `id`                | 1           | Identifiant technique, clé primaire    | uuid                            |
 | `transferFunction`  | 1 →TF       | Fonction construite                    | → TransferFunction              |
 | `builtAt`           | 1           | Date de construction                   | "2024-04-01T08:00:00Z"          |
-| `agentType`         | 0..1        | Type d'agent ayant construit la courbe | `Person` \| `Machine`           |
-| `agentId`           | 0..1        | UUID de la Person ou Machine           | uuid                            |
+| `agentType`         | 0..1        | Type d'agent ayant construit la courbe | `Person` \| `Service`           |
+| `agentId`           | 0..1        | UUID de la Person ou Service           | uuid                            |
 | `logUrl`            | 0..1        | Référence externe (export BaRatin..)   | "https://..."                   |
 | `status`            | 1           | État du batch                          | `pending` \| `done` \| `failed` |
 | `comment`           | 0..1        | Commentaire libre                      |                                 |
@@ -3167,7 +3262,7 @@ Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deploymen
 - Objet transversal de documentation du cycle de vie.
 - Fichiers stockés en S3, référencés via mediaUrl.
 - agentType + agentId : pattern TPC - auteur humain (`Person`) pour une note
-- manuelle, pipeline (`Machine`) pour une alerte automatique ou détection d'anomalie.
+- manuelle, service (`Service`) pour une alerte automatique ou détection d'anomalie.
 
 | Champ          | Cardinalité | Définition                          | Valeurs possibles                                                               |
 |----------------|-------------|-------------------------------------|---------------------------------------------------------------------------------|
@@ -3178,6 +3273,6 @@ Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deploymen
 | `title`        | 0..1        | Titre court                         | "Modification contrôle hydraulique"                                             |
 | `content`      | 0..1        | Texte libre                         | "Installation d'une lame déversante"                                            |
 | `mediaUrl`     | 0..*        | Photos ou documents associés (S3)   | "https://storage.obs.fr/memories/2014-lame.jpg"                                 |
-| `agentType`    | 0..1        | Type d'agent auteur de la note      | `Person` \| `Machine`                                                           |
-| `agentId`      | 0..1        | UUID de la Person ou Machine        | uuid                                                                            |
+| `agentType`    | 0..1        | Type d'agent auteur de la note      | `Person` \| `Service`                                                           |
+| `agentId`      | 0..1        | UUID de la Person ou Service        | uuid                                                                            |
 | `status`       | 1           | État de la note                     | `active` \| `archived`                                                          |

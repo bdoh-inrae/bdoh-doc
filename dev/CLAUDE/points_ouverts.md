@@ -309,6 +309,106 @@ berge ou une emprise de zone humide redessinés après une nouvelle campagne.
 Choix de fond, souvent délibérés. Le but est de nommer le coût accepté et de
 combler ce qui n'est pas spécifié, pas d'annuler.
 
+## M9. Données d'expérience de terrain : une valeur issue d'un fit sur une série courte
+
+**Statut : ouvert, diagnostic posé, forme du chaînon à trancher. Sévérité moyenne
+(cas réel non couvert, aujourd'hui traité dans Excel hors traçabilité), effort
+moyen (un patron existant à décliner, pas une refonte).**
+
+### Le cas
+Certaines grandeurs d'observatoire ne sont ni des mesures de capteur en continu
+ni des analyses d'échantillon : elles résultent d'un calcul sur une série courte
+de points mesurés pendant une expérience de terrain. Exemple type : la
+perméabilité du sol par essai piézométrique (slug test). On perturbe le niveau,
+un piézo enregistre la décrue pendant quelques minutes, on ajuste une loi
+(exponentielle décroissante) sur ces points, et le paramètre du fit (la
+perméabilité) est la valeur qu'on veut dans une série. Chaque expérience produit
+UN point ; la série de perméabilité en accumule au fil des campagnes.
+Aujourd'hui ce calcul est fait à la main (tableur), sans traçabilité : ni les
+points bruts, ni la loi, ni l'expérimentateur ne sont conservés nulle part.
+
+### Le diagnostic : provenance par série contre provenance par point
+La distinction structurelle qui tranche, implicite dans le modèle mais jamais
+énoncée avant cette réflexion :
+- Une **TransformedTimeSeries** a une provenance PAR SÉRIE : le
+  TransformationBatch dérive la série entière d'autres séries identifiées. Son
+  contrat est « je suis dérivée de ces séries par cette procédure ».
+- Une **TimeSeries lab_sample** a une provenance PAR POINT : chaque valeur a sa
+  propre chaîne d'actes (Specimen, AnalysisBatch, AnalysisObservation),
+  indépendante du point voisin. La série n'est dérivée de rien : elle accumule
+  des résultats d'actes distincts.
+
+La perméabilité a une provenance par point (douze expériences par an, chacune
+avec son propre mini-flux et son propre fit). C'est donc structurellement une
+donnée de type chimie, pas une donnée de transformation.
+
+### Piste écartée : le trou Datastream vers TTS (à ne pas rouvrir)
+Une première réflexion avait envisagé d'autoriser un Datastream comme entrée de
+transformationbatch_inputseries, pour produire la série de perméabilité comme
+une TTS. Écarté après examen : une TTS alimentée point par point par des batchs
+successifs pointant chacun vers un Datastream d'entrée différent n'a plus de
+contrat de dérivation lisible (l'inventaire de ses sources devient hétérogène et
+croissant). Ce serait forcer une provenance par point dans un mécanisme de
+provenance par série. Percerait en outre un second pont IoT vers métier à côté
+de TimeSeriesSource, pour un gain nul une fois le bon patron identifié.
+L'argument « la perméabilité est dérivée, donc TTS » ne tient pas non plus : une
+concentration ICP-MS est tout autant le produit d'une chaîne de calcul interne,
+et vit en TimeSeries. Le critère TS contre TTS n'est pas brut contre calculé,
+c'est : dérivée d'autres séries métier (TTS) contre alimentée par des actes (TS).
+
+### Direction envisagée : décliner le patron chimie
+Parallèle terme à terme avec la chaîne d'échantillonnage :
+
+| Chimie                          | Expérience de terrain                     |
+|---------------------------------|-------------------------------------------|
+| SamplingBatch (prélèvement)     | l'acte expérimental (manip piézo)         |
+| Specimen (support physique)     | mini-Datastream (points bruts de décrue)  |
+| AnalysisBatch (mesure, appareil)| le fit (Algorithm, loi d'ajustement)      |
+| AnalysisObservation (valeur)    | la valeur de perméabilité                 |
+| TimeSeries lab_sample           | TimeSeries de perméabilité                |
+
+Éléments déjà en place, aucun changement requis :
+- Le mini-Datastream (série courte de plein droit, points bruts conservés :
+  sans eux la valeur fittée est invérifiable, contraire à la mission de
+  reproductibilité). Ses Observations arrivent par un ObservationBatch qui porte
+  déjà l'expérimentateur (agentType=Person) et la date.
+- L'Algorithm pour la loi de fit (swhid, reproductibilité, exécutable par un
+  runner BDOH ou une app terrain : remplace le tableur artisanal).
+
+Ce qui manque, le chaînon de provenance par point :
+1. Un troisième type d'acquisition sur TimeSeries, à côté de sensor_continuous
+   et lab_sample (nom candidat : field_experiment), pour la série qui accumule
+   les valeurs d'expériences.
+2. L'acte qui relie chaque valeur à son expérience : l'équivalent
+   d'AnalysisBatch, prenant un Datastream (les points bruts) là où AnalysisBatch
+   prend un Specimen, portant l'Algorithm du fit, le deployment de l'instrument,
+   l'agent, la date, et produisant la valeur versée dans la série. Deux formes
+   possibles, à trancher :
+   - un nouvel objet frère (ExperimentBatch), symétrique d'AnalysisBatch,
+     cohérent avec « chaque acte est un batch » (ADR-064) ;
+   - un élargissement d'AnalysisBatch (entrée Specimen OU Datastream), écarté
+     a priori : tord la sémantique de labo d'un objet existant, travers déjà
+     rencontré et refusé ailleurs.
+
+### Questions à instruire à la reprise
+- La forme du chaînon (ExperimentBatch dédié, forme pressentie) et l'objet
+  valeur produit : réutiliser AnalysisObservation ou créer un équivalent ?
+  Inventorier ce qu'AnalysisObservation porte (LOD, LOQ, qualityFlag...) et ce
+  qui a un sens pour un paramètre fitté (incertitude du fit, R², résidus ?
+  parallèle possible avec CalibrationParameter et TransferFunctionParameter,
+  qui portent déjà des lois d'incertitude).
+- Le mini-Datastream expérimental : Datastream ordinaire (rien à changer) ou
+  besoin d'un marqueur (son deployment et sa courte durée suffisent-ils à le
+  distinguer d'un flux pérenne ?).
+- L'ancrage de la série d'expériences : par point (chaque expérience a son
+  lieu) ou par série (une série par station, comme lab_sample) ? Le patron
+  chimie suggère par série, avec le lieu fin porté par l'acte.
+- Lien avec la calibration : une calibration est aussi un fit sur une série
+  courte contre étalon (même motif « points + loi = paramètres »). Une fois
+  ExperimentBatch conçu, vérifier si CalibrationBatch devrait stocker ses
+  points bruts de la même façon (aujourd'hui il ne garde que les paramètres),
+  sans forcer l'unification si les besoins divergent.
+
 ## S1. TPC sans FK native : intégrité référentielle seulement applicative (clos, voir ADR-060)
 Fermé : pas de supertable ni de FK native. Le risque visé (un lien polymorphe
 pointant vers une ligne qui n'existe plus) suppose une suppression physique
@@ -382,14 +482,12 @@ calibration aux données brutes, qui serait une transformation entre Datastream
 et TimeSeries (pas au niveau TransformedTimeSeries). À modéliser si le besoin de
 rejouer les corrections dans BDOH se confirme.
 
-### E. Restant ouvert : renommage de Machine
-`Machine` (entité agent : service, runner, pipeline) porte un nom qui évoque un
-objet physique, alors que le physique est maintenant Sensor/Actuator/Sampler/
-Platform. La distinction de fond est claire (Machine = ce qui a un swhid, agent
-logiciel ; les entités d'instrumentation = ce qui a un serialNumber ou pidinst).
-Reste le nom : `Service` envisagé, mais bute sur `Algorithm.runner` qui désigne
-l'infrastructure d'exécution (serveur, HPC), sens différent de l'agent logiciel.
-À trancher séparément, l'utilisatrice le suit de son côté.
+### E. Machine / Service / Algorithm (clos, gravé ADR-065)
+Tranché et gravé. Trois rôles séparés : Algorithm (code intriqué, reproductibilité),
+Service (agent logiciel responsable, documentaire, prov:SoftwareAgent), Machine
+(hardware d'exécution, documentaire, jamais agent). agentType devient Person,
+Service, Organization ; Machine en sort. Le hardware automatique (préleveur,
+capteur) est un outil, pas un agent. Voir ADR-065.
 
 ### Ordre de reprise suggéré
 1. Ancrage TS/TTS (partie C) : trancher la forme (champ ou règle) et graver.
