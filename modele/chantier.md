@@ -483,26 +483,6 @@ d'instruction, la seconde le résout entité par entité. Le tableau de triage n
 compte qu'un C3, marqué clos. La version ouverte aurait dû disparaître lors de
 la clôture.
 
-## D11. La règle d'alignement des tableaux se contredit elle-même
-
-La règle écrite dit deux choses incompatibles dans la même phrase :
-
-> les barres verticales de chaque colonne sont alignées sur la ligne la plus
-> large de cette colonne, les lignes courtes sont paddées d'espaces jusqu'à cette
-> largeur. Le contenu ne doit jamais être tronqué ni appauvri pour des raisons de
-> largeur : si une ligne dépasse parce que les valeurs possibles sont nombreuses,
-> elle dépasse, c'est normal et attendu.
-
-Si on padde jusqu'à la ligne la plus large, aucune ligne ne dépasse jamais : la
-notion de dépassement n'a plus de sens. La deuxième moitié de la règle décrit en
-réalité une autre politique, tolérer qu'une cellule exceptionnellement longue
-sorte de la colonne sans élargir tout le tableau.
-
-Les deux politiques sont défendables et le fichier applique les deux selon les
-endroits, ce qui explique les 47 tableaux à dépassement de CH-16. C'est un
-arbitrage à trancher, pas un défaut à corriger en silence : la question est
-posée dans la synthèse remise avec ce fichier.
-
 # V. Veille standards
 
 Questions d'évolution, pas de défauts. L'état daté des standards vit dans
@@ -670,6 +650,43 @@ fausse accessible et citable. À moyen terme, régénérer selon la procédure d
 `CLAUDE.md`, et poser la règle qui manque : la régénération est une étape du
 travail sur le modèle, pas une tâche séparée qu'on repousse.
 
+**Procédure de régénération**, déplacée depuis `CLAUDE.md` dont elle n'était pas
+la propriété. Prérequis : `pip install mkdocs-material`.
+
+Structure cible :
+
+```
+docs/
+  index.md  overview.md
+  model/
+    index.md  actors.md  references.md  geography.md  network.md
+    rawdata.md  instrumentation.md  observation.md  transformation.md
+    organisation.md  project.md
+  standards/index.md
+  decisions/index.md
+```
+
+1. Lire `modele/modele_donnees.md` en entier.
+2. Découper en pages selon la structure ci-dessus, ajouter les liens internes.
+3. Mettre à jour `docs/decisions/index.md` depuis `modele/decisions.md`.
+4. Mettre à jour `docs/standards/index.md` depuis `modele/sources.md`, sans
+   ressaisir l'état des standards à la main : il vit dans `modele/sources.md`.
+5. Tester avec `mkdocs serve` avant de pousser.
+6. Réactiver le déclenchement automatique de `.github/workflows/deploy.yml`,
+   mais seulement après avoir posé la garantie que la régénération fait partie
+   du travail sur le modèle, et non d'une tâche séparée qu'on repousse. C'est
+   cette absence de garantie, pas l'oubli, qui a laissé le site geler cinq mois.
+
+Points de vigilance hérités :
+- `instrumentation.md` (cinq entités d'instrumentation plus Deployment récursif)
+  est à créer, il n'existe pas dans la version en ligne.
+- `transformation.md` a été profondément remanié : ne pas repartir de l'ancienne
+  version.
+- Le mapping `qualityFlag` ODM2 / SANDRE et l'état de STA 2.0 viennent de
+  `modele/decisions.md` (ADR-024) et de `modele/sources.md`.
+- La page rawdata.md est citée par cette procédure mais n'existe ni dans
+  `docs/` ni dans `mkdocs.yml` : à créer ou à retirer de la structure cible.
+
 ## T4. Modèle d'endpoints API
 
 Les champs *Utilisé par* et *Relations inverses* du modèle décrivent de la
@@ -690,6 +707,28 @@ Deux temps :
 
 Ne pas commencer avant que les `D*` soient soldés : un modèle d'API construit
 sur un index de navigation qui ment hériterait de ses erreurs.
+
+
+## T5. Dépôt de scripts BDOH
+
+Conventions de nommage, format des fichiers de paramétrage, processus de
+versionnement des scripts référencés par `Algorithm`. À traiter avant
+l'implémentation des `TransformationBatch` algorithmiques, sinon les `swhid`
+épinglent du code dont l'organisation n'a pas été pensée.
+
+Déplacé depuis `CLAUDE.md`, section *Chantiers techniques en cours*, qui
+dupliquait ce fichier.
+
+## T6. Ingestion : format CSV et pipeline de validation
+
+Spécifier le format CSV attendu par l'API et le pipeline de validation
+automatique. Priorité basse, cible v2.
+
+Aucun modèle de données supplémentaire n'est requis : `ObservationBatch` et
+`ValidationBatch` couvrent déjà la traçabilité. C'est un travail de
+spécification d'interface, pas de modélisation.
+
+Déplacé depuis `CLAUDE.md`.
 
 
 # Constats soldés
@@ -1011,6 +1050,35 @@ Les occurrences résiduelles de `—` et `–` dans `CLAUDE.md` et dans ce fichi
 sont les énoncés de la règle elle-même, qui cite les caractères.
 
 `docs/` porte encore 59 cadratins : ils partiront avec la régénération (T3).
+
+
+## D11. La règle d'alignement des tableaux se contredit elle-même (clos)
+
+La règle écrite dit deux choses incompatibles dans la même phrase :
+
+> les barres verticales de chaque colonne sont alignées sur la ligne la plus
+> large de cette colonne, les lignes courtes sont paddées d'espaces jusqu'à cette
+> largeur. Le contenu ne doit jamais être tronqué ni appauvri pour des raisons de
+> largeur : si une ligne dépasse parce que les valeurs possibles sont nombreuses,
+> elle dépasse, c'est normal et attendu.
+
+Si on padde jusqu'à la ligne la plus large, aucune ligne ne dépasse jamais : la
+notion de dépassement n'a plus de sens. La deuxième moitié de la règle décrit en
+réalité une autre politique, tolérer qu'une cellule exceptionnellement longue
+sorte de la colonne sans élargir tout le tableau.
+
+Les deux politiques sont défendables et le fichier applique les deux selon les
+endroits, ce qui explique les 47 tableaux à dépassement de CH-16. C'est un
+arbitrage à trancher, pas un défaut à corriger en silence : la question est
+posée dans la synthèse remise avec ce fichier.
+
+**Résolution.** Résolu le 14 août 2026 par l'écriture de `methode/redaction.md`,
+qui devient le propriétaire des règles d'écriture. La règle y est énoncée en
+trois temps sans contradiction : padder à la cellule la plus large ; raboter la
+colonne la plus large si le tableau dépasse 150 caractères ; laisser les
+cellules trop longues de cette colonne déborder ligne par ligne. La phrase
+« le contenu ne se raccourcit jamais pour tenir dans la grille » est conservée
+telle quelle, elle n'a jamais été le problème.
 
 # Journal
 

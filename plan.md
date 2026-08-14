@@ -195,13 +195,13 @@ Passe mécanique, aucun changement de fond, commit dédié.
 
 **Critère de fin** : `mdtable.py check` sort zéro, et zéro cadratin hors `docs/`.
 
-## Étape 6. Nettoyage de `CLAUDE.md` et `SOUL.md`
+## Étape 6. Nettoyage de `CLAUDE.md` et `SOUL.md` (close)
 
-- [ ] `CLAUDE.md` devient le hub : carte de propriété, invariants, renvois. Les
+- [x] `CLAUDE.md` devient le hub : carte de propriété, invariants, renvois. Les
       règles de rédaction sortent dans `methode/redaction.md`
-- [ ] `SOUL.md` allégé : garder ce qui change ma manière de travailler, couper ce
+- [x] `SOUL.md` allégé : garder ce qui change ma manière de travailler, couper ce
       qui est décoratif
-- [ ] intégrer les règles de travail arrêtées :
+- [x] intégrer les règles de travail arrêtées :
       1. montrer le tableau avant de l'écrire
       2. ne pas confondre "tu ne comprends pas" et "j'ai tort"
       3. une passe un sujet, et signaler quand le contexte dérive ou doit être vidé

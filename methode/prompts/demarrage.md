@@ -1,67 +1,37 @@
-Avant de commencer, lis les fichiers du projet dans cet ordre.
+# Prompt de démarrage
 
-Principe à garder en tête pendant la lecture : chaque fichier a un scope unique.
-Une information n'est détenue que par un seul fichier ; les autres y renvoient.
-Ne recopie jamais une information d'un fichier dans un autre, même si ça semble
-pratique : c'est ainsi que naissent les divergences.
-
-1. SOUL.md
-   La manière de penser et de collaborer sur ce projet. Lis-le attentivement :
-   son noyau de sept réflexes décrit la posture, et notamment quand questionner
-   et quand exécuter. C'est le fichier le plus important pour bien démarrer.
-
-2. CLAUDE.md
-   L'état du travail en cours et les règles de rédaction du modèle. Il contient
-   la carte de propriété des fichiers (qui détient quoi), les invariants à ne pas
-   casser sans ADR, le mode de collaboration et les chantiers ouverts. C'est ton
-   routeur : il te dit où trouver le reste.
-
-3. modele_donnees_vxx.md
-   SOURCE DE VÉRITÉ de la structure : entités, colonnes, patterns, nommage,
-   scopes d'unicité, enums. Lis-le en entier avant de modifier quoi que ce soit.
-
-4. decisions_index.md
-   Le pourquoi : les ADR, le raisonnement et les alternatives écartées derrière
-   chaque choix. Les décisions remplacées sont rassemblées en fin de fichier.
-   Comprends pourquoi un choix a été fait avant de le rouvrir. Un ADR est un
-   instantané daté : ses listes reflètent l'état au moment de la décision, pas
-   forcément l'état courant (qui fait foi dans le modèle).
-
-5. chantier.md
-   Ce qui n'est pas tranché : chantiers de conception, décisions en attente,
-   ambiguïtés locales, veille standards. Ce sont les sujets à aborder, pas des
-   défauts à corriger en silence.
-
-6. sources.md
-   Bibliographie annotée des standards et propriétaire unique de leur état daté.
+`CLAUDE.md`, à la racine, est lu automatiquement en début de session : il porte
+déjà le contexte, la carte de propriété et l'ordre de lecture. Ce prompt ne les
+répète pas, il demande ce que le routeur ne peut pas donner : une preuve que le
+contexte a été compris et une posture explicite.
 
 ---
 
-Puis vérifie en ligne l'état actuel des standards qui évoluent. Leur état connu
-est dans sources.md ; confirme-le, ne le suppose pas, car les connaissances
-d'entraînement vieillissent alors que les standards continuent d'avancer :
+Lis les fichiers dans l'ordre donné par la section *Par où commencer* de
+`CLAUDE.md`, puis vérifie en ligne l'état actuel des standards qui évoluent.
+Leur état connu est dans `modele/sources.md` ; confirme-le, ne le suppose pas :
+les standards avancent pendant que les connaissances d'entraînement
+vieillissent. À vérifier en priorité :
 
 - OGC API Connected Systems (successeur de STA, SOS et SPS)
 - OGC SensorThings API 2.0
 - STAMPLATE (Helmholtz)
 - eLTER-RI et ENVRI-Hub NEXT (interopérabilité européenne)
+- I-ADOPT (descriptions interopérables de variables observables)
 
-Si tu trouves une divergence avec sources.md, signale-la : c'est sources.md qu'il
+Si tu trouves une divergence, signale-la : c'est `modele/sources.md` qu'il
 faudra corriger, puisqu'il est le seul propriétaire de cette information.
 
----
+Puis fais un résumé en trois parties.
 
-Puis fais-moi un résumé en trois parties :
+1. **L'état du modèle** : ce qui est solide, ce qui reste ouvert, ce qui mérite
+   d'être remis en question avant d'aller plus loin.
+2. **Les tensions conceptuelles non résolues** : pas les points techniques, mais
+   les questions de fond qui conditionnent plusieurs décisions en aval.
+3. **Comment tu comptes travailler** : en montrant que tu sais quand questionner
+   et quand exécuter (réflexes 2 et 3 de `methode/SOUL.md`), et que tu ne
+   confonds pas les deux.
 
-1. L'état actuel du modèle : ce qui est solide, ce qui reste ouvert, ce qui
-   mérite d'être remis en question avant d'aller plus loin.
-
-2. Les tensions conceptuelles non résolues : pas les points ouverts techniques,
-   mais les questions de fond qui conditionnent plusieurs décisions en aval.
-
-3. Comment tu comptes travailler avec moi : en montrant que tu sais quand
-   questionner et quand exécuter (réflexes 2 et 3 de SOUL), et que tu ne confonds
-   pas les deux.
-
-Mon but est de voir que tu as compris le contexte et la posture. La conversation
-guidera ensuite le mode, conceptuel ou ingénieur, selon les besoins du moment.
+Le but est de vérifier que le contexte et la posture sont compris. La
+conversation guidera ensuite le mode, conceptuel ou ingénieur, selon les besoins
+du moment.
