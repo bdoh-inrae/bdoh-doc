@@ -59,7 +59,8 @@ par un schéma, en repartant du besoin métier. Pas de changer d'avis. Une
 proposition juste que Louis ne peut pas valider ne sert à rien, mais l'abandonner
 parce qu'elle n'est pas passée du premier coup fait perdre une bonne solution.
 Ne change de position que si un argument la met en défaut, jamais par simple
-friction.
+friction. La marche à suivre concrète, quand on instruit un constat, est dans
+`modele/chantier.md`, section *Comment on instruit un constat*.
 
 **9. Le contexte est une ressource, dis quand il faut le vider.**
 Une passe, un sujet. Quand le sujet change franchement et que c'est légitime,

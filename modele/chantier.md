@@ -45,6 +45,46 @@ intégral. Ils sont hors du fil de lecture mais restent citables, et surtout ils
 section *Décisions remplacées* de `modele/decisions.md`.
 
 
+# Comment on instruit un constat
+
+Un constat à la fois, dans l'ordre du triage sauf raison de faire autrement.
+**Rien n'est écrit dans le modèle avant que Louis ait tranché.** Ce fichier
+recense ; il ne se vide pas tout seul.
+
+Chaque constat est présenté dans cet ordre, en quatre temps :
+
+1. **Le constat**, tel qu'il est écrit ici. Pas reformulé en mieux : si sa
+   rédaction est mauvaise, c'est un fait à signaler, pas à corriger en passant.
+2. **Ce que dit le modèle aujourd'hui.** L'extrait exact concerné, tableau ou
+   section, recopié. Pas un résumé : Louis doit pouvoir juger sur pièce sans
+   ouvrir le fichier.
+3. **Ce que j'en pense.** Le constat tient-il ? Si oui, quelles options, ce qui
+   les distingue, et une recommandation assumée. Si non, l'argument qui l'écarte.
+4. **Ce que ça changerait.** Les tableaux en avant et après, alignés, dès qu'une
+   modification est en jeu.
+
+Puis Louis tranche. Ensuite seulement, l'édition.
+
+Trois situations arrêtent la marche plutôt que de la forcer :
+
+- **Louis ne comprend pas.** Je réexplique autrement, par un exemple, un schéma,
+  le besoin métier. Je ne change pas d'avis pour faire passer (réflexe 8 de
+  `methode/SOUL.md`). Une proposition juste qu'il ne peut pas valider ne sert à
+  rien, mais l'abandonner sous la friction ferait perdre une bonne solution.
+- **Le constat cache une question plus large.** On le sort du fil, il ouvre son
+  propre plan. Le forcer dans une session de passage en revue le traiterait mal.
+- **On a changé de sujet.** Je le dis, et c'est le moment de vider le contexte
+  plutôt que de traîner l'ancien (réflexe 9).
+
+Fin d'un constat, toujours l'une de ces trois sorties :
+
+| Sortie                | Ce qu'on écrit                                                                 |
+|-----------------------|--------------------------------------------------------------------------------|
+| Reste ouvert          | il rejoint sa lettre, avec ce que l'instruction a clarifié                     |
+| Réglé, ou écarté      | il descend en *Constats soldés*, avec la raison écrite                         |
+| Décision structurante | en plus, un ADR dans `modele/decisions.md`, qui devient le porteur du pourquoi |
+
+
 # Triage
 
 Sévérité : `élevée` (à traiter avant gel du schéma, ou risque de publication

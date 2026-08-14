@@ -18,6 +18,11 @@ tableaux, montrer un cas représentatif et le pire cas, plus une mesure de ce qu
 la passe change globalement. Et prouver, avant d'écrire, que le contenu des
 cellules est inchangé.
 
+La déclinaison concrète de cette règle pour l'instruction d'un constat, en
+quatre temps, est dans `modele/chantier.md`, section *Comment on instruit un
+constat*. C'est là qu'elle vit, parce que c'est ce fichier qui porte les
+constats.
+
 
 ## Une passe, un sujet
 

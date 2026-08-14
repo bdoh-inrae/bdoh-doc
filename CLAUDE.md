@@ -67,6 +67,11 @@ ouvert (T4 dans `modele/chantier.md`).
    que de le supposer : ils évoluent, les connaissances d'entraînement
    vieillissent.
 
+Pour traiter un constat de `modele/chantier.md`, suivre le protocole en quatre
+temps de sa section *Comment on instruit un constat* : le constat, ce que dit le
+modèle aujourd'hui, ce que j'en pense, ce que ça changerait. Rien n'est écrit
+dans le modèle avant que Louis ait tranché.
+
 Un ADR est un **instantané daté**. Quand il énumère des tables ou des valeurs,
 cette liste reflète l'état au moment de la décision. La liste courante fait foi
 dans le modèle ; on ne resynchronise pas un ADR a posteriori.
