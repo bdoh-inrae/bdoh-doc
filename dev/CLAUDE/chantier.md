@@ -46,7 +46,7 @@ sur plusieurs fichiers), `élevé` (régénération complète).
 | CH-19 | Le site public publie un modèle de mars 2026, disparu depuis           | publication | élevée   | élevé  | ouvert |
 | CH-03 | `dev/old/` ignoré par git, contient un backlog non repris ailleurs     | perte       | moyenne  | faible | ouvert |
 | CH-05 | Patterns transversaux annonce quatre TPC, le modèle en porte cinq      | divergence  | moyenne  | faible | ouvert |
-| CH-06 | `Deployment.anchorType` accepte `Facility`, hors domaine déclaré       | divergence  | moyenne  | faible | ouvert |
+| CH-06 | Facility et SamplingBatch hors des domaines de référence, 6 tableaux   | divergence  | moyenne  | faible | ouvert |
 | CH-07 | L'index anchor cite `Specimen`, la colonne est sur `SamplingBatch`     | divergence  | moyenne  | faible | ouvert |
 | CH-10 | `Memory` cite `System`, entité supprimée par ADR-062                   | divergence  | moyenne  | faible | ouvert |
 | CH-11 | Cinq mentions "(FK x)" désignent une colonne qui n'existe pas          | divergence  | moyenne  | faible | ouvert |
@@ -125,7 +125,7 @@ pas les questions de conception.
 Même mécanisme que CH-01 : `.gitignore` contient `old`. Le dossier contient
 `product_backlog.md`, backlog fonctionnel de la plateforme (monitoring, RGPD,
 mentions légales, gestion des exports, traduction) dont rien n'est repris
-ailleurs, et `chat.txt`, une conversation d'architecture initiale.
+ailleurs, et `chat_architecture_initiale.txt`, une conversation d'architecture initiale.
 
 `product_backlog.md` n'est pas de la conception de modèle : c'est un besoin
 fonctionnel de plateforme. Il n'a donc pas sa place dans `points_ouverts.md`. Il
@@ -196,8 +196,25 @@ Trois affirmations du même fichier ne s'accordent pas :
 
 `Facility` vient d'ADR-064 (chaîne d'actes de laboratoire). L'ajout a été fait
 dans la table sans remonter au domaine, et la phrase "toutes acceptent les trois
-échelles" est devenue fausse. C'est la seule sortie de domaine du modèle entier :
-les 24 autres colonnes discriminantes vérifiées restent dans leur domaine.
+échelles" est devenue fausse.
+
+Le passage à l'outil (`outils/verifie_modele.py`) montre que ce n'est pas un cas
+isolé mais un oubli systématique : les deux entités introduites par ADR-064,
+`Facility` et `SamplingBatch`, ont été ajoutées comme cibles dans six tableaux
+sans jamais remonter aux deux domaines de référence qui les gouvernent.
+
+| Discriminant   | Table portant la valeur hors domaine                           | Valeur ajoutée              |
+|----------------|----------------------------------------------------------------|-----------------------------|
+| `anchorType`   | `Deployment`                                                   | `Facility`                  |
+| `resourceType` | `Responsibility`, `Identifier`, `HistoricalLocation`, `Memory` | `Facility`                  |
+| `resourceType` | `KeywordAssignment`                                            | `Facility`, `SamplingBatch` |
+
+La correction est en un seul endroit : ajouter `Facility` aux deux domaines de
+référence, `SamplingBatch` à celui de `resourceType`, et refaire la phrase sur
+les trois échelles. Aucune table individuelle n'est à toucher, ce sont elles qui
+avaient raison. Mais le fait que six tableaux aient dérivé du domaine sans que
+rien ne le signale est l'argument le plus net en faveur du contrôle outillé :
+c'est exactement le genre d'écart qu'une relecture humaine ne voit pas.
 
 ## CH-07. L'index du pattern anchor cite `Specimen`, la colonne est sur `SamplingBatch`
 
@@ -353,7 +370,7 @@ changement de capteur par `HistoricalSensor`.
 
 La procédure de régénération est décrite dans `CLAUDE.md`, section *Régénérer
 bdoh-doc*, et n'a jamais été exécutée depuis. Elle mentionne d'ailleurs une page
-`rawdata.md` qui n'existe ni dans `docs/` ni dans `mkdocs.yml`.
+rawdata.md qui n'existe ni dans `docs/` ni dans `mkdocs.yml`.
 
 **Action, deux temps.** À court terme, décider si le site doit rester en ligne
 dans cet état : le plus simple est de désactiver la publication automatique tant
