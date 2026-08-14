@@ -76,13 +76,13 @@ Trois principes de séquencement :
 
 # Étapes
 
-## Étape 0. Outillage (garde-fous)
+## Étape 0. Outillage, garde-fous (close)
 
 Écrire les vérificateurs avant de toucher au contenu, pour que chaque étape
 suivante soit contrôlable.
 
 - [x] `outils/mdtable.py` : alignement des tableaux, politique 153 caractères
-- [ ] `outils/verifie_modele.py` : cinq contrôles sur le modèle
+- [x] `outils/verifie_modele.py` : cinq contrôles sur le modèle
       - cible de FK inexistante
       - mention `(FK x)` dont la colonne n'existe pas dans la table citée
       - valeur de discriminant TPC hors du domaine déclaré
@@ -93,7 +93,7 @@ suivante soit contrôlable.
 identifiés (D1 à D11). Un outil qui ne retrouve pas un défaut connu ne sert à
 rien.
 
-## Étape 1. Sauver ce qui risque de se perdre
+## Étape 1. Sauver ce qui risque de se perdre (close)
 
 - [ ] sortir `dev/CLAUDE/tmp/audit_modele_v12.md` de l'ignoré, le placer dans
       `archives/` où il sera suivi
@@ -105,7 +105,7 @@ rien.
 
 **Critère de fin** : `git status --ignored` ne cache plus aucun fichier de fond.
 
-## Étape 2. Débrancher le site public
+## Étape 2. Débrancher le site public (close)
 
 Le site publie un modèle de mars 2026 à chaque push. Tant qu'il n'est pas
 régénéré, il vaut mieux qu'il ne se republie pas tout seul.
@@ -116,7 +116,7 @@ régénéré, il vaut mieux qu'il ne se republie pas tout seul.
 
 **Critère de fin** : un push sur `main` ne republie plus rien.
 
-## Étape 3. Migration de l'arborescence
+## Étape 3. Migration de l'arborescence (close)
 
 Un seul commit, uniquement des déplacements, aucune modification de contenu sauf
 les chemins cités.
@@ -264,6 +264,28 @@ Notés ici pour ne pas les perdre, pas pour les traiter maintenant.
 
 # Journal
 
-| Date       | Étape | Fait                                                 |
-|------------|-------|------------------------------------------------------|
-| 2026-08-14 | 0     | `mdtable.py` écrit, politique de largeur 153 arrêtée |
+| Date       | Étape | Fait                                                                                                                             |
+|------------|-------|----------------------------------------------------------------------------------------------------------------------------------|
+| 2026-08-14 | 0     | `mdtable.py` écrit, politique de largeur 153 arrêtée                                                                             |
+| 2026-08-14 | 0     | `verifie_modele.py` écrit. Il retrouve les 11 divergences connues et en révèle une 12e : Facility et SamplingBatch hors des domaines de référence dans six tableaux |
+| 2026-08-14 | 1     | `archives/` créé et documenté. Audit, backlog, conversation initiale et deux brouillons orphelins sauvés. `.gitignore` ancré     |
+| 2026-08-14 | 1     | Perte : les sauvegardes `~` des modèles v3 et v5 à v10, jamais suivies par git, ont été supprimées avec `dev/`. Voir la note ci-dessous |
+| 2026-08-14 | 2     | Publication du site passée en déclenchement manuel, avertissement dans le README                                                 |
+| 2026-08-14 | 3     | Migration faite, 37 renommages, `git log --follow` fonctionne, zéro renvoi mort hors `chantier.md`                               |
+
+## Note sur la perte du 14 août 2026
+
+En vidant `dev/` après la migration, j'ai supprimé sans les regarder les
+sauvegardes d'éditeur `modele_donnees_v3.md~`, `v5~` à `v10~`. Elles n'étaient
+suivies par aucun commit : elles sont irrécupérables depuis le dépôt.
+
+Ce qui subsiste de ces états : les 65 ADR de `modele/decisions.md`, qui portent
+le raisonnement de chaque transition, `archives/bdoh_model_v0.txt` qui capture
+un état très antérieur, et les exports PDF de `references/relecture/`. Ce qui
+est perdu : la possibilité de différer mot à mot un état intermédiaire contre la
+version courante.
+
+Règle qui en découle, à appliquer désormais : **avant tout `rm -rf` d'un dossier
+contenant des fichiers non suivis, en lister le contenu et décider fichier par
+fichier.** Un fichier ignoré par git n'est pas un fichier sans valeur, c'est un
+fichier sans filet.
