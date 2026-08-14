@@ -6,23 +6,28 @@ Usage :
     mdtable.py fix   <fichier.md> [...]   reecrit les tableaux alignes
 
 Options :
-    --largeur N    largeur cible d'une ligne de tableau (defaut 153)
+    --largeur N    largeur cible d'une ligne de tableau (defaut 150)
 
-Regle appliquee, en deux temps.
+Regle appliquee, en trois temps.
 
 1. Chaque colonne prend la largeur de sa cellule la plus large, et toutes les
    lignes sont paddees a cette largeur. Les barres verticales forment donc une
    grille.
 
-2. Si le tableau depasse alors la largeur cible, seule la DERNIERE colonne est
-   ramenee a la place restante. Les cellules de cette colonne qui depassent
-   sortent de la grille et font deborder leur ligne, seules ; les autres restent
-   paddees, donc la barre de droite reste alignee pour la majorite des lignes.
+2. Si le tableau depasse la largeur cible, la colonne la PLUS LARGE est ramenee
+   a la place restante (pas la derniere : c'est presque toujours elle, mais dans
+   une table d'index c'est une colonne du milieu qui enfle, et raboter la
+   derniere allongerait alors toutes les lignes au lieu de les raccourcir).
 
-Ce compromis vient d'un constat d'usage : c'est presque toujours la derniere
-colonne (les valeurs possibles) qui explose, sur une ou deux lignes. Elargir
-toute la colonne pour ces deux lignes rendrait le tableau entier illisible ;
-laisser ces deux lignes deborder seules reste lisible.
+3. Les cellules trop longues de cette colonne sortent de la grille et font
+   deborder leur ligne, seules. Une ligne qui deborde ne recoit plus le
+   remplissage final de sa derniere cellule : il ne servirait qu'a l'allonger.
+   Les lignes qui tiennent gardent leur bord droit aligne.
+
+Le compromis vient d'un constat d'usage : dans un tableau d'entites, c'est une
+ou deux lignes qui explosent, pas le tableau. Elargir toute la colonne pour ces
+deux lignes rendrait le tableau entier illisible ; les laisser deborder seules
+reste lisible, et le repli se fait sur cette ligne-la uniquement.
 
 Aucun contenu n'est jamais tronque, reformule ni appauvri : la qualite du
 contenu prime sur la mise en page.
@@ -33,8 +38,8 @@ import unicodedata
 
 FENCE = ("```", "~~~")
 
-LARGEUR_CIBLE = 153   # largeur d'une ligne dans l'editeur, sans repli
-PLANCHER = 20         # largeur minimale laissee a la derniere colonne
+LARGEUR_CIBLE = 150   # largeur utile d'une ligne dans l'editeur, sans repli
+PLANCHER = 20         # largeur minimale laissee a une colonne rabotee
 
 
 def width(s):

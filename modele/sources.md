@@ -361,37 +361,37 @@ qui la citent dans leur section *Aligné avec*. Elle sert de point d'entrée
 pour vérifier la cohérence des alignements et pour les enrichir.
 
 | Source                       | Entités BDOH alignées | Nature de l'apport |
-|------------------------------|----------------------|-------------------------------------------------------------------------------------------------|
+|------------------------------|----------------------|----------------------------------------------------------------------------------------------|
 | OGC STA 1.1                  | Property, Unit, Procedure, Location, HistoricalLocation, FeatureOfInterest, Observatory, Site, Station, Sensor, Datastream, Observation, ValidatedObservation, Specimen, Transformation, TransformedTimeSeries, qualityFlag | Structure de base et interface ; vocabulaire des entités IoT (le Sensor STA = entité Sensor BDOH) |
 | OGC API - Connected Systems  | Sensor, Actuator, Sampler, Platform, Kit, Deployment, TimeSeriesSource | Deployment récursif ; ressource System unifiée reconstituée en vue (BDOH éclate en cinq entités, ADR-062) |
 | OGC OMS / ISO 19156:2023     | FeatureOfInterest, Procedure, Observation, ControlObservation, Specimen | Concept d'observation et de feature of interest |
-| OGC STAplus                  | Project              | Entité Project (campagnes) et License                                                           |
+| OGC STAplus                  | Project              | Entité Project (campagnes) et License                                                        |
 | OGC SensorML 3.0             | Deployment, Sensor, Actuator, Sampler, Platform, Kit | Encodage des propriétés de déploiement, d'instrument et d'actionneur |
 | W3C SSN/SOSA                 | Sensor, Actuator, Sampler, Platform, Kit, Deployment | Ontologie sémantique : rôles Sensor, Actuator, Sampler, Platform (Kit propre à BDOH) |
 | W3C PROV-O                   | Service (SoftwareAgent), Machine, Responsibility, SamplingBatch, PreparationBatch, AnalysisBatch, CalibrationBatch, ObservationBatch, ValidationBatch, TransferFunctionBatch, TransformationBatch | Traçabilité : agents (Person/Service/Organization), activités, génération |
 | ODM2                         | Person, Organization, Responsibility, Property, Unit, Procedure, KeywordType, Keyword, Identifier, ObservationBatch, Observation, TimeSeriesSource, ValidationBatch, ValidatedObservation, ControlObservation, Specimen, TransferFunction, TransferFunctionBatch, TransferFunctionSet, TransformationBatch, Transformation, TransformedTimeSeries, Bundle, Memory | Sémantique environnementale de référence (variables, méthodes, actions, provenance, annotations) |
 | HydroServer                  | Property, Unit, Datastream, TimeSeriesSource, ValidatedObservation, TransformedTimeSeries | Implémentation de référence ; justification empirique de plusieurs ADR |
-| STAMPLATE Schema             | Observatory, Station | Profil de métadonnées STA pour l'environnement                                                  |
+| STAMPLATE Schema             | Observatory, Station | Profil de métadonnées STA pour l'environnement                                               |
 | FROST-Server                 | Datastream, Observation | Implémentation de référence STA |
 | Helmholtz SMS                | Sensor, Actuator, Sampler, Platform, Kit, Procedure ; SMS-CV : Keyword, License | Cycle de vie des instruments, Basic Data ; Configuration inspire Kit ; vocabulaires |
 | ISO 19115                    | Responsibility (CI_RoleCode), KeywordType (MD_KeywordTypeCode), Keyword (MD_Keywords), Observatory (MD_DataIdentification) | Métadonnées géographiques et gouvernance |
-| ISO 19107                    | Location             | Schéma spatial des géométries                                                                   |
+| ISO 19107                    | Location             | Schéma spatial des géométries                                                                |
 | schema.org                   | Person, Organization, Responsibility, Observatory, Project, Machine, Identifier, Memory | Sérialisation JSON-LD (souvent via STAMPLATE) |
-| NERC NVS P01                 | Property             | Vocabulaire des variables environnementales                                                     |
+| NERC NVS P01                 | Property             | Vocabulaire des variables environnementales                                                  |
 | ODM2 Controlled Vocabularies | KeywordType, Keyword, ControlObservation, qualityFlag | Vocabulaires SKOS modérés |
-| Theia/OZCAR thesaurus        | Property, Keyword    | Thésaurus national français des variables (interopérabilité in-situ.theia-land.fr)              |
+| Theia/OZCAR thesaurus        | Property, Keyword    | Thésaurus national français des variables (interopérabilité in-situ.theia-land.fr)           |
 | SANDRE                       | Site, Station, qualityFlag | Référentiel hydrométrique français |
 | WMO                          | Station, TransferFunction, TransferFunctionSet | Stations hydrologiques et courbes de tarage |
-| QUDT / UCUM                  | Unit                 | URIs et syntaxe des unités                                                                      |
-| SPDX                         | License              | Identifiants de licences canoniques                                                             |
-| SWHID / Software Heritage    | Algorithm            | Identifiant permanent du code source                                                            |
+| QUDT / UCUM                  | Unit                 | URIs et syntaxe des unités                                                                   |
+| SPDX                         | License              | Identifiants de licences canoniques                                                          |
+| SWHID / Software Heritage    | Algorithm            | Identifiant permanent du code source                                                         |
 | PIDINST (RDA)                | Sensor, Actuator, Sampler, Platform, Kit | Métadonnées d'identification pérenne d'instrument (make, model, serialNumber, inventoryNumber) |
-| CodeMeta                     | Algorithm            | Métadonnées logicielles                                                                         |
+| CodeMeta                     | Algorithm            | Métadonnées logicielles                                                                      |
 | ORCID / ROR                  | Person / Organization | Identifiants persistants (via Identifier) |
-| GeoJSON (RFC 7946)           | Location             | Encodage de la géométrie                                                                        |
-| INSPIRE                      | Site, Identifier     | Interopérabilité géographique européenne                                                        |
-| DataCite                     | Project, Bundle      | Publication citable (DOI)                                                                       |
-| DCAT                         | License, Bundle      | Vocabulaire de catalogue (export Theia/OZCAR, ENVRI-Hub)                                        |
+| GeoJSON (RFC 7946)           | Location             | Encodage de la géométrie                                                                     |
+| INSPIRE                      | Site, Identifier     | Interopérabilité géographique européenne                                                     |
+| DataCite                     | Project, Bundle      | Publication citable (DOI)                                                                    |
+| DCAT                         | License, Bundle      | Vocabulaire de catalogue (export Theia/OZCAR, ENVRI-Hub)                                     |
 
 **Note sur la lecture de cette table** : une source citée sur de nombreuses
 entités (ODM2, STA) est une boussole structurante ; une source citée sur une

@@ -39,17 +39,17 @@ les divergences ; ce ne sera plus le cas une fois l'implémentation commencée.
 
 ## Carte des fichiers : qui possède quoi
 
-| Fichier                               | Possède (source de vérité de...)                                                                              |
-|---------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| Fichier                               | Possède (source de vérité de...)                                                                           |
+|---------------------------------------|------------------------------------------------------------------------------------------------------------|
 | `modele/modele_donnees.md`            | la **structure** : entités, colonnes, patterns TPC, conventions de nommage, scopes d'unicité, enums SQL, suppression logique, vocabulaires Keyword |
-| `modele/decisions.md`                 | le **pourquoi** : ADR-001 à ADR-065, alternatives écartées                                                    |
+| `modele/decisions.md`                 | le **pourquoi** : ADR-001 à ADR-065, alternatives écartées                                                 |
 | `modele/chantier.md`                  | **tout ce qui reste à faire** : constats (C), modélisation (M), risques structurels (S), divergences documentaires (D), veille (V), travaux (T), avec triage sévérité/effort |
-| `modele/sources.md`                   | les **standards externes** et leur état daté, table source vers entités                                       |
-| `methode/SOUL.md`                     | la **manière de penser et de collaborer**                                                                     |
-| `plan.md`                             | l'**ordre d'exécution** du travail en cours. Les plans clos vivent dans `archives/plans/`                     |
-| `outils/`                             | les **vérificateurs** : alignement des tableaux, cohérence interne du modèle                                  |
-| `CLAUDE.md` (ce fichier)              | l'**état du travail** et les **règles de rédaction**                                                          |
-| `annexes/tpc_philosophie_synthese.md` | la **justification philosophique** du pattern TPC                                                             |
+| `modele/sources.md`                   | les **standards externes** et leur état daté, table source vers entités                                    |
+| `methode/SOUL.md`                     | la **manière de penser et de collaborer**                                                                  |
+| `plan.md`                             | l'**ordre d'exécution** du travail en cours. Les plans clos vivent dans `archives/plans/`                  |
+| `outils/`                             | les **vérificateurs** : alignement des tableaux, cohérence interne du modèle                               |
+| `CLAUDE.md` (ce fichier)              | l'**état du travail** et les **règles de rédaction**                                                       |
+| `annexes/tpc_philosophie_synthese.md` | la **justification philosophique** du pattern TPC                                                          |
 
 Le fichier BDD (`modele/modele_donnees.md`) est la source de vérité ; l'API s'en
 déduit. Les relations inverses absentes des tableaux y réapparaissent comme

@@ -46,18 +46,18 @@ porte un simple renvoi vers le dossier.
 Décisions prises dans l'échange du 14 août 2026, à ne pas rouvrir sans raison
 neuve.
 
-| Sujet                                | Décision                                                                             |
-|--------------------------------------|--------------------------------------------------------------------------------------|
-| Objectif de la reprise               | fixer le fichier modèle de données. Tout le reste est au service de ça               |
-| Arborescence                         | validée, voir l'étape 3                                                              |
-| `points_ouverts.md` et `chantier.md` | unifiés en un seul fichier, `chantier.md`. `CLAUDE.md` reste le hub                  |
-| Largeur des tableaux                 | grille à 153 caractères, seule la dernière colonne déborde ligne par ligne           |
-| Site public                          | débranché maintenant, régénéré plus tard, question de mise en ligne rouverte ensuite |
-| `product_backlog.md`                 | archivé, pas de reprise                                                              |
-| `integrity_checks.md`                | archivé, à recréer au moment de l'implémentation                                     |
-| Audit `tmp/audit_modele_v12.md`      | relu constat par constat, puis intégré ou écarté, puis supprimé                      |
-| Historique git antérieur             | considéré comme démarrage anarchique, on ne le réécrit pas                           |
-| Relations inverses                   | sujet d'API, pas de structure. Vérifiées par outil, formalisées plus tard (étape 10) |
+| Sujet                                | Décision                                                                                                    |
+|--------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| Objectif de la reprise               | fixer le fichier modèle de données. Tout le reste est au service de ça                                      |
+| Arborescence                         | validée, voir l'étape 3                                                                                     |
+| `points_ouverts.md` et `chantier.md` | unifiés en un seul fichier, `chantier.md`. `CLAUDE.md` reste le hub                                         |
+| Largeur des tableaux                 | grille à 150 caractères, la colonne la plus large est rabotée, les cellules trop longues débordent ligne par ligne |
+| Site public                          | débranché maintenant, régénéré plus tard, question de mise en ligne rouverte ensuite                        |
+| `product_backlog.md`                 | archivé, pas de reprise                                                                                     |
+| `integrity_checks.md`                | archivé, à recréer au moment de l'implémentation                                                            |
+| Audit `tmp/audit_modele_v12.md`      | relu constat par constat, puis intégré ou écarté, puis supprimé                                             |
+| Historique git antérieur             | considéré comme démarrage anarchique, on ne le réécrit pas                                                  |
+| Relations inverses                   | sujet d'API, pas de structure. Vérifiées par outil, formalisées plus tard (étape 10)                        |
 
 
 # Ordre des étapes, et pourquoi cet ordre
@@ -81,7 +81,7 @@ Trois principes de séquencement :
 Écrire les vérificateurs avant de toucher au contenu, pour que chaque étape
 suivante soit contrôlable.
 
-- [x] `outils/mdtable.py` : alignement des tableaux, politique 153 caractères
+- [x] `outils/mdtable.py` : alignement des tableaux, politique 150 caractères
 - [x] `outils/verifie_modele.py` : cinq contrôles sur le modèle
       - cible de FK inexistante
       - mention `(FK x)` dont la colonne n'existe pas dans la table citée
@@ -264,14 +264,14 @@ Notés ici pour ne pas les perdre, pas pour les traiter maintenant.
 
 # Journal
 
-| Date       | Étape | Fait                                                                                                                             |
-|------------|-------|----------------------------------------------------------------------------------------------------------------------------------|
-| 2026-08-14 | 0     | `mdtable.py` écrit, politique de largeur 153 arrêtée                                                                             |
+| Date       | Étape | Fait                                                                                                                          |
+|------------|-------|-------------------------------------------------------------------------------------------------------------------------------|
+| 2026-08-14 | 0     | `mdtable.py` écrit, politique de largeur arrêtée (150, largeur utile de l'éditeur)                                            |
 | 2026-08-14 | 0     | `verifie_modele.py` écrit. Il retrouve les 11 divergences connues et en révèle une 12e : Facility et SamplingBatch hors des domaines de référence dans six tableaux |
-| 2026-08-14 | 1     | `archives/` créé et documenté. Audit, backlog, conversation initiale et deux brouillons orphelins sauvés. `.gitignore` ancré     |
+| 2026-08-14 | 1     | `archives/` créé et documenté. Audit, backlog, conversation initiale et deux brouillons orphelins sauvés. `.gitignore` ancré  |
 | 2026-08-14 | 1     | Perte : les sauvegardes `~` des modèles v3 et v5 à v10, jamais suivies par git, ont été supprimées avec `dev/`. Voir la note ci-dessous |
-| 2026-08-14 | 2     | Publication du site passée en déclenchement manuel, avertissement dans le README                                                 |
-| 2026-08-14 | 3     | Migration faite, 37 renommages, `git log --follow` fonctionne, zéro renvoi mort hors `chantier.md`                               |
+| 2026-08-14 | 2     | Publication du site passée en déclenchement manuel, avertissement dans le README                                              |
+| 2026-08-14 | 3     | Migration faite, 37 renommages, `git log --follow` fonctionne, zéro renvoi mort hors `chantier.md`                            |
 
 ## Note sur les sauvegardes d'éditeur supprimées le 14 août 2026
 

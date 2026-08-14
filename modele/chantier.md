@@ -961,9 +961,10 @@ nouvelle : le contenu est structurellement sain, seul le rendu ne l'est pas.
 **Résolution.** Passe faite le 14 août 2026 sur les huit fichiers vivants (`CLAUDE.md`,
 `README.md`, `plan.md`, `modele/`, `methode/`, `annexes/`) : 90 tableaux, tous
 conformes. La politique retenue est celle décrite dans `outils/mdtable.py` :
-grille à 153 caractères, colonne la plus large rabotée si le tableau dépasse,
-cellules trop longues débordant ligne par ligne. Les lignes qui débordent
-passent de 92 à 34 sur l'ensemble du dépôt, dont 79 à 18 pour le seul modèle.
+grille à 150 caractères (largeur utile de l'éditeur), colonne la plus large
+rabotée si le tableau dépasse, cellules trop longues débordant ligne par ligne.
+Les lignes qui débordent passent de 248 à 37 sur l'ensemble du dépôt, dont 203
+à 21 pour le seul modèle.
 
 Vérification faite avant écriture : le contenu de chaque cellule est identique
 caractère par caractère avant et après, sur les 90 tableaux. Le rendu seul a
