@@ -106,9 +106,13 @@ ADR. Ne pas modifier l'un de ces points sans ouvrir une décision.
 ## Avant de clore une passe
 
 ```bash
-python3 outils/mdtable.py check <fichiers.md>   # alignement des tableaux
-python3 outils/verifie_modele.py                # cohérence interne du modèle
+python3 outils/mdtable.py        check <fichiers.md>   # alignement des tableaux
+python3 outils/verifie_modele.py                       # cohérence interne du modèle
+python3 outils/verifie_integrite.py                    # pertes de volume anormales
+git diff --numstat                                     # à lire avant de committer
 ```
 
-Les deux doivent sortir zéro. Le détail de ce qu'ils vérifient, et la règle de
+Les deux premiers doivent sortir zéro. Le troisième ne juge pas : il force un
+regard sur ce que les deux autres ne peuvent pas voir, parce qu'un fichier
+tronqué reste cohérent. Le détail de ce qu'ils vérifient, et la règle de
 mise en forme qu'ils appliquent, sont dans `methode/redaction.md`.

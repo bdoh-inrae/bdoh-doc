@@ -107,6 +107,52 @@ Titres portant un identifiant : le point, pas le tiret. `## ADR-001. Titre`,
 `## D1. Titre`.
 
 
+## Ne jamais reconstruire un fichier par tranches
+
+Un fichier se modifie par des opérations **totales**, jamais par recollage de
+morceaux. `str.replace()` et `re.sub()` sont totaux : ils ne peuvent pas perdre
+de contenu par omission. Le découpage par indices ne l'est pas.
+
+```python
+# INTERDIT : reconstruire par tranches. Oublier une tranche supprime le reste.
+t = t[:m.start()] + nouveau            # il manquait + t[m.end():]
+
+# CORRECT : opération totale sur une ancre exacte.
+t = t.replace(ancien_bloc, nouveau_bloc)
+
+# CORRECT : déplacer un bloc, en deux opérations totales.
+t = t.replace(bloc, "")                # retirer
+t = t.replace(ancre, ancre + bloc)     # réinsérer
+```
+
+Cette règle vient d'un incident daté du 14 août 2026 : un script de réécriture a
+tronqué `modele/chantier.md` de 628 lignes, exactement de cette façon, et la
+troncature a été commitée sans être vue.
+
+
+## Cohérence n'est pas intégrité
+
+Les deux vérificateurs de cohérence sont passés au vert sur le fichier tronqué.
+C'est logique : un fichier amputé reste bien formé, ses tableaux restent
+alignés, ses renvois restent valides. Ils vérifient que ce qui est là est
+cohérent, pas que tout ce qui devait être là y est encore.
+
+D'où un troisième contrôle, et une habitude.
+
+```bash
+python3 outils/verifie_integrite.py     # signale les pertes de volume
+git diff --numstat                      # à lire avant chaque commit
+```
+
+`verifie_integrite.py` ne juge pas si une perte est légitime : une suppression
+voulue (un fichier fusionné dans un autre, une archive versée) sera signalée
+comme le reste. Son rôle est de forcer un regard, pas de bloquer.
+
+Et lire `git diff --numstat` avant de committer prend trois secondes. Sur
+l'incident du 14 août, il affichait `98  686  modele/chantier.md`, ce qui se
+voit immédiatement.
+
+
 ## Cohérence interne
 
 Avant de clore une passe sur le modèle :

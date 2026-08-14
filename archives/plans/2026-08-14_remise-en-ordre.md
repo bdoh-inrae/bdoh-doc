@@ -359,8 +359,22 @@ dans l'historique git, mais le geste était mauvais. Règle retenue : avant un
 commitée.** Restaurée depuis le commit précédent, rien de perdu. Le point qui
 compte est que les deux vérificateurs sont passés au vert sur le fichier
 tronqué : un fichier amputé reste bien formé. Ils contrôlent la cohérence, pas
-l'intégrité. Un contrôle de non-régression de volume, ou une relecture du diff
-avant commit, aurait vu ce que les outils ne voient pas.
+l'intégrité.
+
+Cause exacte : reconstruction du fichier par tranches, `t[:debut] + nouveau`,
+sans la tranche de fin `t[fin:]`. Le découpage par indices exige de réassembler
+trois morceaux et n'échoue jamais bruyamment quand on en oublie un.
+
+Trois corrections, appliquées le jour même : interdiction de reconstruire un
+fichier par tranches (`methode/redaction.md`), un troisième vérificateur
+`outils/verifie_integrite.py` qui signale les pertes de volume, et l'habitude de
+lire `git diff --numstat` avant de committer. Vérifié a posteriori : le
+vérificateur signale bien le commit fautif (52% de perte), reste muet sur la
+passe de formatage, et signale la suppression volontaire de `points_ouverts.md`
+sans la juger, ce qui est le comportement voulu.
+
+Contrôle de l'ensemble de la session : aucune autre perte de volume anormale sur
+les douze commits.
 
 ## Ce que la session dit de la méthode
 
