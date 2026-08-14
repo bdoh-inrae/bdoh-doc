@@ -273,19 +273,29 @@ Notés ici pour ne pas les perdre, pas pour les traiter maintenant.
 | 2026-08-14 | 2     | Publication du site passée en déclenchement manuel, avertissement dans le README                                                 |
 | 2026-08-14 | 3     | Migration faite, 37 renommages, `git log --follow` fonctionne, zéro renvoi mort hors `chantier.md`                               |
 
-## Note sur la perte du 14 août 2026
+## Note sur les sauvegardes d'éditeur supprimées le 14 août 2026
 
 En vidant `dev/` après la migration, j'ai supprimé sans les regarder les
-sauvegardes d'éditeur `modele_donnees_v3.md~`, `v5~` à `v10~`. Elles n'étaient
-suivies par aucun commit : elles sont irrécupérables depuis le dépôt.
+sauvegardes d'éditeur `modele_donnees_v3.md~` et `v5~` à `v10~`, non suivies par
+git. Vérification faite ensuite : **rien n'est perdu.** Ces versions ont bien
+été suivies sous leur propre nom avant d'être retirées de l'arbre de travail par
+le commit de nettoyage du 10 juin 2026. Elles restent lisibles dans l'historique.
 
-Ce qui subsiste de ces états : les 65 ADR de `modele/decisions.md`, qui portent
-le raisonnement de chaque transition, `archives/bdoh_model_v0.txt` qui capture
-un état très antérieur, et les exports PDF de `references/relecture/`. Ce qui
-est perdu : la possibilité de différer mot à mot un état intermédiaire contre la
-version courante.
+| Version | Lignes | Commande de récupération                                    |
+|---------|--------|-------------------------------------------------------------|
+| v3      | 841    | `git show ea90785^:dev/to_read/modele_donnees_v3.md`        |
+| v5      | 1111   | `git show ea6b933^:dev/CLAUDE/modele_donnees_v5.md`         |
+| v6      | 1184   | `git show ea6b933^:dev/CLAUDE/modele_donnees_v6.md`         |
+| v7      | 1266   | `git show ea6b933^:dev/CLAUDE/modele_donnees_v7.md`         |
+| v8      | 1317   | `git show ea6b933^:dev/CLAUDE/modele_donnees_v8.md`         |
+| v9      | 1305   | `git show ea6b933^:dev/CLAUDE/modele_donnees_v9.md`         |
+| v10     | 1303   | `git show ea6b933^:dev/CLAUDE/modele_donnees_v10.md`        |
+| v11     | 1591   | `git show c8b8769^:dev/CLAUDE/modele/modele_donnees_v11.md` |
 
-Règle qui en découle, à appliquer désormais : **avant tout `rm -rf` d'un dossier
-contenant des fichiers non suivis, en lister le contenu et décider fichier par
-fichier.** Un fichier ignoré par git n'est pas un fichier sans valeur, c'est un
-fichier sans filet.
+Les fichiers en `~` ne faisaient que dupliquer sur disque ce que git portait
+déjà. Leur suppression est sans conséquence.
+
+Ce qui reste vrai malgré tout, et vaut d'être tenu : **avant un `rm -rf` sur un
+dossier contenant des fichiers non suivis, en lister le contenu et demander.**
+Ici le filet existait ; l'erreur était de ne pas avoir vérifié avant d'agir, pas
+d'avoir supprimé.
