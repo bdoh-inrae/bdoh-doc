@@ -2,7 +2,7 @@
 
 ---
 
-## Partie I — Le problème
+## Partie I : Le problème
 
 ### Contexte
 
@@ -40,13 +40,13 @@ La question est de savoir lequel choisir, et pourquoi. La réponse technique seu
 
 ---
 
-## Partie II — Le fil philosophique
+## Partie II : Le fil philosophique
 
 Les grandes ruptures de la logique et de la philosophie du langage au XXe siècle éclairent ce problème d'une façon qui n'est pas métaphorique. Elles décrivent structurellement pourquoi certaines solutions de modélisation sont condamnées à échouer, quelles que soient les contraintes techniques du moment.
 
 ---
 
-### Frege (1848-1925) — Sens et référence
+### Frege (1848-1925) : Sens et référence
 
 Gottlob Frege pose en 1892 une distinction fondamentale entre le **sens** (Sinn) et la **référence** (Bedeutung) d'un terme. La référence est l'objet pointé dans le monde. Le sens est le mode de présentation de cet objet, la façon dont on y accède conceptuellement. L'étoile du matin et l'étoile du soir ont la même référence (Vénus) mais des sens radicalement différents.
 
@@ -58,7 +58,7 @@ La leçon de Frege pour la modélisation est directe : un bon modèle de donnée
 
 ---
 
-### Russell (1872-1970) et Whitehead — La théorie des types
+### Russell (1872-1970) et Whitehead : La théorie des types
 
 Bertrand Russell, travaillant avec Alfred North Whitehead sur les Principia Mathematica (1910-1913), trébuche sur un paradoxe fondamental : l'ensemble de tous les ensembles qui ne se contiennent pas eux-mêmes. Si cet ensemble se contient lui-même, il ne devrait pas se contenir. S'il ne se contient pas, il devrait se contenir. Contradiction irréductible.
 
@@ -72,7 +72,7 @@ TPC est russellien dans le bon sens : il sépare les types concrets et rend leur
 
 ---
 
-### Hilbert (1862-1943) — Le programme formaliste
+### Hilbert (1862-1943) : Le programme formaliste
 
 David Hilbert formule au début du XXe siècle un programme ambitieux : formaliser l'intégralité des mathématiques dans un système axiomatique complet, cohérent et décidable. Toute vérité mathématique doit être dérivable mécaniquement depuis un ensemble fini d'axiomes. Le système doit se suffire à lui-même.
 
@@ -82,7 +82,7 @@ Ce programme échoue pour les bases de données pour la même raison qu'il écho
 
 ---
 
-### Gödel (1906-1978) — L'incomplétude
+### Gödel (1906-1978) : L'incomplétude
 
 En 1931, Kurt Gödel publie ses théorèmes d'incomplétude. Dans tout système formel suffisamment expressif pour exprimer l'arithmétique, il existe des propositions vraies qui ne sont pas démontrables à l'intérieur de ce système. Un système formel ne peut pas être à la fois complet et cohérent. La vérité déborde toujours le système qui tente de la capturer.
 
@@ -94,7 +94,7 @@ TPC fait ce choix de façon explicite. Le schéma porte la structure. Le discrim
 
 ---
 
-### Turing (1912-1954) — La décidabilité et ses limites
+### Turing (1912-1954) : La décidabilité et ses limites
 
 Alan Turing répond à Hilbert différemment de Gödel. Son problème de l'arrêt (1936) démontre qu'il n'existe pas d'algorithme général capable de décider si un programme quelconque se terminera. La décidabilité complète est impossible : il n'existe pas de procédure mécanique universelle qui puisse répondre à toutes les questions bien formées sur le comportement d'un système.
 
@@ -104,7 +104,7 @@ Turing contribue aussi directement à la notion de machine comme agent. Sa défi
 
 ---
 
-### Liskov (1939-) — Le principe de substitution
+### Liskov (1939-) : Le principe de substitution
 
 Barbara Liskov formule en 1987 le principe qui porte son nom : dans un programme, un objet de type T peut être remplacé par un objet de sous-type S sans altérer les propriétés du programme. Un sous-type doit respecter le contrat de son type parent dans tous les contextes où ce type parent peut apparaître.
 
@@ -116,7 +116,7 @@ TPC abandonne cette promesse. Il ne prétend pas que `Person` et `Machine` sont 
 
 ---
 
-### Wittgenstein (1889-1951) — Le tournant décisif
+### Wittgenstein (1889-1951) : Le tournant décisif
 
 Ludwig Wittgenstein est le philosophe le plus directement pertinent pour notre problème. Il faut distinguer ses deux périodes, car elles se contredisent sur l'essentiel, et cette contradiction est elle-même instructive.
 
@@ -164,13 +164,13 @@ C'est l'argument le plus fort contre TPH : en cachant la sémantique dans le sch
 
 ---
 
-## Partie III — Analyse technique des stratégies et de leurs alternatives
+## Partie III : Analyse technique des stratégies et de leurs alternatives
 
 La philosophie a posé le cadre. Il faut maintenant vérifier que le choix philosophiquement fondé tient face aux contraintes réelles de PostgreSQL, des outils applicatifs, et des exigences FAIR opérationnelles. Cette section examine chaque stratégie et chaque alternative moderne sans concession sur leurs limites respectives.
 
 ---
 
-### TPH — Table Per Hierarchy
+### TPH : Table Per Hierarchy
 
 #### Ce qu'elle fait
 
@@ -212,7 +212,7 @@ Par ailleurs, les contraintes d'intégrité interne à chaque type ne peuvent pa
 
 ---
 
-### TPT — Table Per Type
+### TPT : Table Per Type
 
 #### Ce qu'elle fait
 
@@ -262,7 +262,7 @@ Du point de vue des migrations, ajouter un troisième type d'agent impose de cr�
 
 ---
 
-### TPC — Table Per Concrete type
+### TPC : Table Per Concrete type
 
 #### Ce qu'elle fait
 
@@ -406,21 +406,21 @@ Les triplestores RDF éliminent le problème différemment : il n'y a pas de tab
 
 ### Tableau de synthèse
 
-| Critère | TPH | TPT | TPC | JSONB | `INHERITS` PG |
-|---|---|---|---|---|---|
-| FK native propre | oui | oui | non | oui | non fiable |
-| Intégrité référentielle garantie | oui | oui | triggers | oui | non |
-| Export CSV auto-descriptif | non | non | oui | non | partiel |
-| Schéma lisible sans documentation externe | non | partiel | oui | non | non |
-| Requêtes transversales simples | oui | jointure | UNION ALL | oui | non fiable |
-| Alignement Liskov | non | non | oui | non | non |
-| Alignement FAIR (Reusable) | faible | faible | fort | faible | faible |
-| Cohérence avec pattern polymorphique existant | non | non | oui | non | non |
-| Support ORM Django | natif | natif | manuel | natif | inexistant |
+| Critère                                       | TPH    | TPT      | TPC       | JSONB  | `INHERITS` PG |
+|-----------------------------------------------|--------|----------|-----------|--------|---------------|
+| FK native propre                              | oui    | oui      | non       | oui    | non fiable    |
+| Intégrité référentielle garantie              | oui    | oui      | triggers  | oui    | non           |
+| Export CSV auto-descriptif                    | non    | non      | oui       | non    | partiel       |
+| Schéma lisible sans documentation externe     | non    | partiel  | oui       | non    | non           |
+| Requêtes transversales simples                | oui    | jointure | UNION ALL | oui    | non fiable    |
+| Alignement Liskov                             | non    | non      | oui       | non    | non           |
+| Alignement FAIR (Reusable)                    | faible | faible   | fort      | faible | faible        |
+| Cohérence avec pattern polymorphique existant | non    | non      | oui       | non    | non           |
+| Support ORM Django                            | natif  | natif    | manuel    | natif  | inexistant    |
 
 ---
 
-## Conclusion — Pour une adoption massive et raisonnée de TPC
+## Conclusion : Pour une adoption massive et raisonnée de TPC
 
 ### 1. Le lien entre résolution philosophique et choix technique
 

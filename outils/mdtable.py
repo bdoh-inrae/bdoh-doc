@@ -103,10 +103,16 @@ def find_tables(lines):
 
 
 def largeurs(rows, ncols, cible=LARGEUR_CIBLE):
-    """Largeur de chaque colonne : maximum des cellules, derniere colonne rabotee.
+    """Largeur de chaque colonne : maximum des cellules, la plus large rabotee.
 
     Voir la regle en tete de fichier. La ligne de separation ne contraint pas la
     largeur : c'est elle qui suit, pas l'inverse.
+
+    Quand le tableau depasse la largeur cible, on rabote la colonne la PLUS
+    LARGE, pas la derniere. C'est presque toujours la derniere en pratique (la
+    colonne des valeurs possibles), mais pas toujours : dans une table d'index,
+    c'est une colonne du milieu qui enfle. Raboter la derniere dans ce cas
+    allongeait toutes les lignes au lieu de les raccourcir.
     """
     w = [0] * ncols
     for n, r in enumerate(rows):
@@ -118,9 +124,12 @@ def largeurs(rows, ncols, cible=LARGEUR_CIBLE):
     if ncols < 2:
         return w
     marge = 3 * ncols + 1           # "| " et " " par colonne, plus la barre finale
-    reste = cible - marge - sum(w[:-1])
-    if sum(w) + marge > cible and reste >= PLANCHER:
-        w[-1] = reste
+    while sum(w) + marge > cible:
+        c = w.index(max(w))
+        if w[c] <= PLANCHER:
+            break                   # plus rien a raboter, le tableau debordera
+        exces = sum(w) + marge - cible
+        w[c] = max(PLANCHER, w[c] - exces)
     return w
 
 
@@ -146,7 +155,14 @@ def render(rows, aligns, cible=LARGEUR_CIBLE):
         for c, w in enumerate(widths):
             cell = r[c] if c < len(r) else ""
             parts.append(" " + cell + " " * (w - width(cell)) + " ")
-        out.append("|" + "|".join(parts) + "|")
+        ligne = "|" + "|".join(parts) + "|"
+        # Une ligne qui deborde deja n'a rien a gagner a etre paddee jusqu'au
+        # bout : la barre de droite ne s'alignera de toute facon pas. On retire
+        # le remplissage de sa derniere cellule pour ne pas l'allonger en pure
+        # perte. Les lignes qui tiennent gardent leur bord droit aligne.
+        if width(ligne) > cible:
+            ligne = ligne[:-1].rstrip() + " |"
+        out.append(ligne)
     return out
 
 

@@ -185,13 +185,13 @@ unique. `CLAUDE.md` est le hub qui y renvoie.
 
 **Critère de fin** : un seul fichier répond à "qu'est-ce qui reste à faire".
 
-## Étape 5. Passe de formatage
+## Étape 5. Passe de formatage (close)
 
 Passe mécanique, aucun changement de fond, commit dédié.
 
-- [ ] `outils/mdtable.py fix` sur tous les fichiers Markdown
-- [ ] remplacer les 90 ` -- ` de `decisions.md` par une ponctuation conforme
-- [ ] retirer les tirets cadratins résiduels (`CLAUDE.md`, `README.md`, annexes)
+- [x] `outils/mdtable.py fix` sur tous les fichiers Markdown
+- [x] remplacer les 90 ` -- ` de `decisions.md` par une ponctuation conforme
+- [x] retirer les tirets cadratins résiduels (`CLAUDE.md`, `README.md`, annexes)
 
 **Critère de fin** : `mdtable.py check` sort zéro, et zéro cadratin hors `docs/`.
 

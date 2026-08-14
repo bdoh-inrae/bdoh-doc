@@ -503,26 +503,6 @@ endroits, ce qui explique les 47 tableaux à dépassement de CH-16. C'est un
 arbitrage à trancher, pas un défaut à corriger en silence : la question est
 posée dans la synthèse remise avec ce fichier.
 
-## D12. Trois conventions de tiret coexistent
-
-La règle est de n'utiliser ni cadratin (—) ni demi-cadratin (–), et de
-reformuler. Elle est respectée dans les trois gros fichiers de fond
-(`modele/modele_donnees.md`, `chantier.md`, `sources.md`, zéro occurrence).
-Ailleurs :
-
-| Fichier                        | Cadratin | Demi-cadratin | ` -- ` |
-|--------------------------------|----------|---------------|--------|
-| `modele/decisions.md`          | 0        | 0             | 90     |
-| `archives/integrity_checks.md` | 0        | 0             | 19     |
-| `annexes/tpc_philosophie.md`   | 14       | 0             | 5      |
-| `CLAUDE.md`                    | 1        | 1             | 0      |
-| `docs/` (11 fichiers)          | 59       | 0             | 0      |
-| `README.md`                    | 2        | 0             | 0      |
-
-`modele/decisions.md` a substitué ` -- ` au cadratin plutôt que de reformuler :
-c'est une troisième convention, non écrite, qui produit un rendu HTML différent
-selon le moteur Markdown. `CLAUDE.md` enfreint la règle qu'il énonce.
-
 # V. Veille standards
 
 Questions d'évolution, pas de défauts. L'état daté des standards vit dans
@@ -654,32 +634,6 @@ documentation : S6 (état métier et cycle de vie confondus dans `status`), C7
 **Action** : relecture groupée, avec restitution du classement avant intégration.
 Puis suppression de `archives/audit_modele_v12.md`, dont le contenu vivant aura
 rejoint ce fichier et dont le reste sera soldé.
-
-## T2. Passer tous les tableaux au format
-
-Mesure faite sur les fichiers Markdown de `dev/CLAUDE/` et `docs/`, ce fichier
-exclu, avec un vérificateur écrit pour l'occasion (`outils/mdtable.py`, voir
-CH-17 pour la règle appliquée) :
-
-| Constat                                                             | Nombre |
-|---------------------------------------------------------------------|--------|
-| Tableaux dont toutes les barres verticales sont alignées            | 26     |
-| Tableaux dont au moins une cellule dépasse la largeur de sa colonne | 47     |
-| Tableaux dont le padding est simplement absent ou incomplet         | 38     |
-| Tableaux dont le nombre de cellules varie d'une ligne à l'autre     | 0      |
-
-Répartition par périmètre : 24 tableaux corrects sur 77 dans `dev/CLAUDE/`,
-2 sur 34 dans `docs/`.
-
-Le défaut le plus fréquent est systématique et invisible à la relecture rapide :
-la ligne de séparation est plus courte d'un caractère par colonne que les lignes
-de contenu. Dans `Person` par exemple, la première colonne fait quinze tirets
-alors que les cellules occupent seize caractères. Toutes les barres de la ligne
-de séparation sont donc décalées vers la gauche, d'autant plus qu'on avance dans
-le tableau. En lecture Markdown brute, le tableau ne forme pas de grille.
-
-Aucun tableau n'a un nombre de cellules incohérent, ce qui est une bonne
-nouvelle : le contenu est structurellement sain, seul le rendu ne l'est pas.
 
 ## T3. Régénérer la documentation publique
 
@@ -976,6 +930,86 @@ corrigé. `AnalysisObservation` n'en a pas besoin, même raison que
 d'`AnalysisObservation`, question distincte à traiter avec M6 le jour où
 l'export STA de la chaîne labo devient prioritaire.
 
+
+ (clos)
+## T2. Passer tous les tableaux au format (clos)
+
+Mesure faite sur les fichiers Markdown de `dev/CLAUDE/` et `docs/`, ce fichier
+exclu, avec un vérificateur écrit pour l'occasion (`outils/mdtable.py`, voir
+CH-17 pour la règle appliquée) :
+
+| Constat                                                             | Nombre |
+|---------------------------------------------------------------------|--------|
+| Tableaux dont toutes les barres verticales sont alignées            | 26     |
+| Tableaux dont au moins une cellule dépasse la largeur de sa colonne | 47     |
+| Tableaux dont le padding est simplement absent ou incomplet         | 38     |
+| Tableaux dont le nombre de cellules varie d'une ligne à l'autre     | 0      |
+
+Répartition par périmètre : 24 tableaux corrects sur 77 dans `dev/CLAUDE/`,
+2 sur 34 dans `docs/`.
+
+Le défaut le plus fréquent est systématique et invisible à la relecture rapide :
+la ligne de séparation est plus courte d'un caractère par colonne que les lignes
+de contenu. Dans `Person` par exemple, la première colonne fait quinze tirets
+alors que les cellules occupent seize caractères. Toutes les barres de la ligne
+de séparation sont donc décalées vers la gauche, d'autant plus qu'on avance dans
+le tableau. En lecture Markdown brute, le tableau ne forme pas de grille.
+
+Aucun tableau n'a un nombre de cellules incohérent, ce qui est une bonne
+nouvelle : le contenu est structurellement sain, seul le rendu ne l'est pas.
+
+**Résolution.** Passe faite le 14 août 2026 sur les huit fichiers vivants (`CLAUDE.md`,
+`README.md`, `plan.md`, `modele/`, `methode/`, `annexes/`) : 90 tableaux, tous
+conformes. La politique retenue est celle décrite dans `outils/mdtable.py` :
+grille à 153 caractères, colonne la plus large rabotée si le tableau dépasse,
+cellules trop longues débordant ligne par ligne. Les lignes qui débordent
+passent de 92 à 34 sur l'ensemble du dépôt, dont 79 à 18 pour le seul modèle.
+
+Vérification faite avant écriture : le contenu de chaque cellule est identique
+caractère par caractère avant et après, sur les 90 tableaux. Le rendu seul a
+changé.
+
+`docs/` n'est pas passé au format : il sera régénéré (T3), le formater
+maintenant serait du travail perdu.
+
+Reste connu, non bloquant : la table *Correspondance source vers entités* de
+`modele/sources.md` a une colonne du milieu si large qu'aucune politique de
+formatage ne la rend confortable. C'est un problème éditorial (trop d'entités
+par ligne), pas un problème de format.
+
+ (clos)
+## D12. Trois conventions de tiret coexistent (clos)
+
+La règle est de n'utiliser ni cadratin (—) ni demi-cadratin (–), et de
+reformuler. Elle est respectée dans les trois gros fichiers de fond
+(`modele/modele_donnees.md`, `chantier.md`, `sources.md`, zéro occurrence).
+Ailleurs :
+
+| Fichier                        | Cadratin | Demi-cadratin | ` -- ` |
+|--------------------------------|----------|---------------|--------|
+| `modele/decisions.md`          | 0        | 0             | 90     |
+| `archives/integrity_checks.md` | 0        | 0             | 19     |
+| `annexes/tpc_philosophie.md`   | 14       | 0             | 5      |
+| `CLAUDE.md`                    | 1        | 1             | 0      |
+| `docs/` (11 fichiers)          | 59       | 0             | 0      |
+| `README.md`                    | 2        | 0             | 0      |
+
+`modele/decisions.md` a substitué ` -- ` au cadratin plutôt que de reformuler :
+c'est une troisième convention, non écrite, qui produit un rendu HTML différent
+selon le moteur Markdown. `CLAUDE.md` enfreint la règle qu'il énonce.
+
+**Résolution.** Résolu le 14 août 2026. `modele/decisions.md` ne contient plus aucun ` -- ` :
+58 titres d'ADR sont passés au point (`## ADR-001. Titre`, aligné sur le style
+des identifiants de ce fichier), 9 items de liste au deux-points, et les 23
+occurrences en prose ont été reformulées une par une plutôt que substituées.
+`annexes/tpc_philosophie.md` : ses 14 titres passent du cadratin au deux-points.
+Les ` -- ` restants dans cette annexe sont des commentaires SQL dans des blocs
+de code, ils restent.
+
+Les occurrences résiduelles de `—` et `–` dans `CLAUDE.md` et dans ce fichier
+sont les énoncés de la règle elle-même, qui cite les caractères.
+
+`docs/` porte encore 59 cadratins : ils partiront avec la régénération (T3).
 
 # Journal
 
