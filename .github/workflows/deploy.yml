@@ -1,9 +1,23 @@
 name: Deploy documentation
 
+# Publication MANUELLE seulement, volontairement.
+#
+# Le contenu de docs/ decrit un etat du modele anterieur a la v12 : des entites
+# qui n'existent plus (TimeSerie, SamplingFeature, Equipment, HistoricalSensor,
+# TimeSeriesBundle) y sont documentees, et 29 entites y figurent contre 60 dans
+# le modele courant. Republier a chaque push mettait donc en ligne, et rendait
+# citable, une documentation fausse.
+#
+# Tant que docs/ n'est pas regenere depuis le modele, la publication ne part
+# plus toute seule. Pour publier sciemment : onglet Actions du depot, ce
+# workflow, bouton "Run workflow".
+#
+# Retablir le declenchement automatique suppose d'avoir d'abord regenere docs/
+# ET pose la garantie que la regeneration fait partie du travail sur le modele,
+# et non d'une tache separee qu'on repousse. Voir chantier.md.
+
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
