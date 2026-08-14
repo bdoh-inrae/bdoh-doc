@@ -226,7 +226,7 @@ depuis, ou à écarter.
 
 **Critère de fin** : `archives/audit_modele_v12.md` supprimé, rien de perdu.
 
-## Étape 8. Correction des divergences documentaires
+## Étape 8. Correction des divergences documentaires (close, sauf D5 et D9)
 
 Les onze divergences internes au modèle (D1 à D11 après renumérotation). Aucune
 ne demande de décision de fond, mais chacune touche un tableau.

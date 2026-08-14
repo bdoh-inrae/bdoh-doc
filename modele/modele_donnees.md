@@ -410,15 +410,28 @@ concrets simulée dans un modèle qui ne connaît que le produit (voir
 |--------------|------------------------------------------|------------------------------|
 | `Deployment` | L'objet déployé à son lieu et sa période | voir `Deployment.systemType` |
 
-`Deployment` est le seul porteur, et c'est structurant : **aucun objet
-d'instrumentation n'est jamais référencé nu.** Tout lien vers du matériel passe
-par un `Deployment`, qui porte l'objet, le lieu et la période
-(`Datastream.deployment`, `ControlObservation.deployment`,
-`AnalysisBatch.sensor`). Un capteur sans déploiement n'a produit aucune donnée ;
-un capteur déplacé est un nouveau déploiement, pas une mise à jour. La
-composition d'objets (un capteur sur une bouée sur une station) se lit par la
-récursivité de `Deployment` via `parentDeployment`, jamais par un lien direct
-entre objets.
+`Deployment` est le seul porteur du pattern, et cela reflète une règle du
+modèle : dans BDOH, **un objet d'instrumentation n'est pas référencé nu.** Tout
+lien depuis une donnée vers du matériel passe par un `Deployment`, qui porte
+l'objet, le lieu et la période (`Datastream.deployment`,
+`ControlObservation.deployment`, `AnalysisBatch.sensor`). Un capteur déplacé est
+un nouveau déploiement, pas une mise à jour. La composition d'objets (un capteur
+sur une bouée sur une station) se lit par la récursivité de `Deployment` via
+`parentDeployment`, jamais par un lien direct entre objets.
+
+**Écart assumé avec OGC API Connected Systems, à ne pas confondre avec un
+alignement.** La récursivité de `Deployment` vient bien de CS API (ADR-037), mais
+l'obligation de passer par lui n'en vient pas. Dans CS API, `System` est une
+ressource de plein droit, adressable par son propre endpoint, et le `DataStream`
+est rattaché à un `System`, pas à un `Deployment` : la hiérarchie normative y est
+System vers DataStream vers Observation, et le `Deployment` n'est qu'un contexte
+spatio-temporel optionnel. BDOH rend ce contexte obligatoire, de sorte qu'un flux
+sache toujours où et quand il a été produit sans remontée de chaîne.
+
+Conséquence à instruire, pas encore tranchée : un export CS API devra
+reconstituer le lien direct flux vers System en résolvant le `Deployment`, et le
+choix de rendre le déploiement obligatoire n'a jamais fait l'objet d'une décision
+écrite. Voir C19 dans `chantier.md`.
 
 ## Tables de jointure explicites
 
@@ -1366,7 +1379,7 @@ HistoricalLocation, HistoricalProject, Responsibility, Identifier, Memory, Keywo
 | `code`        | 1           | Code court unique                   | "yzr-mer"                      |
 | `name`        | 1           | Nom du site                         | "Bassin versant du Mercier"    |
 | `description` | 0..1        | Description libre                   |                                |
-| `Observatory` | 1 →Obs      | Observatoire parent                 | → Observatory                  |
+| `observatory` | 1 →Obs      | Observatoire parent                 | → Observatory                  |
 | `location`    | 1 →Loc      | Géométrie courante                  | → Location                     |
 | `area`        | 0..1        | Superficie en km²                   | "245.3"                        |
 | `archivedAt`  | 0..1        | Horodatage d'archivage logique      | null \| "2024-01-01T00:00:00Z" |
@@ -1412,7 +1425,7 @@ HistoricalLocation, HistoricalProject, Responsibility, Identifier, Memory, Keywo
 | `code`              | 1           | Code court unique                      | "yzr-mer-d610"                           |
 | `name`              | 1           | Nom de la station                      | "Mercier au pont D610"                   |
 | `description`       | 0..1        | Description libre                      |                                          |
-| `Site`              | 1 →Site     | Site parent                            | → Site                                   |
+| `site`              | 1 →Site     | Site parent                            | → Site                                   |
 | `location`          | 1 →Loc      | Position GPS courante                  | → Location                               |
 | `elevation`         | 0..1        | Altitude en mètres (référentiel local) | "312.5"                                  |
 | `featureOfInterest` | 0..1 →FOI   | FOI ultime - entité réelle observée    | → FeatureOfInterest                      |
@@ -3003,6 +3016,24 @@ TransformedTimeSeries (observations)
 | `qualityFlag`           | 0..1        | Indicateur qualité                        | `good` \| `suspect` \| `bad` \| `missing` |
 | `uncertaintyLow`        | 0..1        | Borne basse de l'incertitude propagée     | -0.8                                      |
 | `uncertaintyHigh`       | 0..1        | Borne haute de l'incertitude propagée     | 1.2                                       |
+
+---
+
+## transformationbatch_inputseries
+> Séries d'entrée d'un TransformationBatch - table de jointure, pattern TPC series.
+
+*Note* :
+- Un batch peut prendre plusieurs séries en entrée ; une même série peut alimenter plusieurs batchs.
+- N'accepte que `TimeSeries` et `TransformedTimeSeries` : une TransferFunction n'est pas une entrée de calcul, elle est désignée par `TransformationBatch.transferFunctionSet` ; une ControlObservation est un contrôle, pas une source. Sous-ensemble strict du domaine `seriesType`, comme le permet le pattern.
+- Le rôle de chaque entrée, quand le script en distingue, est porté par `TransformationBatch.parameters` et non ici : cette table dit quelles séries, pas comment le script les emploie.
+- Exemptée de suppression logique comme les autres jointures (voir Suppression logique) : une ligne peut être retirée, le batch qui l'a consommée reste la trace de l'acte.
+- Intégrité du couple seriesType/seriesId garantie par trigger BEFORE INSERT/UPDATE, comme tout lien TPC.
+
+| Champ                 | Cardinalité | Définition                | Valeurs possibles                       |
+|-----------------------|-------------|---------------------------|-----------------------------------------|
+| `transformationBatch` | 1 →TBat     | Batch consommateur        | → TransformationBatch                   |
+| `seriesType`          | 1           | Type de la série d'entrée | `TimeSeries` \| `TransformedTimeSeries` |
+| `seriesId`            | 1           | UUID de la série d'entrée | uuid                                    |
 
 ---
 
