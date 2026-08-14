@@ -16,7 +16,7 @@ d'un standard, il pointe ici plutôt que de le recopier.
 
 Il ne décrit pas le modèle (`modele_donnees.md`) ni les décisions
 (`decisions.md`). Les questions de veille propres à BDOH, c'est-à-dire ce
-qu'il faudra décider quand un standard bouge, sont dans `points_ouverts.md`
+qu'il faudra décider quand un standard bouge, sont dans `chantier.md`
 (partie D), pas ici.
 
 # Standards OGC

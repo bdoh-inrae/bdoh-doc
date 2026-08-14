@@ -11,15 +11,14 @@ eux-mêmes.
 
 ## Où est quoi
 
-| Fichier                    | Contient                                                      |
-|----------------------------|---------------------------------------------------------------|
-| `modele/modele_donnees.md` | la structure : entités, colonnes, patterns, conventions       |
-| `modele/decisions.md`      | le pourquoi : ADR-001 à ADR-065, alternatives écartées        |
-| `modele/points_ouverts.md` | ce qui n'est pas tranché                                      |
-| `modele/chantier.md`       | les défauts documentaires et l'hygiène de l'espace de travail |
-| `modele/sources.md`        | les standards externes et leur état daté                      |
-| `plan.md`                  | le plan de travail courant                                    |
-| `archives/`                | les états anciens conservés sciemment                         |
+| Fichier                    | Contient                                                |
+|----------------------------|---------------------------------------------------------|
+| `modele/modele_donnees.md` | la structure : entités, colonnes, patterns, conventions |
+| `modele/decisions.md`      | le pourquoi : ADR-001 à ADR-065, alternatives écartées  |
+| `modele/chantier.md`       | tout ce qui reste ouvert, à trancher ou à corriger      |
+| `modele/sources.md`        | les standards externes et leur état daté                |
+| `plan.md`                  | le plan de travail courant                              |
+| `archives/`                | les états anciens conservés sciemment                   |
 
 Le détail de chaque dossier est dans `CLAUDE.md`, qui sert de routeur.
 

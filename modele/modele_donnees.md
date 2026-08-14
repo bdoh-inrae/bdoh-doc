@@ -308,7 +308,7 @@ Correction d'erreur : si une ancre a été mal fixée, sa correction est un acte
 explicite de gestionnaire, jamais un effet de bord silencieux (elle change
 l'identité géographique d'une chronique). La correction doit être propagée à
 tous les objets figés en aval. C'est un invariant applicatif (voir S3 dans
-`points_ouverts.md`), pas une mécanique de synchronisation permanente : en
+`chantier.md`), pas une mécanique de synchronisation permanente : en
 régime normal, rien ne bouge, donc rien n'est à propager.
 
 Export STA, résolution du Thing : `anchorType` donne directement l'entité à
@@ -1860,7 +1860,7 @@ CalibrationParameter (calibrationBatch)
   coefficient nommé, valeur, incertitude, unité).
 - L'application effective de ces paramètres pour corriger des données brutes est
   une transformation entre Datastream et TimeSeries : hors de ce batch, non
-  modélisée à ce stade (voir points_ouverts.md).
+  modélisée à ce stade (voir chantier.md).
 - agentType + agentId : pattern TPC, métrologue (`Person`) ou service de calibration automatique (`Service`). Le banc physique est un outil, pas l'agent.
 
 | Champ               | Cardinalité | Définition                             | Valeurs possibles                   |

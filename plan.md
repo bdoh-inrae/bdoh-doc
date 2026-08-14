@@ -165,7 +165,7 @@ bdoh-doc/
 **Critère de fin** : zéro référence morte, et `git log --follow` retrouve
 l'historique de chaque fichier déplacé.
 
-## Étape 4. Unification de `chantier.md`
+## Étape 4. Unification de `chantier.md` (close)
 
 Un seul fichier pour tout ce qui reste ouvert ou à faire, avec un jeu de lettres
 unique. `CLAUDE.md` est le hub qui y renvoie.
@@ -179,9 +179,9 @@ unique. `CLAUDE.md` est le hub qui y renvoie.
 | `V`    | veille standards                      | mise à jour de `sources.md` |
 | `T`    | travaux (outillage, publication, API) | exécution                   |
 
-- [ ] fusionner les deux fichiers
-- [ ] renuméroter les `CH-*` en `D*`, `V*`, `T*` selon leur nature
-- [ ] un seul tableau de triage en tête
+- [x] fusionner les deux fichiers
+- [x] renuméroter les `CH-*` en `D*`, `V*`, `T*` selon leur nature
+- [x] un seul tableau de triage en tête
 
 **Critère de fin** : un seul fichier répond à "qu'est-ce qui reste à faire".
 

@@ -924,7 +924,7 @@ partout) n'est pas un défaut de structure mais un défaut de complétude du
 modèle en cours de construction. Traité par audit des quatre grilles TPC
 (resource, anchor, agent, series), pas par une structure supplémentaire.
 
-**Portée** : referme S1 dans `points_ouverts.md`. Ne rouvre pas ADR-047 ni
+**Portée** : referme S1 dans `chantier.md`. Ne rouvre pas ADR-047 ni
 ADR-004/ADR-040 (choix de TPC contre TPT/TPH pour agent, même raisonnement
 valable ici).
 
@@ -935,7 +935,7 @@ valable ici).
 Entrée unique de synthèse pour une passe d'audit des points ouverts. Chaque
 décision amende un ADR existant (indiqué) ou en est un complément. Le détail du
 raisonnement, des contradictions levées et des pistes écartées vit dans
-`points_ouverts.md`, au point cité, qui reste la source du pourquoi. Les
+`chantier.md`, au point cité, qui reste la source du pourquoi. Les
 changements ci-dessous sont gravés dans le modèle.
 
 **Nommage et code** (amende ADR-027, ADR-009)
@@ -1080,7 +1080,7 @@ valeurs.
 **Portée** : remplace ADR-037 (fusion Sensor/Platform/Equipment dans System) et,
 par transitivité, la justification de fusion héritée d'ADR-029 et ADR-034. Ne
 rouvre pas la récursivité de Deployment (ADR-037 la conservait, elle est
-maintenue). Points restants dans `points_ouverts.md` : articulation fine
+maintenue). Points restants dans `chantier.md` : articulation fine
 préparation/mesure au labo (branchement Actuator, filiation Specimen), sticky
 de la dérivation d'ancre, renommage éventuel de Machine.
 
@@ -1127,9 +1127,9 @@ que de laisser une ancre ambiguë à résoudre.
 jonction DS vers TS et aux entrées de TTS) et une procédure de correction
 d'erreur explicite qui propage la nouvelle ancre aux objets figés en aval. En
 régime normal rien ne bouge, donc rien n'est à propager : ce n'est pas une
-synchronisation permanente. Détail dans S3 de `points_ouverts.md`.
+synchronisation permanente. Détail dans S3 de `chantier.md`.
 
-**Portée** : consolide et ferme S2.A et S2.C de `points_ouverts.md`. Prolonge la
+**Portée** : consolide et ferme S2.A et S2.C de `chantier.md`. Prolonge la
 dérivation d'ancre du Datastream (déjà actée) à toute la chaîne, sous le lien
 Datastream vers Deployment d'ADR-062. Ne rouvre pas ADR-050 (bornes temporelles
 calculées) : l'ancre, elle, est stockée, parce que c'est une identité et non une
@@ -1194,7 +1194,7 @@ calibrationDate/calibrationCertificate qui ne gardaient que la dernière. Les
 paramètres de correction produits (offset, gain) vivent dans CalibrationParameter,
 frère de TransferFunctionParameter (même patron GUM). L'application effective des
 corrections aux données brutes (transformation Datastream vers TimeSeries) reste
-non modélisée à ce stade (points_ouverts.md).
+non modélisée à ce stade (chantier.md).
 
 **Retrait de aggregation** : la valeur aggregation de Procedure.type est retirée,
 aucune entité ne la portait et une agrégation est une transformation (portée par
@@ -1309,8 +1309,8 @@ conservé pour que les références anciennes restent résolvables ; le raisonne
 ## Renvois
 
 Les décisions non tranchées (chantiers de conception A1 à A7, décisions en
-attente, ambiguïtés locales, veille standards) sont dans `points_ouverts.md`.
+attente, ambiguïtés locales, veille standards) sont dans `chantier.md`.
 Les tâches d'implémentation (intégrité applicative, régénération de la
 documentation, ingestion) sont dans `CLAUDE.md`. L'inventaire des invariants
 applicatifs à porter par trigger ou requête périodique reste à consolider (voir
-S3 dans `points_ouverts.md`). Ce fichier ne les duplique pas.
+S3 dans `chantier.md`). Ce fichier ne les duplique pas.

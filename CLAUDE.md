@@ -43,9 +43,11 @@ les divergences ; ce ne sera plus le cas une fois l'implémentation commencée.
 |---------------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `modele/modele_donnees.md`            | la **structure** : entités, colonnes, patterns TPC, conventions de nommage, scopes d'unicité, enums SQL, suppression logique, vocabulaires Keyword |
 | `modele/decisions.md`                 | le **pourquoi** : ADR-001 à ADR-065, alternatives écartées                                                    |
-| `modele/points_ouverts.md`            | ce qui **n'est pas tranché** : constats concrets (C), risques structurels (S), points de modélisation (M), veille standards (V), avec triage sévérité/effort |
+| `modele/chantier.md`                  | **tout ce qui reste à faire** : constats (C), modélisation (M), risques structurels (S), divergences documentaires (D), veille (V), travaux (T), avec triage sévérité/effort |
 | `modele/sources.md`                   | les **standards externes** et leur état daté, table source vers entités                                       |
 | `methode/SOUL.md`                     | la **manière de penser et de collaborer**                                                                     |
+| `plan.md`                             | l'**ordre d'exécution** du travail en cours. Les plans clos vivent dans `archives/plans/`                     |
+| `outils/`                             | les **vérificateurs** : alignement des tableaux, cohérence interne du modèle                                  |
 | `CLAUDE.md` (ce fichier)              | l'**état du travail** et les **règles de rédaction**                                                          |
 | `annexes/tpc_philosophie_synthese.md` | la **justification philosophique** du pattern TPC                                                             |
 
@@ -166,12 +168,12 @@ Points de vigilance :
 ## Chantiers techniques en cours
 
 Tâches d'implémentation, hors conception. Les questions de conception non
-tranchées sont dans `modele/points_ouverts.md` et ne sont pas dupliquées ici.
+tranchées sont dans `modele/chantier.md` et ne sont pas dupliquées ici.
 
 - **Intégrité applicative** : triggers `prevent_physical_delete`, triggers
   BEFORE INSERT/UPDATE pour les relations TPC (dont le nouveau TPC system),
   requêtes de vérification périodique. Inventaire à consolider (voir S3 dans
-  `modele/points_ouverts.md`).
+  `modele/chantier.md`).
 - **Documentation** : régénérer bdoh-doc (procédure ci-dessus). Section
   `transformation.md` profondément remaniée (Algorithm, TransferFunctionParameter,
   incertitude). Section `organisation.md` à mettre à jour (Bundle, Dataset,

@@ -27,7 +27,7 @@ pratique : c'est ainsi que naissent les divergences.
    instantané daté : ses listes reflètent l'état au moment de la décision, pas
    forcément l'état courant (qui fait foi dans le modèle).
 
-5. points_ouverts.md
+5. chantier.md
    Ce qui n'est pas tranché : chantiers de conception, décisions en attente,
    ambiguïtés locales, veille standards. Ce sont les sujets à aborder, pas des
    défauts à corriger en silence.
