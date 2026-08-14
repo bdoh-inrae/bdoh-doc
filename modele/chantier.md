@@ -53,34 +53,24 @@ fausse), `moyenne` (le modèle se contredit ou un cas réel n'est pas couvert),
 `moyen` (refonte locale ou décision de fond), `élevé` (changement structurel ou
 passe complète).
 
-| ID  | Constat                                                                   | Sévérité | Effort |
-|-----|---------------------------------------------------------------------------|----------|--------|
-| M9  | Données d'expérience de terrain : valeur issue d'un fit sur série courte  | élevée   | moyen  |
-| T3  | La documentation publique décrit un modèle disparu                        | élevée   | élevé  |
-| T1  | Dix-huit constats d'audit jamais relus                                    | moyenne  | moyen  |
-| S3  | Invariants applicatifs cumulés : inventaire à tenir                       | moyenne  | moyen  |
-| S4  | Historique des valeurs : propriété à écrire, pas à corriger               | moyenne  | faible |
-| D1  | Patterns transversaux annonce quatre TPC, le modèle en porte cinq         | moyenne  | faible |
-| D2  | Facility et SamplingBatch hors des domaines de référence, six tableaux    | moyenne  | faible |
-| D3  | L'index anchor cite Specimen, la colonne est sur SamplingBatch            | moyenne  | faible |
-| D6  | Memory cite System, entité supprimée par ADR-062                          | moyenne  | faible |
-| D7  | Cinq mentions "(FK x)" désignent une colonne qui n'existe pas             | moyenne  | faible |
-| D9  | La version de DataCite est figée dans le modèle, et périmée               | moyenne  | faible |
-| D11 | La règle d'alignement des tableaux se contredit elle-même                 | moyenne  | faible |
-| T2  | Passer tous les tableaux au format arrêté                                 | moyenne  | moyen  |
-| V3  | sources.md pointe les brouillons de CS API, désormais standards           | moyenne  | faible |
-| S2  | Ancrage et lien au matériel : à confirmer soldé, ses cinq parties le sont | faible   | faible |
-| D4  | bundle_series absent de l'index des tables de jointure                    | faible   | faible |
-| D5  | Deux tables de jointure citées sans tableau de colonnes                   | faible   | faible |
-| D8  | Deux colonnes en TitleCase contre la convention camelCase                 | faible   | faible |
-| D10 | La section C3 figurait deux fois, ouverte et close                        | faible   | faible |
-| D12 | Trois conventions de tiret coexistent dans le projet                      | faible   | faible |
-| V1  | OGC API Connected Systems comme cible v2                                  | veille   | -      |
-| V2  | Alignement STAMPLATE et écosystème européen                               | veille   | -      |
-| V4  | Extension STA WebSub 1.0 absente de sources.md                            | faible   | faible |
-| V5  | I-ADOPT absent de sources.md alors qu'il vise Property                    | faible   | moyen  |
-| V6  | DataCite n'a pas d'entrée d'état daté dans sources.md                     | faible   | faible |
-| T4  | Modèle d'endpoints API à construire par-dessus le modèle de données       | -        | élevé  |
+| ID | Constat                                                                   | Sévérité | Effort |
+|----|---------------------------------------------------------------------------|----------|--------|
+| M9 | Données d'expérience de terrain : valeur issue d'un fit sur série courte  | élevée   | moyen  |
+| T3 | La documentation publique décrit un modèle disparu                        | élevée   | élevé  |
+| T1 | Dix-huit constats d'audit jamais relus                                    | moyenne  | moyen  |
+| S3 | Invariants applicatifs cumulés : inventaire à tenir                       | moyenne  | moyen  |
+| S4 | Historique des valeurs : propriété à écrire, pas à corriger               | moyenne  | faible |
+| D9 | La version de DataCite est figée dans le modèle, et périmée               | moyenne  | faible |
+| V3 | sources.md pointe les brouillons de CS API, désormais standards           | moyenne  | faible |
+| S2 | Ancrage et lien au matériel : à confirmer soldé, ses cinq parties le sont | faible   | faible |
+| D5 | Deux tables de jointure citées sans tableau de colonnes                   | faible   | faible |
+| D8 | Deux colonnes en TitleCase contre la convention camelCase                 | faible   | faible |
+| V1 | OGC API Connected Systems comme cible v2                                  | veille   | -      |
+| V2 | Alignement STAMPLATE et écosystème européen                               | veille   | -      |
+| V4 | Extension STA WebSub 1.0 absente de sources.md                            | faible   | faible |
+| V5 | I-ADOPT absent de sources.md alors qu'il vise Property                    | faible   | moyen  |
+| V6 | DataCite n'a pas d'entrée d'état daté dans sources.md                     | faible   | faible |
+| T4 | Modèle d'endpoints API à construire par-dessus le modèle de données       | -        | élevé  |
 
 Ordre suggéré : les `D*` d'abord, ils sont bon marché et le modèle ment tant
 qu'ils tiennent. Puis `T2` (formatage), puis `T1` (relecture de l'audit, qui
@@ -334,73 +324,6 @@ Les divergences D1 à D8 sont détectées automatiquement par
 `outils/verifie_modele.py`. Le critère de clôture de cette section est que
 l'outil sorte zéro.
 
-## D1. La section Patterns transversaux annonce quatre déclinaisons TPC, le modèle en porte cinq
-
-La section *Patterns transversaux* écrit "Ce pattern TPC est décliné en quatre
-usages" et documente resource, anchor, agent, series. Le TPC **system**
-(`systemType` + `systemId`, porté par `Deployment` vers les cinq entités
-d'instrumentation) n'a pas de section, pas de domaine de référence déclaré et
-pas d'index de tables porteuses.
-
-Il est pourtant listé comme invariant dans `CLAUDE.md` ("un seul pattern TPC,
-cinq déclinaisons"), gravé par ADR-062, et utilisé dans la table `Deployment`.
-Le lecteur qui découvre le modèle par la section des patterns ne le voit pas.
-
-`methode/notes.md` porte déjà ce constat ("reprendre l'entete pattern transversaux manque
-system").
-
-## D2. `Facility` et `SamplingBatch` hors des domaines de référence, dans six tableaux
-
-Trois affirmations du même fichier ne s'accordent pas :
-
-| Endroit                                  | Ce qui est dit                                                      |
-|------------------------------------------|---------------------------------------------------------------------|
-| Section *Pattern TPC anchor*, domaine    | "Domaine de référence de `anchorType` : Observatory, Site, Station" |
-| Section *Pattern TPC anchor*, index      | "Toutes acceptent les trois échelles (Observatory, Site, Station)"  |
-| Table `Deployment`, colonne `anchorType` | `Observatory` \| `Site` \| `Station` \| `Facility`                  |
-
-`Facility` vient d'ADR-064 (chaîne d'actes de laboratoire). L'ajout a été fait
-dans la table sans remonter au domaine, et la phrase "toutes acceptent les trois
-échelles" est devenue fausse.
-
-Le passage à l'outil (`outils/verifie_modele.py`) montre que ce n'est pas un cas
-isolé mais un oubli systématique : les deux entités introduites par ADR-064,
-`Facility` et `SamplingBatch`, ont été ajoutées comme cibles dans six tableaux
-sans jamais remonter aux deux domaines de référence qui les gouvernent.
-
-| Discriminant   | Table portant la valeur hors domaine                           | Valeur ajoutée              |
-|----------------|----------------------------------------------------------------|-----------------------------|
-| `anchorType`   | `Deployment`                                                   | `Facility`                  |
-| `resourceType` | `Responsibility`, `Identifier`, `HistoricalLocation`, `Memory` | `Facility`                  |
-| `resourceType` | `KeywordAssignment`                                            | `Facility`, `SamplingBatch` |
-
-La correction est en un seul endroit : ajouter `Facility` aux deux domaines de
-référence, `SamplingBatch` à celui de `resourceType`, et refaire la phrase sur
-les trois échelles. Aucune table individuelle n'est à toucher, ce sont elles qui
-avaient raison. Mais le fait que six tableaux aient dérivé du domaine sans que
-rien ne le signale est l'argument le plus net en faveur du contrôle outillé :
-c'est exactement le genre d'écart qu'une relecture humaine ne voit pas.
-
-## D3. L'index du pattern anchor cite `Specimen`, la colonne est sur `SamplingBatch`
-
-L'index des tables porteuses de `anchorType` liste `Specimen` et renvoie à
-"voir `Specimen.anchorType`". La table `Specimen` ne porte pas cette colonne :
-son ancrage passe par `samplingBatch` ou `preparationBatch`. Inversement,
-`SamplingBatch` porte bien `anchorType` mais ne figure pas dans l'index.
-
-L'ancre a manifestement été déplacée du Specimen vers le batch lors d'ADR-064,
-et l'index n'a pas suivi. Le renvoi "voir X.anchorType" pointe donc vers une
-colonne inexistante, alors même que la section affirme que ce champ est "seule
-source de vérité".
-
-## D4. `bundle_series` absent de l'index des tables de jointure explicites
-
-`bundle_series` a sa propre section, son tableau de colonnes, et figure dans
-l'index du pattern TPC series. Il manque dans le tableau *Tables de jointure
-explicites*, qui liste `person_organization`,
-`transformationbatch_inputseries`, `specimen_parents`,
-`transferfunctionset_function` et `dataset_resource`.
-
 ## D5. Deux tables de jointure citées sans tableau de colonnes
 
 `person_organization` et `transformationbatch_inputseries` sont nommées dans
@@ -410,41 +333,6 @@ colonnes. Les quatre autres jointures en ont une. Un lecteur ne peut pas savoir
 si `person_organization` porte des dates, un rôle, ou seulement deux clés.
 
 Ce constat recoupe C14 de l'audit de juillet (CH-01), qui en comptait trois.
-
-## D6. `Memory` cite `System`, entité supprimée par ADR-062
-
-Le champ *Utilisé par* de `Memory` liste comme cibles possibles "Observatory,
-Site, Station, System, TimeSeries, TransformedTimeSeries, Deployment, Project,
-TransferFunction". `System` a été éclaté en cinq entités (Sensor, Actuator,
-Sampler, Platform, Kit) par ADR-062, et le domaine de référence de
-`resourceType` liste bien les cinq. C'est la seule occurrence résiduelle du nom
-dans le modèle en dehors des passages qui racontent explicitement l'histoire de
-la décision.
-
-## D7. Cinq mentions "(FK nomColonne)" désignent une colonne qui n'existe pas
-
-La section *Notation des champs « Utilisé par »* définit `Entité (FK nomColonne)`
-comme "la colonne nomColonne de l'entité citée pointe vers l'entité courante".
-Cinq mentions ne vérifient pas cette définition :
-
-| Écrit dans le champ *Utilisé par* de | Mention                        | Réalité de la table citée                                         |
-|--------------------------------------|--------------------------------|-------------------------------------------------------------------|
-| `Observatory`                        | Site (FK observatory)          | la colonne s'appelle `Observatory`, pas `observatory`             |
-| `Site`                               | Station (FK site)              | la colonne s'appelle `Site`, pas `site`                           |
-| `Sensor`                             | Datastream (FK sensor)         | `Datastream` n'a pas de colonne `sensor` : il pointe `deployment` |
-| `Sensor`                             | ControlObservation (FK sensor) | idem, la colonne est `deployment`                                 |
-| `Deployment`                         | Specimen (FK deployment)       | `Specimen` n'a pas de colonne `deployment`                        |
-
-Les deux premières se corrigent avec CH-12 (renommer la colonne suffit). Les
-trois autres sont des liens qui n'existent pas sous cette forme : le lien
-`Sensor` vers `Datastream` passe par `Deployment` (`systemType='Sensor'`), et
-`Specimen` se rattache à un `SamplingBatch`, pas à un `Deployment`. La notation
-correcte serait "(via Deployment)".
-
-Le point mérite attention parce que ce champ est le seul index de navigation
-inverse du modèle : c'est lui qu'on lit pour savoir qui pointe vers quoi sans
-ouvrir toutes les tables. S'il ment, il ment à l'endroit exact où on lui fait
-confiance.
 
 ## D8. Deux colonnes en TitleCase contre la convention camelCase
 
@@ -473,15 +361,6 @@ qui est faux.
 
 C'est l'illustration exacte du risque que la règle de propriété unique cherche à
 éviter, et le premier cas mesuré où elle n'a pas été appliquée.
-
-## D10. La section C3 figurait deux fois, ouverte et close
-
-Le fichier porte successivement "## C3. Couverture de la suppression logique
-incomplète" puis "## C3. Couverture de la suppression logique incomplète
-(clos)". La première version décrit le problème ouvert avec sa piste
-d'instruction, la seconde le résout entité par entité. Le tableau de triage ne
-compte qu'un C3, marqué clos. La version ouverte aurait dû disparaître lors de
-la clôture.
 
 # V. Veille standards
 
@@ -1079,6 +958,160 @@ colonne la plus large si le tableau dépasse 150 caractères ; laisser les
 cellules trop longues de cette colonne déborder ligne par ligne. La phrase
 « le contenu ne se raccourcit jamais pour tenir dans la grille » est conservée
 telle quelle, elle n'a jamais été le problème.
+
+
+## D1. La section Patterns transversaux annonce quatre déclinaisons TPC, le modèle en porte cinq (clos)
+
+La section *Patterns transversaux* écrit "Ce pattern TPC est décliné en quatre
+usages" et documente resource, anchor, agent, series. Le TPC **system**
+(`systemType` + `systemId`, porté par `Deployment` vers les cinq entités
+d'instrumentation) n'a pas de section, pas de domaine de référence déclaré et
+pas d'index de tables porteuses.
+
+Il est pourtant listé comme invariant dans `CLAUDE.md` ("un seul pattern TPC,
+cinq déclinaisons"), gravé par ADR-062, et utilisé dans la table `Deployment`.
+Le lecteur qui découvre le modèle par la section des patterns ne le voit pas.
+
+`methode/notes.md` porte déjà ce constat ("reprendre l'entete pattern transversaux manque
+system").
+
+**Résolution.** Résolu le 14 août 2026. La section *Pattern TPC system* est écrite, avec son
+domaine de référence (`Sensor`, `Actuator`, `Sampler`, `Platform`, `Kit`), son
+index (`Deployment`, seul porteur) et la conséquence structurante qui n'était
+écrite nulle part : aucun objet d'instrumentation n'est jamais référencé nu,
+tout lien vers du matériel passe par un `Deployment`. L'introduction annonce
+maintenant cinq déclinaisons.
+
+
+## D2. `Facility` et `SamplingBatch` hors des domaines de référence, dans six tableaux (clos)
+
+Trois affirmations du même fichier ne s'accordent pas :
+
+| Endroit                                  | Ce qui est dit                                                      |
+|------------------------------------------|---------------------------------------------------------------------|
+| Section *Pattern TPC anchor*, domaine    | "Domaine de référence de `anchorType` : Observatory, Site, Station" |
+| Section *Pattern TPC anchor*, index      | "Toutes acceptent les trois échelles (Observatory, Site, Station)"  |
+| Table `Deployment`, colonne `anchorType` | `Observatory` \| `Site` \| `Station` \| `Facility`                  |
+
+`Facility` vient d'ADR-064 (chaîne d'actes de laboratoire). L'ajout a été fait
+dans la table sans remonter au domaine, et la phrase "toutes acceptent les trois
+échelles" est devenue fausse.
+
+Le passage à l'outil (`outils/verifie_modele.py`) montre que ce n'est pas un cas
+isolé mais un oubli systématique : les deux entités introduites par ADR-064,
+`Facility` et `SamplingBatch`, ont été ajoutées comme cibles dans six tableaux
+sans jamais remonter aux deux domaines de référence qui les gouvernent.
+
+| Discriminant   | Table portant la valeur hors domaine                           | Valeur ajoutée              |
+|----------------|----------------------------------------------------------------|-----------------------------|
+| `anchorType`   | `Deployment`                                                   | `Facility`                  |
+| `resourceType` | `Responsibility`, `Identifier`, `HistoricalLocation`, `Memory` | `Facility`                  |
+| `resourceType` | `KeywordAssignment`                                            | `Facility`, `SamplingBatch` |
+
+La correction est en un seul endroit : ajouter `Facility` aux deux domaines de
+référence, `SamplingBatch` à celui de `resourceType`, et refaire la phrase sur
+les trois échelles. Aucune table individuelle n'est à toucher, ce sont elles qui
+avaient raison. Mais le fait que six tableaux aient dérivé du domaine sans que
+rien ne le signale est l'argument le plus net en faveur du contrôle outillé :
+c'est exactement le genre d'écart qu'une relecture humaine ne voit pas.
+
+**Résolution.** Résolu le 14 août 2026. `Facility` et `SamplingBatch` rejoignent le domaine de
+référence de `resourceType` ; `Facility` rejoint celui de `anchorType`, avec la
+phrase qui manquait : les trois premières échelles sont celles du terrain,
+`Facility` est celle du laboratoire, et une entité qui n'a de sens que sur le
+terrain n'accepte que les trois premières. La phrase « toutes acceptent les
+trois échelles », devenue fausse, est corrigée. Aucun tableau d'entité n'a
+changé : c'étaient eux qui avaient raison.
+
+
+## D3. L'index du pattern anchor cite `Specimen`, la colonne est sur `SamplingBatch` (clos)
+
+L'index des tables porteuses de `anchorType` liste `Specimen` et renvoie à
+"voir `Specimen.anchorType`". La table `Specimen` ne porte pas cette colonne :
+son ancrage passe par `samplingBatch` ou `preparationBatch`. Inversement,
+`SamplingBatch` porte bien `anchorType` mais ne figure pas dans l'index.
+
+L'ancre a manifestement été déplacée du Specimen vers le batch lors d'ADR-064,
+et l'index n'a pas suivi. Le renvoi "voir X.anchorType" pointe donc vers une
+colonne inexistante, alors même que la section affirme que ce champ est "seule
+source de vérité".
+
+**Résolution.** Résolu le 14 août 2026. L'index du pattern anchor cite `SamplingBatch` à la
+place de `Specimen`, conformément à ADR-064 qui a déplacé l'ancre du support
+physique vers l'acte de prélèvement.
+
+
+## D4. `bundle_series` absent de l'index des tables de jointure explicites (clos)
+
+`bundle_series` a sa propre section, son tableau de colonnes, et figure dans
+l'index du pattern TPC series. Il manque dans le tableau *Tables de jointure
+explicites*, qui liste `person_organization`,
+`transformationbatch_inputseries`, `specimen_parents`,
+`transferfunctionset_function` et `dataset_resource`.
+
+**Résolution.** Résolu le 14 août 2026. `bundle_series` figure dans l'index des tables de
+jointure explicites.
+
+
+## D6. `Memory` cite `System`, entité supprimée par ADR-062 (clos)
+
+Le champ *Utilisé par* de `Memory` liste comme cibles possibles "Observatory,
+Site, Station, System, TimeSeries, TransformedTimeSeries, Deployment, Project,
+TransferFunction". `System` a été éclaté en cinq entités (Sensor, Actuator,
+Sampler, Platform, Kit) par ADR-062, et le domaine de référence de
+`resourceType` liste bien les cinq. C'est la seule occurrence résiduelle du nom
+dans le modèle en dehors des passages qui racontent explicitement l'histoire de
+la décision.
+
+**Résolution.** Résolu le 14 août 2026. Le champ *Utilisé par* de `Memory` liste les cinq
+entités d'instrumentation, `Facility` et `Datastream` à la place de `System`,
+conformément au domaine de référence de `resourceType`.
+
+
+## D7. Cinq mentions "(FK nomColonne)" désignent une colonne qui n'existe pas (clos)
+
+La section *Notation des champs « Utilisé par »* définit `Entité (FK nomColonne)`
+comme "la colonne nomColonne de l'entité citée pointe vers l'entité courante".
+Cinq mentions ne vérifient pas cette définition :
+
+| Écrit dans le champ *Utilisé par* de | Mention                        | Réalité de la table citée                                         |
+|--------------------------------------|--------------------------------|-------------------------------------------------------------------|
+| `Observatory`                        | Site (FK observatory)          | la colonne s'appelle `Observatory`, pas `observatory`             |
+| `Site`                               | Station (FK site)              | la colonne s'appelle `Site`, pas `site`                           |
+| `Sensor`                             | Datastream (FK sensor)         | `Datastream` n'a pas de colonne `sensor` : il pointe `deployment` |
+| `Sensor`                             | ControlObservation (FK sensor) | idem, la colonne est `deployment`                                 |
+| `Deployment`                         | Specimen (FK deployment)       | `Specimen` n'a pas de colonne `deployment`                        |
+
+Les deux premières se corrigent avec CH-12 (renommer la colonne suffit). Les
+trois autres sont des liens qui n'existent pas sous cette forme : le lien
+`Sensor` vers `Datastream` passe par `Deployment` (`systemType='Sensor'`), et
+`Specimen` se rattache à un `SamplingBatch`, pas à un `Deployment`. La notation
+correcte serait "(via Deployment)".
+
+Le point mérite attention parce que ce champ est le seul index de navigation
+inverse du modèle : c'est lui qu'on lit pour savoir qui pointe vers quoi sans
+ouvrir toutes les tables. S'il ment, il ment à l'endroit exact où on lui fait
+confiance.
+
+**Résolution.** Résolu le 14 août 2026 pour trois des cinq mentions. `Datastream` et
+`ControlObservation` sont notés « (via Deployment) » et non « (FK sensor) » : le
+lien vers un capteur passe toujours par un déploiement, jamais en direct.
+`Specimen` est noté « (via SamplingBatch) ». Les deux mentions restantes,
+`Site (FK observatory)` et `Station (FK site)`, dépendent de D8 : renommer la
+colonne suffit à les rendre vraies.
+
+
+## D10. La section C3 figurait deux fois, ouverte et close (clos)
+
+Le fichier porte successivement "## C3. Couverture de la suppression logique
+incomplète" puis "## C3. Couverture de la suppression logique incomplète
+(clos)". La première version décrit le problème ouvert avec sa piste
+d'instruction, la seconde le résout entité par entité. Le tableau de triage ne
+compte qu'un C3, marqué clos. La version ouverte aurait dû disparaître lors de
+la clôture.
+
+**Résolution.** Résolu le 14 août 2026 lors de l'unification : seule la version
+close a été reprise, la version ouverte était superseded par elle.
 
 # Journal
 

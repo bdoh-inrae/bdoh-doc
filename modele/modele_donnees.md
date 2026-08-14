@@ -191,16 +191,19 @@ types d'entités selon le cas. Une table porte un couple `xxxType` + `xxxId` :
 FK native PostgreSQL n'est posée ; l'intégrité est garantie applicativement
 (trigger, vérification périodique).
 
-Ce pattern TPC est décliné en quatre usages, présentés ci-dessous :
+Ce pattern TPC est décliné en cinq usages, présentés ci-dessous :
 - **TPC resource** (`resourceType + resourceId`) : rattacher une donnée
   transverse à n'importe quelle ressource (identifiants, mots-clés, notes...).
 - **TPC anchor** (`anchorType + anchorId`) : ancrer une entité à un contexte
-  géographique (Observatory, Site ou Station).
+  géographique (Observatory, Site, Station ou Facility).
 - **TPC agent** (`agentType + agentId`) : désigner l'acteur responsable d'un acte
   (Person, Service ou Organization).
 - **TPC series** (`seriesType + seriesId`) : pointer vers une série ou une
   fonction, quel que soit son type (regroupements, exports, entrées de calcul,
   contrôles).
+- **TPC system** (`systemType + systemId`) : désigner l'objet d'instrumentation
+  déployé, quelle que soit sa nature (capteur, actionneur, préleveur,
+  plateforme, kit).
 
 ## Pattern TPC resource (resourceType + resourceId)
 
@@ -209,10 +212,11 @@ historique) à une ressource quelconque. `resourceType` discrimine le type de
 ressource, `resourceId` porte son uuid.
 
 Domaine de référence de `resourceType` : `Observatory`, `Site`, `Station`,
-`Sensor`, `Actuator`, `Sampler`, `Platform`, `Kit`, `Deployment`, `Datastream`, `TimeSeries`, `TransformedTimeSeries`,
-`TransferFunction`, `TransferFunctionSet`, `Project`, `Bundle`, `Dataset`,
-`Person`, `Organization`, `Property`, `Unit`, `Procedure`, `FeatureOfInterest`,
-`Specimen`, `ControlObservation`, `Algorithm`, `Memory`.
+`Facility`, `Sensor`, `Actuator`, `Sampler`, `Platform`, `Kit`, `Deployment`,
+`Datastream`, `TimeSeries`, `TransformedTimeSeries`, `TransferFunction`,
+`TransferFunctionSet`, `Project`, `Bundle`, `Dataset`, `Person`, `Organization`,
+`Property`, `Unit`, `Procedure`, `FeatureOfInterest`, `Specimen`,
+`SamplingBatch`, `ControlObservation`, `Algorithm`, `Memory`.
 
 Ne sont pas des ressources, et n'apparaissent dans aucune table ci-dessous : les
 lignes de données (`Observation`, `ValidatedObservation`, `AnalysisObservation`),
@@ -251,12 +255,21 @@ référence est l'union maximale que ces sous-ensembles ne dépassent jamais.
 Ancre une entité à un contexte géographique. `anchorType` discrimine le type de
 contexte, `anchorId` porte son uuid.
 
-Domaine de référence de `anchorType` : `Observatory`, `Site`, `Station`.
+Domaine de référence de `anchorType` : `Observatory`, `Site`, `Station`,
+`Facility`.
+
+Les trois premières sont les échelles de terrain, emboîtées. `Facility` est
+l'échelle de laboratoire (ADR-064) : elle ancre ce qui se passe entre quatre
+murs, instruments de labo et actes de préparation ou d'analyse. Une entité qui
+n'a de sens que sur le terrain n'accepte donc que les trois premières, et c'est
+le champ `anchorType` de son tableau qui le dit.
 
 Chaque table n'accepte qu'un sous-ensemble de ce domaine ; la liste exacte est
 portée par le champ `anchorType` de son tableau, seule source de vérité. Le
 tableau ci-dessous n'est qu'un index des tables porteuses. Toutes acceptent les
-trois échelles (Observatory, Site, Station) : l'ancrage est un rattachement
+trois échelles de terrain (Observatory, Site, Station) ; seul `Deployment`
+accepte en plus `Facility`, parce qu'un instrument de laboratoire se déploie
+dans un bâtiment, pas sur un bassin versant. L'ancrage est un rattachement
 administratif, la localisation précise vit dans `Location`.
 
 | Table                   | Entité ancrée                | Cibles autorisées                       |
@@ -265,7 +278,7 @@ administratif, la localisation précise vit dans `Location`.
 | `Datastream`            | Flux brut IoT                | voir `Datastream.anchorType`            |
 | `TimeSeries`            | Série validée                | voir `TimeSeries.anchorType`            |
 | `TransformedTimeSeries` | Série dérivée                | voir `TransformedTimeSeries.anchorType` |
-| `Specimen`              | Échantillon prélevé          | voir `Specimen.anchorType`              |
+| `SamplingBatch`         | Prélèvement terrain          | voir `SamplingBatch.anchorType`         |
 | `TransferFunction`      | Barème (courbe de tarage...) | voir `TransferFunction.anchorType`      |
 | `TransferFunctionSet`   | Jeu de barèmes               | voir `TransferFunctionSet.anchorType`   |
 
@@ -376,6 +389,36 @@ tableau ci-dessous n'est qu'un index des tables porteuses.
 | `transformationbatch_inputseries` | Entrées d'un TransformationBatch | voir jointure `transformationbatch_inputseries` |
 | `ControlObservation`              | Série contrôlée par une mesure   | voir `ControlObservation.seriesType`            |
 
+
+## Pattern TPC system (systemType + systemId)
+
+Désigne l'objet d'instrumentation qu'un acte de déploiement met en place.
+`systemType` discrimine le type d'objet, `systemId` porte son uuid.
+
+Domaine de référence de `systemType` : `Sensor`, `Actuator`, `Sampler`,
+`Platform`, `Kit`.
+
+Ce sont les cinq entités issues de l'éclatement de l'ancienne entité unique
+`System` (ADR-062, remplace la fusion d'ADR-037). Elles ne partagent pas de
+table parente : chacune porte ses propres métadonnées, alignées SensorML, SMS et
+PIDINST, et le discriminant seul les réunit au point d'usage. C'est la
+déclinaison la plus proche du motif d'origine du pattern, une somme de types
+concrets simulée dans un modèle qui ne connaît que le produit (voir
+`annexes/tpc_philosophie_synthese.md`).
+
+| Table        | Ce qu'elle relie                         | Cibles autorisées            |
+|--------------|------------------------------------------|------------------------------|
+| `Deployment` | L'objet déployé à son lieu et sa période | voir `Deployment.systemType` |
+
+`Deployment` est le seul porteur, et c'est structurant : **aucun objet
+d'instrumentation n'est jamais référencé nu.** Tout lien vers du matériel passe
+par un `Deployment`, qui porte l'objet, le lieu et la période
+(`Datastream.deployment`, `ControlObservation.deployment`,
+`AnalysisBatch.sensor`). Un capteur sans déploiement n'a produit aucune donnée ;
+un capteur déplacé est un nouveau déploiement, pas une mise à jour. La
+composition d'objets (un capteur sur une bouée sur une station) se lit par la
+récursivité de `Deployment` via `parentDeployment`, jamais par un lien direct
+entre objets.
 
 ## Tables de jointure explicites
 
@@ -1491,7 +1534,7 @@ sans lien de portage physique (voir sa note).
   d'instrument (Owner, Manufacturer, Model, serialNumber, inventoryNumber).
 
 *Utilisé par* :<br>
-Deployment (systemType='Sensor'), Datastream (FK sensor), ControlObservation (FK sensor), AnalysisBatch (FK sensor)
+Deployment (systemType='Sensor'), Datastream (via Deployment), ControlObservation (via Deployment), AnalysisBatch (FK sensor)
 
 *Relations inverses (requêter par resourceType='Sensor')* :<br>
 Memory, Responsibility, Identifier, KeywordAssignment
@@ -1720,7 +1763,7 @@ Memory, Responsibility, Identifier, KeywordAssignment
   formalise les propriétés de déploiement d'un système d'observation.
 
 *Utilisé par* :<br>
-Sensor, Actuator, Sampler, Platform, Kit (via systemType + systemId), Datastream (FK deployment), ControlObservation (FK deployment), AnalysisBatch (FK sensor), Specimen (FK deployment)
+Sensor, Actuator, Sampler, Platform, Kit (via systemType + systemId), Datastream (FK deployment), ControlObservation (FK deployment), AnalysisBatch (FK sensor), Specimen (via SamplingBatch)
 
 *Relations inverses (requêter par resourceType='Deployment')* :<br>
 Memory, Identifier, HistoricalLocation
@@ -3252,7 +3295,7 @@ dataset_resource (les ressources BDOH incluses dans l'export)
   éditoriaux (texte, photos, événements).
 
 *Utilisé par* :<br>
-Observatory, Site, Station, System, TimeSeries, TransformedTimeSeries, Deployment, Project, TransferFunction (via resourceType + resourceId)
+Observatory, Site, Station, Facility, Sensor, Actuator, Sampler, Platform, Kit, Deployment, Datastream, TimeSeries, TransformedTimeSeries, Project, TransferFunction (via resourceType + resourceId)
 
 *Keywords attendus (voir KeywordRequirement)* :<br>
 - memoryType : note, event, document, photo, installation, hydraulic change, maintenance, incident, calibration
