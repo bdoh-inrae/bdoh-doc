@@ -1,18 +1,44 @@
 ---
-title: Plan de reprise BDOH
-subtitle: Remise en ordre de l'espace de travail avant reprise du modèle
-date: août 2026
-statut: temporaire, à supprimer quand toutes les étapes sont closes
+titre: Remise en ordre de l'espace de travail
+ouvert: 2026-08-14
+clos:
+statut: en cours
 ---
 
 # Ce que ce fichier est
 
-Un plan d'exécution, écrit pour être suivi d'une session à l'autre sans se
-perdre. Il ne possède aucune vérité de fond : chaque étape renvoie aux fichiers
-qui la portent. Il disparaît quand la dernière étape est close.
+Le **plan de travail courant**. Un seul à la fois, toujours nommé `plan.md`,
+toujours à la racine. Il donne l'ordre dans lequel on traite les choses, et
+pourquoi cet ordre. Il ne possède aucune vérité de fond : chaque étape renvoie
+aux fichiers qui la portent.
 
 Il ne remplace pas `chantier.md`, qui possède les constats. Ici il n'y a que
-l'ordre dans lequel on les traite, et pourquoi cet ordre.
+la séquence.
+
+## Cycle de vie d'un plan
+
+Un plan n'est jamais supprimé : une fois toutes ses étapes closes, il est
+**archivé daté**, pour que les raisons d'un choix de séquencement restent
+retrouvables quand on se demandera, dans deux ans, pourquoi telle chose a été
+faite avant telle autre.
+
+```
+plan.md                                          le plan courant, un seul
+archives/plans/2026-08-14_remise-en-ordre.md     les plans clos, datés
+```
+
+Clôture d'un plan, trois gestes :
+
+1. renseigner `clos:` et passer `statut:` à `clos` dans l'en-tête ;
+2. écrire une section *Bilan* en fin de fichier : ce qui a été fait, ce qui a
+   été abandonné en route et pourquoi, ce qui a débordé sur le plan suivant ;
+3. `git mv plan.md archives/plans/AAAA-MM-JJ_titre-en-kebab-case.md`, la date
+   étant celle d'**ouverture**, pour que les plans se trient dans l'ordre où le
+   travail a commencé.
+
+Pas de fichier d'index des plans archivés : le nom des fichiers et leur en-tête
+suffisent, et un index serait une deuxième vérité à tenir à jour. `CLAUDE.md`
+porte un simple renvoi vers le dossier.
 
 
 # Ce qui est acté

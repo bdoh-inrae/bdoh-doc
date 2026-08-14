@@ -1,7 +1,16 @@
+# Environnements et caches
 .env*
-*~ 
-*#
-tmp
-old
 .python_env
-__pycache__
+__pycache__/
+
+# Sauvegardes automatiques d'editeur
+*~
+*#
+.$*.bkp
+
+# Dossiers de travail temporaires, a la racine SEULEMENT.
+# Les motifs sont ancres par la barre oblique de tete : sans elle, git ignorerait
+# tout dossier de ce nom a n'importe quelle profondeur, ce qui a deja fait
+# disparaitre du suivi un audit de 631 lignes (voir chantier.md).
+/tmp/
+/old/
