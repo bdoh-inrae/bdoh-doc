@@ -11,17 +11,17 @@ eux-mêmes.
 
 ## Où est quoi
 
-| Fichier                            | Contient                                                      |
-|------------------------------------|---------------------------------------------------------------|
-| `dev/CLAUDE/modele_donnees_v12.md` | la structure : entités, colonnes, patterns, conventions       |
-| `dev/CLAUDE/decisions_index.md`    | le pourquoi : ADR-001 à ADR-065, alternatives écartées        |
-| `dev/CLAUDE/points_ouverts.md`     | ce qui n'est pas tranché                                      |
-| `dev/CLAUDE/chantier.md`           | les défauts documentaires et l'hygiène de l'espace de travail |
-| `dev/CLAUDE/sources.md`            | les standards externes et leur état daté                      |
-| `plan.md`                          | le plan de travail courant                                    |
-| `archives/`                        | les états anciens conservés sciemment                         |
+| Fichier                    | Contient                                                      |
+|----------------------------|---------------------------------------------------------------|
+| `modele/modele_donnees.md` | la structure : entités, colonnes, patterns, conventions       |
+| `modele/decisions.md`      | le pourquoi : ADR-001 à ADR-065, alternatives écartées        |
+| `modele/points_ouverts.md` | ce qui n'est pas tranché                                      |
+| `modele/chantier.md`       | les défauts documentaires et l'hygiène de l'espace de travail |
+| `modele/sources.md`        | les standards externes et leur état daté                      |
+| `plan.md`                  | le plan de travail courant                                    |
+| `archives/`                | les états anciens conservés sciemment                         |
 
-Cette arborescence est en cours de réorganisation, voir `plan.md`.
+Le détail de chaque dossier est dans `CLAUDE.md`, qui sert de routeur.
 
 ## Documentation en ligne
 
@@ -50,8 +50,8 @@ Le déploiement se déclenche à la main : onglet Actions du dépôt, workflow
 ## Outils
 
 ```bash
-python3 dev/outils/mdtable.py check <fichier.md>   # vérifie l'alignement des tableaux
-python3 dev/outils/mdtable.py fix   <fichier.md>   # le corrige
+python3 outils/mdtable.py check <fichier.md>   # vérifie l'alignement des tableaux
+python3 outils/mdtable.py fix   <fichier.md>   # le corrige
 ```
 
 ## Licence

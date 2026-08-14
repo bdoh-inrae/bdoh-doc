@@ -15,7 +15,7 @@ dans `CLAUDE.md`, chacun avec un renvoi vers son ADR.
 Un ADR est un **instantané daté** de la décision. Quand il énumère des tables ou
 des valeurs (par exemple les tables portant un pattern, ou les tables à `status`
 contre `archivedAt`), cette liste reflète l'état au moment de la décision. La
-liste courante, elle, fait foi dans `modele_donnees_v12.md` ; on ne resynchronise
+liste courante, elle, fait foi dans `modele_donnees.md` ; on ne resynchronise
 pas un ADR a posteriori pour suivre une évolution du modèle.
 
 ---
@@ -76,7 +76,7 @@ Une même station peut avoir plusieurs FOI (ADR-038).
 garantie par trigger BEFORE INSERT/UPDATE, pas par FK native PostgreSQL, et par
 requête de vérification périodique (inventaire à consolider, S3).
 
-**Justification philosophique** : documentée dans agent_TPC_philosophie_synthese.md.
+**Justification philosophique** : documentée dans `annexes/tpc_philosophie_synthese.md`.
 TPC est choisi parce que les types cibles sont ontologiquement distincts et
 partagent seulement un role fonctionnel. La semantique voyage avec les donnees
 (discriminant lisible dans les exports CSV).
@@ -545,7 +545,7 @@ introduction, puis présente les quatre déclinaisons comme des variantes. Le
 mot « polymorphique » reste autorisé comme synonyme explicatif d'introduction,
 mais le pattern lui-même est nommé TPC partout.
 
-**Justification philosophique** : agent_TPC_philosophie_synthese.md reste la
+**Justification philosophique** : `annexes/tpc_philosophie_synthese.md` reste la
 référence sur le choix de TPC vs TPH/TPT. Cette unification n'est pas une
 nouvelle décision technique mais la mise en cohérence du vocabulaire.
 
@@ -910,7 +910,7 @@ périodique, pas par contrainte de base.
 
 **Alternative écartée** : une supertable `Resource(id, resourceType)`, minimale,
 sans `code` ni `statut` pour ne pas répéter l'erreur TPT signalée dans
-`agent_TPC_philosophie_synthese.md` (parent qui redevient épais). Même réduite
+`annexes/tpc_philosophie_synthese.md` (parent qui redevient épais). Même réduite
 à l'identité seule, elle a été écartée : le risque qu'elle couvre, un
 `resourceId` pointant vers une ligne qui n'existe plus, suppose qu'une ligne
 référencée soit supprimée physiquement. C'est déjà interdit par ADR-043 sur

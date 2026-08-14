@@ -14,8 +14,8 @@ ratification, publication). Pour chaque source : ce qu'elle est, ce qu'elle
 apporte à BDOH, et où elle en est. Quand un autre fichier a besoin de l'état
 d'un standard, il pointe ici plutôt que de le recopier.
 
-Il ne décrit pas le modèle (`modele_donnees_v12.md`) ni les décisions
-(`decisions_index.md`). Les questions de veille propres à BDOH, c'est-à-dire ce
+Il ne décrit pas le modèle (`modele_donnees.md`) ni les décisions
+(`decisions.md`). Les questions de veille propres à BDOH, c'est-à-dire ce
 qu'il faudra décider quand un standard bouge, sont dans `points_ouverts.md`
 (partie D), pas ici.
 
@@ -314,7 +314,7 @@ types capteur/équipement) et comme référence pour la table `License`.
 ## SANDRE - Service d'Administration Nationale des Données et Référentiels sur l'Eau
 Référentiel français pour les codes de qualité des données hydrométriques. Le
 mapping des quatre valeurs `qualityFlag` de BDOH vers les codes SANDRE est défini
-dans `decisions_index.md` (ADR-024), qui en est le propriétaire.
+dans `decisions.md` (ADR-024), qui en est le propriétaire.
 - Site : https://www.sandre.eaufrance.fr
 
 ## QUDT - Quantities, Units, Dimensions and Types

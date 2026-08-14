@@ -195,14 +195,30 @@ def controle(racine, chemin_modele):
     # plan.md est exempte : nommer des fichiers qui n'existent pas encore est
     # exactement son role. Ailleurs, pour parler d'un fichier absent sans
     # declencher le controle, l'ecrire sans accents graves.
-    presents = {os.path.basename(p) for p in fichiers(racine, (".md", ".txt", ".py", ".yml"))}
-    presents |= {n for _, _, ns in os.walk(racine) for n in ns}
+    #
+    # Un renvoi peut etre un simple nom (`sources.md`) ou un chemin relatif au
+    # depot (`modele/sources.md`). Le chemin est prefere : il leve l'ambiguite
+    # quand deux dossiers portent un fichier de meme nom.
+    noms, chemins = set(), set()
+    for base, dirs, ns in os.walk(racine):
+        # .git seul est exclu du relevé de présence : un fichier de .github ou
+        # d'archives existe bel et bien et doit pouvoir être cité.
+        dirs[:] = [d for d in dirs if d not in {".git", "__pycache__"}]
+        for n in ns:
+            noms.add(n)
+            chemins.add(
+                os.path.relpath(os.path.join(base, n), racine).replace(os.sep, "/")
+            )
     for chemin in fichiers(racine, (".md", ".txt")):
         if os.path.basename(chemin) == "plan.md":
             continue
         for i, l in enumerate(open(chemin, encoding="utf-8", errors="replace")):
-            for ref in re.findall(r"`([A-Za-z0-9_.-]+\.(?:md|txt|py|yml))`", l):
-                if ref not in presents:
+            for ref in re.findall(r"`([A-Za-z0-9_./-]+\.(?:md|txt|py|yml))`", l):
+                if "/" in ref:
+                    if ref not in chemins:
+                        ecarts.append(("renvoi de fichier", chemin, i + 1,
+                                       f"cite {ref}, chemin qui n'existe pas"))
+                elif ref not in noms:
                     ecarts.append(("renvoi de fichier", chemin, i + 1,
                                    f"cite {ref}, qui n'existe nulle part"))
     return ecarts

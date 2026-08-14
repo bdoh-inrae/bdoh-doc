@@ -11,7 +11,7 @@ a un seul propriétaire. Les autres fichiers pointent, ils ne recopient pas.**
 Quand une information vit à deux endroits, elle finit par diverger ; c'est la
 double vérité que le modèle lui-même s'interdit.
 
-Pour la manière de penser et de collaborer, lire `SOUL.md`. Ce n'est pas
+Pour la manière de penser et de collaborer, lire `methode/SOUL.md`. Ce n'est pas
 répété ici.
 
 
@@ -24,11 +24,11 @@ avec les réseaux OZCAR et Theia.
 
 Le modèle s'aligne sur plusieurs standards (STA, ODM2, CS API, ISO 19115,
 NERC P01, STAMPLATE, Theia/OZCAR...). La liste, l'état daté de chaque standard
-et la table source vers entités sont dans `sources.md`, et nulle part ailleurs.
+et la table source vers entités sont dans `modele/sources.md`, et nulle part ailleurs.
 
 Le modèle repose sur une base TimescaleDB et deux couches : une couche IoT brute
 (STA 1.1) et une couche métier BDOH (données validées et dérivées), cousues par
-`TimeSeriesSource`. Le détail est dans `modele_donnees_v12.md`.
+`TimeSeriesSource`. Le détail est dans `modele/modele_donnees.md`.
 
 **Statut du chantier : conception, rien d'implémenté.** Aucune base ne tourne, aucun
 schéma SQL n'est appliqué quelque part. Le travail avec Claude porte sur les fichiers
@@ -39,17 +39,17 @@ les divergences ; ce ne sera plus le cas une fois l'implémentation commencée.
 
 ## Carte des fichiers : qui possède quoi
 
-| Fichier | Possède (source de vérité de...) |
-|---------|-----------------------------------|
-| `modele_donnees_v12.md` | la **structure** : entités, colonnes, patterns TPC, conventions de nommage, scopes d'unicité, enums SQL, suppression logique, vocabulaires Keyword |
-| `decisions_index.md` | le **pourquoi** : ADR-001 à ADR-065, alternatives écartées |
-| `points_ouverts.md` | ce qui **n'est pas tranché** : constats concrets (C), risques structurels (S), points de modélisation (M), veille standards (V), avec triage sévérité/effort |
-| `sources.md` | les **standards externes** et leur état daté, table source vers entités |
-| `SOUL.md` | la **manière de penser et de collaborer** |
-| `CLAUDE.md` (ce fichier) | l'**état du travail** et les **règles de rédaction** |
-| `agent_TPC_philosophie_synthese.md` | la **justification philosophique** du pattern TPC |
+| Fichier                               | Possède (source de vérité de...)                                                                              |
+|---------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `modele/modele_donnees.md`            | la **structure** : entités, colonnes, patterns TPC, conventions de nommage, scopes d'unicité, enums SQL, suppression logique, vocabulaires Keyword |
+| `modele/decisions.md`                 | le **pourquoi** : ADR-001 à ADR-065, alternatives écartées                                                    |
+| `modele/points_ouverts.md`            | ce qui **n'est pas tranché** : constats concrets (C), risques structurels (S), points de modélisation (M), veille standards (V), avec triage sévérité/effort |
+| `modele/sources.md`                   | les **standards externes** et leur état daté, table source vers entités                                       |
+| `methode/SOUL.md`                     | la **manière de penser et de collaborer**                                                                     |
+| `CLAUDE.md` (ce fichier)              | l'**état du travail** et les **règles de rédaction**                                                          |
+| `annexes/tpc_philosophie_synthese.md` | la **justification philosophique** du pattern TPC                                                             |
 
-Le fichier BDD (`modele_donnees_v12.md`) est la source de vérité ; l'API s'en
+Le fichier BDD (`modele/modele_donnees.md`) est la source de vérité ; l'API s'en
 déduit. Les relations inverses absentes des tableaux y réapparaissent comme
 endpoints de navigation (ADR-028).
 
@@ -87,14 +87,14 @@ ADR. Ne pas modifier l'un de ces points sans ouvrir une décision.
 
 ## Règles de rédaction du modèle
 
-Formalisme strict pour `modele_donnees_v12.md`.
+Formalisme strict pour `modele/modele_donnees.md`.
 
 - Les tableaux de colonnes ne contiennent que des **colonnes réelles** de la table SQL correspondante. Les relations portées par des tables de jointure séparées (many-to-many, TPC series) ne figurent jamais dans le tableau de l'entité parente : elles sont documentées dans la note et dans la table des jointures explicites.
 - Les tableaux Markdown s'alignent visuellement : les barres verticales de chaque colonne sont alignées sur la ligne la plus large de cette colonne, les lignes courtes sont paddées d'espaces jusqu'à cette largeur. Le contenu ne doit jamais être tronqué ni appauvri pour des raisons de largeur : si une ligne dépasse parce que les valeurs possibles sont nombreuses, elle dépasse, c'est normal et attendu.
 - Pas de tiret cadratin (—) ni demi-cadratin (–) dans les fichiers générés.
   Utiliser les deux-points, des parenthèses, ou reformuler.
 - Conventions de nommage (tables, colonnes, enums, valeurs de Keyword) : voir la
-  section *Conventions de nommage* de `modele_donnees_v12.md`. Ne pas les
+  section *Conventions de nommage* de `modele/modele_donnees.md`. Ne pas les
   ressaisir ici.
 - En-tête d'entité, format standard à respecter :
 
@@ -122,7 +122,7 @@ Aucune dette connue à ce jour.
   programmatique via `str_replace` ou script Python.
 
 Le réflexe de remonter en amont quand une question devient trop granulaire est
-décrit dans `SOUL.md` (réflexe 3). Il s'applique ici aussi.
+décrit dans `methode/SOUL.md` (réflexe 3). Il s'applique ici aussi.
 
 
 ## Régénérer bdoh-doc
@@ -148,11 +148,11 @@ bdoh-doc/
 ```
 
 Processus :
-1. Lire `modele_donnees_v12.md` en entier.
+1. Lire `modele/modele_donnees.md` en entier.
 2. Découper en pages selon la structure ci-dessus, ajouter les liens internes.
-3. Mettre à jour `decisions/index.md` depuis `decisions_index.md`.
-4. Mettre à jour `standards/index.md` depuis `sources.md` (ne pas ressaisir
-   l'état des standards à la main : il vit dans `sources.md`).
+3. Mettre à jour `docs/decisions/index.md` depuis `modele/decisions.md`.
+4. Mettre à jour `docs/standards/index.md` depuis `modele/sources.md` (ne pas ressaisir
+   l'état des standards à la main : il vit dans `modele/sources.md`).
 5. Tester avec `mkdocs serve` avant de pousser.
 
 Points de vigilance :
@@ -160,18 +160,18 @@ Points de vigilance :
 - `transformation.md` a été profondément remanié : ne pas repartir de l'ancienne
   version.
 - Le mapping `qualityFlag` ODM2 / SANDRE et l'état de STA 2.0 viennent de
-  `decisions_index.md` (ADR-024) et `sources.md`.
+  `modele/decisions.md` (ADR-024) et `modele/sources.md`.
 
 
 ## Chantiers techniques en cours
 
 Tâches d'implémentation, hors conception. Les questions de conception non
-tranchées sont dans `points_ouverts.md` et ne sont pas dupliquées ici.
+tranchées sont dans `modele/points_ouverts.md` et ne sont pas dupliquées ici.
 
 - **Intégrité applicative** : triggers `prevent_physical_delete`, triggers
   BEFORE INSERT/UPDATE pour les relations TPC (dont le nouveau TPC system),
   requêtes de vérification périodique. Inventaire à consolider (voir S3 dans
-  `points_ouverts.md`).
+  `modele/points_ouverts.md`).
 - **Documentation** : régénérer bdoh-doc (procédure ci-dessus). Section
   `transformation.md` profondément remaniée (Algorithm, TransferFunctionParameter,
   incertitude). Section `organisation.md` à mettre à jour (Bundle, Dataset,

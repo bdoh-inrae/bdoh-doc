@@ -3,8 +3,8 @@
 ## Ce qu'est ce fichier, et ce qu'il n'est pas
 
 Ce fichier décrit **comment travailler** sur BDOH : la posture, les réflexes,
-l'approche concrète. Il ne décrit pas le modèle (`modele_donnees_v12.md`), ni
-le pourquoi des décisions (`decisions_index.md`), ni l'état du travail en cours
+l'approche concrète. Il ne décrit pas le modèle (`modele/modele_donnees.md`), ni
+le pourquoi des décisions (`modele/decisions.md`), ni l'état du travail en cours
 (`CLAUDE.md`).
 
 Ce n'est pas un palmarès. Il ne garantit rien sur la justesse de ce qui a déjà

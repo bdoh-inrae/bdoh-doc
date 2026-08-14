@@ -1,15 +1,15 @@
 ---
 title: Points ouverts BDOH
 subtitle: Ce qui reste à trancher, creuser ou expliciter
-source: audit de modele_donnees_v12.md + travail de session, juin 2026
+source: audit de modele_donnees.md + travail de session, juin 2026
 ---
 
 # Comment lire ce fichier
 
 Ce fichier possède **ce qui n'est pas tranché** : doutes valides, risques à
 nommer, décisions de fond à acter. Il ne possède aucune vérité de structure
-(elle vit dans `modele_donnees_v12.md`), aucun pourquoi déjà décidé (dans
-`decisions_index.md`), aucun état de standard (dans `sources.md`).
+(elle vit dans `modele_donnees.md`), aucun pourquoi déjà décidé (dans
+`decisions.md`), aucun état de standard (dans `sources.md`).
 
 Il remplace l'ancien fichier de points ouverts dont la partie A à D a été
 soldée (voir la note ci-dessous). Son ossature vient d'un audit externe du
