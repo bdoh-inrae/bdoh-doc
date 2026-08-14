@@ -3103,7 +3103,7 @@ Identifier, Memory, KeywordAssignment
 
 ## Mapping DataCite
 
-Correspondance entre les propriétés DataCite 4.6 et les entités BDOH, commune à
+Correspondance entre les propriétés DataCite et les entités BDOH, commune à
 `Bundle` (export éditorial vivant) et `Dataset` (export figé citable). Ce mapping
 décrit le comportement d'export : deux propriétés obligatoires DataCite sont
 fixes (Publisher, ResourceType) ; tout le reste se dérive de ce que le modèle
@@ -3202,7 +3202,7 @@ Responsibility, Identifier, Memory
 > Regroupement éditorial de séries et fonctions pour la diffusion et le catalogage - objet de publication vivant.
 
 *Aligné avec* :
-- [DataCite Metadata Schema 4.6](https://datacite-metadata-schema.readthedocs.io/en/4.6/properties/)
+- [DataCite Metadata Schema](https://datacite-metadata-schema.readthedocs.io/) - version courante et état daté dans `sources.md`, propriétaire unique
   - schéma de référence pour la publication citable d'un jeu de données (DOI,
   Creator, Title, Publisher, Subject...). Bundle est exportable vers tout entrepôt
   compatible DataCite (Dataverse, Zenodo, RDG...). Voir le mapping ci-dessous dans
@@ -3263,11 +3263,11 @@ KeywordAssignment
 > Reçu d'un export figé vers un entrepôt externe (Dataverse...) - objet de citation immuable.
 
 *Aligné avec* :
-- [DataCite Metadata Schema 4.6](https://datacite-metadata-schema.readthedocs.io/en/4.6/properties/)
+- [DataCite Metadata Schema](https://datacite-metadata-schema.readthedocs.io/) - version courante et état daté dans `sources.md`, propriétaire unique
   - le paquet de métadonnées envoyé à l'entrepôt est construit selon ce schéma
   (mapping commun à Bundle et Dataset, voir la section *Mapping DataCite* en tête
   de section 9). Le DOI obtenu identifie le dépôt externe.
-- [DataCite RelatedIdentifier](https://datacite-metadata-schema.readthedocs.io/en/4.6/properties/relatedidentifier/)
+- [DataCite RelatedIdentifier](https://datacite-metadata-schema.readthedocs.io/en/latest/properties/relatedidentifier/)
   - le paquet exporté porte un relatedIdentifier (relationType=IsDerivedFrom)
   pointant vers les ressources BDOH d'origine, fermant la boucle entrepôt -> source.
 

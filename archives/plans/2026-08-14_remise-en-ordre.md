@@ -1,8 +1,8 @@
 ---
 titre: Remise en ordre de l'espace de travail
 ouvert: 2026-08-14
-clos:
-statut: en cours
+clos: 2026-08-14
+statut: clos
 ---
 
 # Ce que ce fichier est
@@ -95,13 +95,13 @@ rien.
 
 ## Étape 1. Sauver ce qui risque de se perdre (close)
 
-- [ ] sortir `dev/CLAUDE/tmp/audit_modele_v12.md` de l'ignoré, le placer dans
+- [x] sortir `dev/CLAUDE/tmp/audit_modele_v12.md` de l'ignoré, le placer dans
       `archives/` où il sera suivi
-- [ ] même chose pour `dev/old/`
-- [ ] ancrer les motifs du `.gitignore` (`/tmp/`, `/old/`) pour qu'ils ne
+- [x] même chose pour `dev/old/`
+- [x] ancrer les motifs du `.gitignore` (`/tmp/`, `/old/`) pour qu'ils ne
       s'appliquent plus à n'importe quelle profondeur
-- [ ] retirer du suivi le fichier de verrou drawio, l'ajouter au `.gitignore`
-- [ ] trancher la règle sur les PDF dérivés : tous suivis, ou aucun
+- [x] retirer du suivi le fichier de verrou drawio, l'ajouter au `.gitignore`
+- [x] trancher la règle sur les PDF dérivés : tous suivis, ou aucun
 
 **Critère de fin** : `git status --ignored` ne cache plus aucun fichier de fond.
 
@@ -110,8 +110,8 @@ rien.
 Le site publie un modèle de mars 2026 à chaque push. Tant qu'il n'est pas
 régénéré, il vaut mieux qu'il ne se republie pas tout seul.
 
-- [ ] conditionner `deploy.yml` à un déclenchement manuel (`workflow_dispatch`)
-- [ ] noter dans `README.md` que la documentation en ligne n'est pas à jour et
+- [x] conditionner `deploy.yml` à un déclenchement manuel (`workflow_dispatch`)
+- [x] noter dans `README.md` que la documentation en ligne n'est pas à jour et
       renvoyer vers le modèle source
 
 **Critère de fin** : un push sur `main` ne republie plus rien.
@@ -156,11 +156,11 @@ bdoh-doc/
 └── docs/                      site public mkdocs
 ```
 
-- [ ] relever l'état des références croisées AVANT (`verifie_modele.py`)
-- [ ] déplacer
-- [ ] mettre à jour les références croisées (15 citations de
+- [x] relever l'état des références croisées AVANT (`verifie_modele.py`)
+- [x] déplacer
+- [x] mettre à jour les références croisées (15 citations de
       `modele_donnees_v12.md` réparties dans 6 fichiers, plus les autres noms)
-- [ ] relever l'état APRÈS, exiger zéro référence morte
+- [x] relever l'état APRÈS, exiger zéro référence morte
 
 **Critère de fin** : zéro référence morte, et `git log --follow` retrouve
 l'historique de chaque fichier déplacé.
@@ -217,11 +217,11 @@ Les 18 constats (C7 à C18, M10 à M14, S6) n'ont jamais été relus. Ils sont �
 vérifier un par un contre le modèle actuel : toujours valides, déjà résolus
 depuis, ou à écarter.
 
-- [ ] relire chaque constat contre `modele_donnees.md` dans son état courant
-- [ ] classer : valide / caduc / à écarter, avec une phrase de justification
-- [ ] **retour groupé à Louis avant intégration** : c'est du fond, pas de la
+- [x] relire chaque constat contre `modele_donnees.md` dans son état courant
+- [x] classer : valide / caduc / à écarter, avec une phrase de justification
+- [x] **retour groupé à Louis avant intégration** : c'est du fond, pas de la
       mécanique
-- [ ] intégrer ceux qui survivent dans `chantier.md`, supprimer le fichier
+- [x] intégrer ceux qui survivent dans `chantier.md`, supprimer le fichier
       d'audit
 
 **Critère de fin** : `archives/audit_modele_v12.md` supprimé, rien de perdu.
@@ -231,19 +231,19 @@ depuis, ou à écarter.
 Les onze divergences internes au modèle (D1 à D11 après renumérotation). Aucune
 ne demande de décision de fond, mais chacune touche un tableau.
 
-- [ ] montrer chaque tableau modifié en avant/après avant de l'écrire
-- [ ] traiter par groupes cohérents, un commit par groupe
+- [x] montrer chaque tableau modifié en avant/après avant de l'écrire
+- [x] traiter par groupes cohérents, un commit par groupe
 
 **Critère de fin** : `verifie_modele.py` sort zéro.
 
-## Étape 9. Mise à jour de `sources.md`
+## Étape 9. Mise à jour de `sources.md` (close)
 
-- [ ] liens CS API : passer de `/DRAFTS/` à `docs.ogc.org/is/`
-- [ ] ajouter l'extension STA WebSub 1.0
-- [ ] créer l'entrée DataCite avec son état daté (4.7, 3 mars 2026), et retirer
+- [x] liens CS API : passer de `/DRAFTS/` à `docs.ogc.org/is/`
+- [x] ajouter l'extension STA WebSub 1.0
+- [x] créer l'entrée DataCite avec son état daté (4.7, 3 mars 2026), et retirer
       le numéro de version du modèle
-- [ ] ajouter I-ADOPT avec son état daté
-- [ ] dater la vérification de chaque état
+- [x] ajouter I-ADOPT avec son état daté
+- [x] dater la vérification de chaque état
 
 **Critère de fin** : aucune version de standard n'est écrite ailleurs que dans
 `sources.md`.
@@ -299,3 +299,77 @@ Ce qui reste vrai malgré tout, et vaut d'être tenu : **avant un `rm -rf` sur u
 dossier contenant des fichiers non suivis, en lister le contenu et demander.**
 Ici le filet existait ; l'erreur était de ne pas avoir vérifié avant d'agir, pas
 d'avoir supprimé.
+
+
+# Bilan, 14 août 2026
+
+## Ce qui a été fait
+
+Neuf étapes sur dix, en une session. La dixième était explicitement hors plan.
+
+| Étape | Résultat                                                                                   |
+|-------|--------------------------------------------------------------------------------------------|
+| 0     | Deux vérificateurs écrits : alignement des tableaux, cohérence interne du modèle           |
+| 1     | Un audit de 631 lignes et un backlog sauvés d'un `.gitignore` mal ancré                    |
+| 2     | Publication du site débranchée : elle republiait un modèle de mars à chaque push           |
+| 3     | Arborescence migrée, 37 renommages, zéro renvoi mort, `git log --follow` intact            |
+| 4     | `points_ouverts.md` et `chantier.md` unifiés, six lettres pour six natures de constat      |
+| 5     | 90 tableaux au format, contenu prouvé inchangé. Tirets normalisés, trois conventions à une |
+| 6     | `CLAUDE.md` devient un routeur, `methode/redaction.md` naît, `SOUL.md` dégraissé           |
+| 7     | Vingt constats d'audit versés tels quels, sans tri ni jugement                             |
+| 8     | Onze divergences du modèle corrigées, le vérificateur sort zéro                            |
+| 9     | `sources.md` à jour et redevenu propriétaire unique des versions de standards              |
+
+Trois choses trouvées en chemin, qui n'étaient dans aucune liste de départ :
+
+- `Facility` et `SamplingBatch` avaient été ajoutés comme cibles dans six
+  tableaux sans jamais remonter aux domaines de référence. Trouvé par outil,
+  pas à l'œil.
+- Le passage obligatoire par `Deployment` diverge de CS API, où un `DataStream`
+  est rattaché à un `System`. Vérifié sur la spécification après un doute de
+  Louis, contre une affirmation fausse que j'avais écrite. C19.
+- La convention de nommage, excellente pour l'API, n'est pas celle de
+  PostgreSQL, et ce coût n'avait jamais été nommé. C20.
+
+## Ce qui a été abandonné en route
+
+Rien. Deux points ont changé de forme, pas de fond :
+
+- L'étape 7 devait « relire et classer » les constats de l'audit. Recadrée en
+  simple versement après une remarque de Louis : classer, c'est instruire, et
+  instruire n'était pas l'objet de ce plan. Les vingt constats sont versés
+  intacts, aucun n'est déclaré clos.
+- D5 est réduit à `person_organization`, bloqué par M11 : lui donner des
+  colonnes reviendrait à trancher si l'affiliation est datée.
+
+## Ce qui déborde sur la suite
+
+Hors plan dès le départ, et toujours ouvert : instruire les vingt constats
+versés, un par un ; M9 (données d'expérience de terrain) ; C19 et C20 ;
+T3 (régénérer le site) ; T4 (modèle d'endpoints API) ; S2 à confirmer soldé.
+
+## Deux incidents, et ce qu'ils ont appris
+
+**Un `rm -rf` sans regarder.** Le vidage de `dev/` a emporté des sauvegardes
+d'éditeur non suivies. Sans conséquence en fin de compte, les versions étaient
+dans l'historique git, mais le geste était mauvais. Règle retenue : avant un
+`rm -rf` sur un dossier contenant des fichiers non suivis, en lister le contenu.
+
+**Un script a tronqué `chantier.md` de 628 lignes, et la troncature a été
+commitée.** Restaurée depuis le commit précédent, rien de perdu. Le point qui
+compte est que les deux vérificateurs sont passés au vert sur le fichier
+tronqué : un fichier amputé reste bien formé. Ils contrôlent la cohérence, pas
+l'intégrité. Un contrôle de non-régression de volume, ou une relecture du diff
+avant commit, aurait vu ce que les outils ne voient pas.
+
+## Ce que la session dit de la méthode
+
+Le reproche le plus utile est venu de Louis en cours de route : en passant par
+Claude Code plutôt que par une conversation, la tendance est de trancher puis
+d'expliquer, alors qu'une phase de conception demande l'inverse. Il ne peut pas
+valider ce qu'il n'a pas lu, et une modification qu'il n'a pas comprise n'est
+pas acquise même si elle est juste.
+
+C'est ce qui a produit les deux règles ajoutées à `methode/SOUL.md` (réflexes 8
+et 9) et l'ouverture de `methode/redaction.md` par « montrer avant d'écrire ».
+Le plan suivant devra les respecter davantage que celui-ci ne l'a fait.

@@ -17,7 +17,7 @@ eux-mêmes.
 | `modele/decisions.md`      | le pourquoi : ADR-001 à ADR-065, alternatives écartées  |
 | `modele/chantier.md`       | tout ce qui reste ouvert, à trancher ou à corriger      |
 | `modele/sources.md`        | les standards externes et leur état daté                |
-| `plan.md`                  | le plan de travail courant                              |
+| `archives/plans/`          | les plans de travail, datés de leur ouverture           |
 | `archives/`                | les états anciens conservés sciemment                   |
 
 Le détail de chaque dossier est dans `CLAUDE.md`, qui sert de routeur.

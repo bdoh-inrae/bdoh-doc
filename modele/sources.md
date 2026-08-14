@@ -43,13 +43,23 @@ Extension pour la science citoyenne et la propriété des observations.
 Introduit les concepts de licence et de relations entre observations.
 - Page OGC : https://www.ogc.org/standards/sensor-things-api-extension/
 
+## OGC SensorThings API Extension: WebSub 1.0
+Extension approuvée pour la notification asynchrone de nouvelles observations,
+fondée sur le protocole W3C WebSub. Sujet d'interface, sans effet sur le modèle
+de données ; à évaluer si BDOH expose un jour un flux temps réel.
+- OGC Doc No. 24-032r1
+- Page OGC : https://www.ogc.org/standards/sensorthings/
+
+**Etat au 14 août 2026** : approuvée, listée parmi les standards SensorThings de
+l'OGC à côté de STAplus 1.0.
+
 ## OGC API - Connected Systems (CS API)
 Successeur moderne de STA et SOS, basé sur OGC API Features.
 Modélisé sur SOSA/SSN. A surveiller pour les évolutions futures de BDOH.
 - Portail officiel (URL stable) : https://ogcapi.ogc.org/connectedsystems/
 - Page OGC : https://www.ogc.org/standards/ogc-api-connected-systems/
-- Spécification Part 1 (Feature Resources, draft) : https://docs.ogc.org/DRAFTS/23-001r0.html
-- Spécification Part 2 (Dynamic Data, draft) : https://docs.ogc.org/DRAFTS/23-002r0.html
+- Spécification Part 1 (Feature Resources) : https://docs.ogc.org/is/23-001/23-001.html
+- Spécification Part 2 (Dynamic Data) : https://docs.ogc.org/is/23-002/23-002.html
 - GitHub SWG : https://github.com/opengeospatial/ogcapi-connected-systems
 
 **Etat en 2025-2026** : les Parts 1 et 2 de CS API ont été approuvées comme
@@ -60,8 +70,16 @@ SensorML 3.0 (avec encodages JSON désormais standardisés). Il est conçu pour
 coexister avec STA plutôt que le remplacer immédiatement : un endpoint CS API
 peut lier vers un endpoint STA existant. Pour BDOH, c'est une cible à moyen
 terme mais une migration prématurée serait hors de propos. A surveiller pour
-la v2. Note : les URLs de spécification ci-dessus restent en `/DRAFTS/` au
-moment de la rédaction ; l'URL canonique stable est le portail ogcapi.ogc.org.
+la v2. Vérification du 14 août 2026 : la page OGC liste les deux parties en
+version 1.0 avec le statut IS (International Standard), et les URLs canoniques
+sont désormais sous `/is/`, plus sous `/DRAFTS/`.
+
+Point de vigilance pour BDOH, relevé le 14 août 2026 en lisant la Part 2 : dans
+CS API, un `DataStream` est rattaché à un `System`, pas à un `Deployment`, et le
+`Deployment` n'est qu'un contexte spatio-temporel optionnel. BDOH fait l'inverse
+et rend le déploiement obligatoire. C'est un écart assumé mais jamais décidé,
+avec une conséquence directe pour un export CS API. Voir C19 dans
+`chantier.md`.
 
 **Ce que CS API apporte par rapport à STA** : une distinction plus propre entre systèmes
 statiques (métadonnées de capteurs, plateformes, déploiements, dans la Part 1)
@@ -326,6 +344,47 @@ URIs pour les unités de mesure. Utilisé dans `Unit.definition`.
 Syntaxe compacte pour exprimer les unités (`mg/L`, `m3/s`). Alternative
 à QUDT utilisable dans `Unit.definition`.
 - Site : https://ucum.org
+
+## DataCite Metadata Schema
+Schéma de métadonnées de citation des jeux de données, cible de l'export de
+`Bundle` et `Dataset` vers un entrepôt externe (Dataverse, RDG, Zenodo). Le
+mapping propriété par propriété vit dans `modele_donnees.md`, section *Mapping
+DataCite* ; seule la version fait foi ici.
+- Schéma : https://schema.datacite.org/
+- Documentation des propriétés : https://datacite-metadata-schema.readthedocs.io/
+
+**Etat au 14 août 2026** : version **4.7**, publiée le 3 mars 2026 (nouveaux
+types de ressource Poster et Presentation, nouveaux types d'identifiants liés,
+nouveau type de relation). Le mapping BDOH s'appuie sur des propriétés stables
+depuis 4.x et n'est pas invalidé par ce passage ; c'était le numéro de version,
+figé dans le fichier modèle, qui avait vieilli.
+
+## I-ADOPT - InteroperAble Descriptions of Observable Property Terminologies
+Cadre de la Research Data Alliance pour décrire une variable observable de façon
+interopérable entre vocabulaires. Il décompose une variable en composants
+(ObjectOfInterest, Property, Matrix, ContextObject, StatisticalModifier) plutôt
+que de la traiter comme un terme atomique.
+- Site et ontologie : https://i-adopt.github.io/
+- Ontologie versionnée : https://i-adopt.github.io/ontology/
+- Recommandation RDA : doi:10.15497/RDA00071
+
+**Etat au 14 août 2026** : recommandation finalisée en janvier 2022, endossée par
+la RDA en avril 2022. Groupe de travail en mode maintenance, ontologie publiée et
+maintenue.
+
+**Ce que I-ADOPT apporte à BDOH** : le cadre traite exactement le problème que
+BDOH résout à sa manière avec `Property`, `Unit`, `aggregationStatistic` et le
+milieu. NERC P01, vocabulaire de référence de BDOH pour les variables, est l'un
+des vocabulaires que I-ADOPT prend en exemple et pour lequel le NERC publie des
+décompositions I-ADOPT.
+
+L'enjeu n'est pas d'adopter le cadre mais de vérifier si la décomposition BDOH
+s'y projette proprement : c'est un test de robustesse du découpage actuel, et un
+écart révélerait soit un manque, soit un choix délibéré à écrire. Son
+`StatisticalModifier` donne notamment une lecture indépendante de M2
+(aggregationStatistic mélangeant cadence et statistique), clos. Enjeu
+d'interopérabilité réel : Theia/OZCAR est la voie de remontée des données BDOH,
+et la définition des variables doit y être irréprochable.
 
 ## SPDX License List - Identifiants de licences
 Liste de référence des licences (logiciel, données, documentation) avec

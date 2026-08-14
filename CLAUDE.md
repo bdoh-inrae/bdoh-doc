@@ -46,7 +46,7 @@ divergences ; ce ne le sera plus une fois l'implémentation commencée.
 | `methode/redaction.md`                | les **règles d'écriture** : formalisme, tableaux, ponctuation, contrôles                                   |
 | `methode/notes.md`                    | le **carnet de Louis**. Lecture libre, écriture seulement sur demande explicite                            |
 | `annexes/tpc_philosophie_synthese.md` | la **justification philosophique** du pattern TPC                                                          |
-| `plan.md`                             | l'**ordre d'exécution** du travail en cours. Les plans clos vivent dans `archives/plans/`                  |
+| `archives/plans/`                     | les **plans de travail**, datés de leur ouverture. Le plan courant, s'il y en a un, est un fichier plan.md à la racine |
 | `outils/`                             | les **vérificateurs** : alignement des tableaux, cohérence interne du modèle                               |
 | `archives/`                           | les **états anciens** conservés sciemment. Aucun ne fait autorité, voir son README                         |
 
